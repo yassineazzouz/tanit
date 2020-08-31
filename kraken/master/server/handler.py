@@ -4,8 +4,11 @@ from Queue import Queue
 from ..core.dispatcher import *
 from ..core.engine import *
 from ..core.scheduler import *
+from ..core.worker import *
 from ..core.job import *
 from ..thrift.ttypes import JobStatus, JobState
+
+import socket
 
 import logging as lg
 
@@ -17,7 +20,8 @@ class KrakenServiceHandler(object):
         self.jobs = []
 
         self.engine = Engine()
-        self.dispatcher  = ThreadPoolDispatcher(self.engine)
+        self.dispatcher  = FairDispatcher()
+        self.dispatcher.add_worker(ThreadPoolWorker( "worker-%s-1" % socket.gethostname() ,self.engine))
         self.scheduler = SimpleScheduler(self.dispatcher)
 
         self.dispatcher.start()
