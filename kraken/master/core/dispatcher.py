@@ -4,7 +4,6 @@
 
 import abc
 import time
-from Queue import Queue
 from threading import Thread
 
 max_concurrency = 25
@@ -17,37 +16,35 @@ class Dispatcher(object):
     '''
     The Dispatcher distribute scheduled tasks between workers.
     Initially tasks are queued when submitted to the dispatcher
-    then 
+    then the dispatch thread continuously poll tasks and select
+    the appropriate worker for execution.
     '''
     
-    def __init__(self):
+    def __init__(self, cqueue):
         self.workers = []
-        self.queue = Queue()
+        self.cqueue = cqueue
         self.stopped = False
 
     def _run(self):
         while True:
-            if (not self.queue.empty()):
+            if (not self.cqueue.empty()):
                 worker = self.get_worker()
                 if (worker == None):
                     _logger.warn("Failed to dispatch task [ %s ] : no workers found !")
                     time.sleep(2)
                 else:
-                    task = self.queue.get()
+                    task = self.cqueue.get()
                     _logger.debug("Dispatching next task [ %s ] for execution.", task.tid)
                     worker.submit(task)
             else:
                 _logger.debug("No new tasks to dispatch, sleeping for %s seconds...", 2)
                 time.sleep(2)
     
-            if (self.stopped and self.queue.empty()):
+            if (self.stopped and self.cqueue.empty()):
                 _logger.debug("No new tasks to dispatch, terminating dispatcher thread.")
                 return
-
-    def submit(self, task):
-        self.queue.put(task)
         
-    def add_worker(self, worker):
+    def register_worker(self, worker):
         self.workers.append(worker)
     
     @abc.abstractmethod

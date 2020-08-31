@@ -12,7 +12,7 @@ class Task(object):
         self.job = job
         self.src_path = src_path
         self.dest_path = dest_path
-
+    
     def on_start(self):
         self.state = "RUNNING"
         self.job.on_task_start(self.tid)
@@ -53,6 +53,7 @@ class Job(object):
 
         self.src_client = conf.src
         self.dest_client = conf.dest
+
 
     def on_task_start(self, tid):
         self.started_tasks += 1

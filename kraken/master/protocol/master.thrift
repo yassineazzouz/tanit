@@ -28,7 +28,7 @@ struct JobConf {
   12: optional i64 buffer_size = 65536,
 }
 
-service KrakenService{
+service ClientMasterService{
 
     // submit a job 
     void submit_job(1:JobConf conf),
