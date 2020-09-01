@@ -1,20 +1,41 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from .server import KrakenMasterServer
+"""kraken-server: Kraken master.
+
+Usage:
+  kraken-client [-v...] [--standalone]
+  kraken-client (--version | -h)
+
+Options:
+  --version                     Show version and exit.
+  -h --help                     Show help and exit.
+  -v --verbose                  Enable log output. Can be specified up to three
+                                times (increasing verbosity each time).
+  --standalone                  Run in standalone mode.
+
+Examples:
+  pydistcp -s prod -d preprod -v /tmp/src /tmp/dest
+
+"""
+
+from ... import __version__
+from .server import MasterServer
 
 import requests as rq
 import logging as lg
 
+from docopt import docopt
+
 def configure_logging():
     # capture warnings issued by the warnings module  
     try:
-      # This is not available in python 2.6
-      lg.captureWarnings(True)
+        # This is not available in python 2.6
+        lg.captureWarnings(True)
     except:
-      # disable annoying url3lib warnings
-      rq.packages.urllib3.disable_warnings()
-      pass
+        # disable annoying url3lib warnings
+        rq.packages.urllib3.disable_warnings()
+        pass
 
     logger = lg.getLogger()
     logger.setLevel(lg.DEBUG)
@@ -30,14 +51,12 @@ def configure_logging():
     logger.addHandler(stream_handler)
     
 def main(argv=None):
-    """Entry point.
-    :param argv: Arguments list.
-    :param client: For testing.
-    """
+    
+    args = docopt(__doc__, argv=argv, version=__version__)
     
     configure_logging()
     
-    server = KrakenMasterServer()
+    server = MasterServer(True if args['--standalone'] else False)
     server.start()
 
 if __name__ == '__main__':

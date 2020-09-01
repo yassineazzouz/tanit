@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
+import socket
+
 from Queue import Queue
 from ..core.dispatcher import FairDispatcher
 from ..core.engine import Engine
 from ..core.scheduler import SimpleScheduler
 
 import logging as lg
-from kraken.master.core.worker import ThreadPoolWorker, RemoteThriftWorker
+from kraken.master.core.worker import Worker, ThreadPoolWorker, RemoteThriftWorker
 
 _logger = lg.getLogger(__name__)
 
@@ -57,26 +59,36 @@ class Master(object):
             raise MasterStoppedException("Can not register worker [ %s ] : master server stopped.", worker.wid)
         
         _logger.info("Registering new Worker [ %s ].", worker.wid)
-        if (worker.address == None):
-            self.dispatcher.register_worker(ThreadPoolWorker(worker.wid,self.engine))
-        else:
-            self.dispatcher.register_worker(RemoteThriftWorker(worker.wid,worker.address, worker.port))
+        self.dispatcher.register_worker(RemoteThriftWorker(worker.wid,worker.address, worker.port))
         _logger.info("Worker [ %s ] registered.", worker.wid)   
             
     def start(self):
-        _logger.info("Stating Kraken master.")
+        _logger.info("Stating Kraken master services.")
         self.dispatcher.start()
         self.scheduler.start()
         self.started = True
-        _logger.info("Kraken master started.")
+        _logger.info("Kraken master services started.")
         
     def stop(self):
-        _logger.info("Stopping Kraken master.")
+        _logger.info("Stopping Kraken master services.")
         self.started = False
         self.scheduler.stop()
         self.dispatcher.stop()
-        _logger.info("Kraken master stopped.")
+        _logger.info("Kraken master services stopped.")
+
+class StandaloneMaster(Master):
+    def __init__(self):
+        super(StandaloneMaster, self).__init__()
+        self.worker = ThreadPoolWorker("worker-local-%s-1" % socket.gethostname(),self.engine)
         
+    def start(self):
+        super(StandaloneMaster, self).start()
+        _logger.info("Registering new local Worker [ %s ].", self.worker.wid)
+        self.dispatcher.register_worker(self.worker)
+        _logger.info("Worker [ %s ] registered.", self.worker.wid)
+         
+    
+                
 class MasterStoppedException(Exception):
     """Raised when trying to submit a task to a stopped master"""
     pass

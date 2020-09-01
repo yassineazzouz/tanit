@@ -30,7 +30,7 @@ class Dispatcher(object):
             if (not self.cqueue.empty()):
                 worker = self.get_worker()
                 if (worker == None):
-                    _logger.warn("Failed to dispatch task [ %s ] : no workers found !")
+                    _logger.warn("Failed to dispatch tasks : no workers found !")
                     time.sleep(2)
                 else:
                     task = self.cqueue.get()

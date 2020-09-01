@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 from ..core.job import Job
+from ..core.worker import Worker
 from ..thrift.ttypes import JobStatus, JobState
 
 import logging as lg
 
 _logger = lg.getLogger(__name__)
 
-class KrakenServiceHandler(object):
+class MasterClientServiceHandler(object):
 
     def __init__(self, master):
         self.master = master
@@ -28,6 +29,19 @@ class KrakenServiceHandler(object):
             raise JobNotFoundException("No such job [ %s ]", jid)
         return JobStatus(job.jid, JobState._NAMES_TO_VALUES[job.state], job.submission_time)
 
+class MasterWorkerServiceHandler(object):
+
+    def __init__(self, master):
+        self.master = master
+        
+    def register_worker(self, worker):
+        wker = Worker(worker.wid, worker.address, worker.port)
+        self.master.register_worker(self, wker)
+
+    def send_heartbeat(self, worker):
+        pass        
+        
+    
 class JobNotFoundException(Exception):
     """Raised when trying to submit a task to a stopped master"""
     pass

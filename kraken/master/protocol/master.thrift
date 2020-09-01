@@ -28,7 +28,13 @@ struct JobConf {
   12: optional i64 buffer_size = 65536,
 }
 
-service ClientMasterService{
+struct Worker {
+  	1: required string wid,
+  	2: optional string address,
+  	3: optional i32 port,
+}
+
+service MasterClientService{
 
     // submit a job 
     void submit_job(1:JobConf conf),
@@ -39,4 +45,11 @@ service ClientMasterService{
     // job status
     JobStatus job_status(1:string jid),
     
+}
+
+service MasterWorkerService{
+
+    void register_worker(1:Worker worker),
+    
+    void send_heartbeat(1:Worker worker),
 }

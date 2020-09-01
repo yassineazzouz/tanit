@@ -23,7 +23,7 @@ Examples:
 """
 
 from ... import __version__
-from .client import KrakenClient
+from .client import MasterClient
 
 import requests as rq
 import logging as lg
@@ -58,7 +58,7 @@ def main(argv=None):
     
     configure_logging()
     
-    client = KrakenClient()
+    client = MasterClient()
     client.start()
     if (args['--list']):
         for job in client.list_jobs():

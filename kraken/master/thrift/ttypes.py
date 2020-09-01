@@ -343,3 +343,96 @@ class JobConf:
 
   def __ne__(self, other):
     return not (self == other)
+
+class Worker:
+  """
+  Attributes:
+   - wid
+   - address
+   - port
+  """
+
+  thrift_spec = (
+    None, # 0
+    (1, TType.STRING, 'wid', None, None, ), # 1
+    (2, TType.STRING, 'address', None, None, ), # 2
+    (3, TType.I32, 'port', None, None, ), # 3
+  )
+
+  def __init__(self, wid=None, address=None, port=None,):
+    self.wid = wid
+    self.address = address
+    self.port = port
+
+  def read(self, iprot):
+    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
+      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
+      return
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == 1:
+        if ftype == TType.STRING:
+          self.wid = iprot.readString()
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
+        if ftype == TType.STRING:
+          self.address = iprot.readString()
+        else:
+          iprot.skip(ftype)
+      elif fid == 3:
+        if ftype == TType.I32:
+          self.port = iprot.readI32()
+        else:
+          iprot.skip(ftype)
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
+      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
+      return
+    oprot.writeStructBegin('Worker')
+    if self.wid is not None:
+      oprot.writeFieldBegin('wid', TType.STRING, 1)
+      oprot.writeString(self.wid)
+      oprot.writeFieldEnd()
+    if self.address is not None:
+      oprot.writeFieldBegin('address', TType.STRING, 2)
+      oprot.writeString(self.address)
+      oprot.writeFieldEnd()
+    if self.port is not None:
+      oprot.writeFieldBegin('port', TType.I32, 3)
+      oprot.writeI32(self.port)
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def validate(self):
+    if self.wid is None:
+      raise TProtocol.TProtocolException(message='Required field wid is unset!')
+    return
+
+
+  def __hash__(self):
+    value = 17
+    value = (value * 31) ^ hash(self.wid)
+    value = (value * 31) ^ hash(self.address)
+    value = (value * 31) ^ hash(self.port)
+    return value
+
+  def __repr__(self):
+    L = ['%s=%r' % (key, value)
+      for key, value in self.__dict__.iteritems()]
+    return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+  def __eq__(self, other):
+    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+  def __ne__(self, other):
+    return not (self == other)

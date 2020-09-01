@@ -16,7 +16,7 @@ from thrift.transport import TSSLSocket
 from thrift.transport import THttpClient
 from thrift.protocol import TBinaryProtocol
 
-from thrift import KrakenService
+from thrift import MasterClientService
 from thrift.ttypes import *
 
 if len(sys.argv) <= 1 or sys.argv[1] == '--help':
@@ -80,7 +80,7 @@ else:
   else:
     transport = TTransport.TBufferedTransport(socket)
 protocol = TBinaryProtocol.TBinaryProtocol(transport)
-client = KrakenService.Client(protocol)
+client = MasterClientService.Client(protocol)
 transport.open()
 
 if cmd == 'submit_job':
