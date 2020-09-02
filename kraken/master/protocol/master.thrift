@@ -13,7 +13,7 @@ struct JobStatus {
   	3: string submission_time,
 }
 
-struct JobConf {
+struct Job {
   1: required string src,
   2: required string dest,
   3: required string src_path,
@@ -37,7 +37,7 @@ struct Worker {
 service MasterClientService{
 
     // submit a job 
-    void submit_job(1:JobConf conf),
+    void submit_job(1:Job job),
     
     // list jobs
     list<JobStatus> list_jobs(),
@@ -52,4 +52,10 @@ service MasterWorkerService{
     void register_worker(1:Worker worker),
     
     void send_heartbeat(1:Worker worker),
+   
+    void task_start(1:string tid),
+        
+    void task_success(1:string tid),
+    
+    void task_failure(1:string tid),
 }

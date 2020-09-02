@@ -7,8 +7,8 @@ from kraken.master.server.master import Master, StandaloneMaster
 from ..thrift import MasterClientService, MasterWorkerService
 from thrift.transport import TSocket
 from thrift.transport import TTransport
-from thrift.protocol import TCompactProtocol
-from thrift.server import TNonblockingServer
+from thrift.protocol import TBinaryProtocol
+from thrift.server import TServer
 
 from threading import Thread
 
@@ -31,12 +31,12 @@ class MasterWorkerServer(Thread):
         # Create Service handler
         handler = MasterWorkerServiceHandler(self.master)
 
-        processor = MasterWorkerService.Processor(handler)
-
-        transport = TSocket.TServerSocket(self.listen_address, self.listen_port)
-        pfactory = TCompactProtocol.TCompactProtocolFactory()
-
-        server = TNonblockingServer.TNonblockingServer(processor, transport, pfactory, pfactory, self.n_threads)
+        server = TServer.TThreadedServer(
+            MasterWorkerService.Processor(handler),
+            TSocket.TServerSocket(self.listen_address, self.listen_port),
+            TTransport.TBufferedTransportFactory(),
+            TBinaryProtocol.TBinaryProtocolFactory()
+        )
         
         # Start Kraken server
         server.serve()
@@ -55,13 +55,14 @@ class MasterClientServer(Thread):
     def run(self):
         # Create Service handler
         handler = MasterClientServiceHandler(self.master)
-
-        processor = MasterClientService.Processor(handler)
-
-        transport = TSocket.TServerSocket(self.listen_address, self.listen_port)
-        pfactory = TCompactProtocol.TCompactProtocolFactory()
-
-        server = TNonblockingServer.TNonblockingServer(processor, transport, pfactory, pfactory, self.n_threads)
+        
+        
+        server = TServer.TThreadedServer(
+            MasterClientService.Processor(handler),
+            TSocket.TServerSocket(self.listen_address, self.listen_port),
+            TTransport.TBufferedTransportFactory(),
+            TBinaryProtocol.TBinaryProtocolFactory()
+        )
         
         # Start Kraken server
         server.serve()

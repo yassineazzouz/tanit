@@ -55,6 +55,7 @@ setup(
   ],
   entry_points={'console_scripts': 
      [ 'kraken-master = kraken.master.server.__main__:main',
+       'kraken-worker = kraken.worker.server.__main__:main',
        'kraken-client = kraken.master.client.__main__:main']
   },
   long_description_content_type='text/markdown'

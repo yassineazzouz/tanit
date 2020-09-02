@@ -16,7 +16,7 @@ from thrift.transport import TSSLSocket
 from thrift.transport import THttpClient
 from thrift.protocol import TBinaryProtocol
 
-from thrift import MasterClientService
+from thrift import WorkerService
 from thrift.ttypes import *
 
 if len(sys.argv) <= 1 or sys.argv[1] == '--help':
@@ -24,9 +24,8 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print('Usage: ' + sys.argv[0] + ' [-h host[:port]] [-u url] [-f[ramed]] [-s[sl]] function [arg1 [arg2...]]')
   print('')
   print('Functions:')
-  print('  void submit_job(Job job)')
-  print('   list_jobs()')
-  print('  JobStatus job_status(string jid)')
+  print('  void submit(Task task)')
+  print('  WorkerStatus worker_status()')
   print('')
   sys.exit(0)
 
@@ -80,26 +79,20 @@ else:
   else:
     transport = TTransport.TBufferedTransport(socket)
 protocol = TBinaryProtocol.TBinaryProtocol(transport)
-client = MasterClientService.Client(protocol)
+client = WorkerService.Client(protocol)
 transport.open()
 
-if cmd == 'submit_job':
+if cmd == 'submit':
   if len(args) != 1:
-    print('submit_job requires 1 args')
+    print('submit requires 1 args')
     sys.exit(1)
-  pp.pprint(client.submit_job(eval(args[0]),))
+  pp.pprint(client.submit(eval(args[0]),))
 
-elif cmd == 'list_jobs':
+elif cmd == 'worker_status':
   if len(args) != 0:
-    print('list_jobs requires 0 args')
+    print('worker_status requires 0 args')
     sys.exit(1)
-  pp.pprint(client.list_jobs())
-
-elif cmd == 'job_status':
-  if len(args) != 1:
-    print('job_status requires 1 args')
-    sys.exit(1)
-  pp.pprint(client.job_status(args[0],))
+  pp.pprint(client.worker_status())
 
 else:
   print('Unrecognized method %s' % cmd)

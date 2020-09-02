@@ -6,8 +6,6 @@ import abc
 import time
 from threading import Thread
 
-max_concurrency = 25
-
 import logging as lg
 _logger = lg.getLogger(__name__)
 
@@ -33,9 +31,9 @@ class Dispatcher(object):
                     _logger.warn("Failed to dispatch tasks : no workers found !")
                     time.sleep(2)
                 else:
-                    task = self.cqueue.get()
-                    _logger.debug("Dispatching next task [ %s ] for execution.", task.tid)
-                    worker.submit(task)
+                    task_exec = self.cqueue.get()
+                    _logger.debug("Dispatching next task [ %s ] for execution.", task_exec.task.tid)
+                    worker.submit(task_exec)
             else:
                 _logger.debug("No new tasks to dispatch, sleeping for %s seconds...", 2)
                 time.sleep(2)
@@ -45,6 +43,7 @@ class Dispatcher(object):
                 return
         
     def register_worker(self, worker):
+        worker.start()
         self.workers.append(worker)
     
     @abc.abstractmethod
@@ -62,6 +61,9 @@ class Dispatcher(object):
         _logger.info("Stopping kraken dispatcher.")
         self.stopped = True
         self.daemon.join()
+        for worker in self.workers:
+            worker.stop()
+        _logger.info("kraken dispatcher Stopped.")
         
     
 class FairDispatcher(Dispatcher):
@@ -70,13 +72,17 @@ class FairDispatcher(Dispatcher):
         if(len(self.workers) == 0):
             return None
         
-        next_worker = self.workers[0]    
+        next_worker = self.workers[0]
+        next_status = next_worker.status()  
         for worker in self.workers[1:len(self.workers)]:
-            if (worker.num_pending() < next_worker.num_pending()):
+            status = worker.status()
+            if (status.num_pending < next_status.num_pending):
                 next_worker = worker
+                next_status = status
                 continue
-            elif (worker.num_pending() == next_worker.num_pending()):
-                if (worker.num_available() > next_worker.num_available()):
+            elif (status.num_pending == next_status.num_pending):
+                if (status.num_available > next_status.num_available):
                     next_worker = worker
+                    next_status = status
                     continue
         return next_worker

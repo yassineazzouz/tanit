@@ -26,6 +26,9 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print('Functions:')
   print('  void register_worker(Worker worker)')
   print('  void send_heartbeat(Worker worker)')
+  print('  void task_start(string tid)')
+  print('  void task_success(string tid)')
+  print('  void task_failure(string tid)')
   print('')
   sys.exit(0)
 
@@ -93,6 +96,24 @@ elif cmd == 'send_heartbeat':
     print('send_heartbeat requires 1 args')
     sys.exit(1)
   pp.pprint(client.send_heartbeat(eval(args[0]),))
+
+elif cmd == 'task_start':
+  if len(args) != 1:
+    print('task_start requires 1 args')
+    sys.exit(1)
+  pp.pprint(client.task_start(args[0],))
+
+elif cmd == 'task_success':
+  if len(args) != 1:
+    print('task_success requires 1 args')
+    sys.exit(1)
+  pp.pprint(client.task_success(args[0],))
+
+elif cmd == 'task_failure':
+  if len(args) != 1:
+    print('task_failure requires 1 args')
+    sys.exit(1)
+  pp.pprint(client.task_failure(args[0],))
 
 else:
   print('Unrecognized method %s' % cmd)

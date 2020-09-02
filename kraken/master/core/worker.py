@@ -4,34 +4,40 @@
 
 from multiprocessing.pool import ThreadPool
 
+from ...worker.client.client import WorkerClient
+
 import logging as lg
 _logger = lg.getLogger(__name__)
 
-class Worker(object):
-    
-    def __init__(self, wid, address = None, port = None):
-        self.wid = wid
-        self.address = address
-        self.port = port
-        
-    def submit(self, task):
-        pass
-    def num_running(self):
-        pass
-    def num_pending(self):
-        pass
-    def num_available(self):        
-        pass
-
-class RemoteThriftWorker(Worker):
+class RemoteThriftWorker(object):
     def __init__(self, wid, address, port):
-        super(RemoteThriftWorker,self).__init__(wid, address, port)
+        self.wid = wid
+        self.client = WorkerClient(address, port)
+        
+        self.stopped = True
+        
+    def start(self):
+        self.stopped = False
+        self.client.start()
+        
+    def stop(self):
+        self.stopped = True
+        self.client.stop()
 
-class ThreadPoolWorker(Worker):
+    def submit(self, task_exec):
+        if (not self.stopped):
+            self.client.submit(task_exec.task)
+        else :
+            raise WorkerStoppedException("Can not submit task [ %s ] to [ %s ] : worker stopped.", task_exec.task.tid, self.wid)
+        
+    def status(self):
+        return self.client.worker_status()
+         
+class ThreadPoolWorker(object):
 
     def __init__(self, wid, engine, concurrency = 25):
         
-        super(ThreadPoolWorker,self).__init__(wid)
+        self.wid = wid
         
         self.pool = ThreadPool(concurrency)
         self.concurrency = 25

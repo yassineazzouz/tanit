@@ -16,7 +16,7 @@ except:
   fastbinary = None
 
 
-class JobState:
+class TaskState:
   SUBMITTED = 1
   RUNNING = 2
   FINISHED = 3
@@ -37,25 +37,28 @@ class JobState:
   }
 
 
-class JobStatus:
+class WorkerStatus:
   """
   Attributes:
-   - id
-   - state
-   - submission_time
+   - wid
+   - running
+   - pending
+   - available
   """
 
   thrift_spec = (
     None, # 0
-    (1, TType.STRING, 'id', None, None, ), # 1
-    (2, TType.I32, 'state', None, None, ), # 2
-    (3, TType.STRING, 'submission_time', None, None, ), # 3
+    (1, TType.STRING, 'wid', None, None, ), # 1
+    (2, TType.I32, 'running', None, None, ), # 2
+    (3, TType.I32, 'pending', None, None, ), # 3
+    (4, TType.I32, 'available', None, None, ), # 4
   )
 
-  def __init__(self, id=None, state=None, submission_time=None,):
-    self.id = id
-    self.state = state
-    self.submission_time = submission_time
+  def __init__(self, wid=None, running=None, pending=None, available=None,):
+    self.wid = wid
+    self.running = running
+    self.pending = pending
+    self.available = available
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -68,17 +71,22 @@ class JobStatus:
         break
       if fid == 1:
         if ftype == TType.STRING:
-          self.id = iprot.readString()
+          self.wid = iprot.readString()
         else:
           iprot.skip(ftype)
       elif fid == 2:
         if ftype == TType.I32:
-          self.state = iprot.readI32()
+          self.running = iprot.readI32()
         else:
           iprot.skip(ftype)
       elif fid == 3:
-        if ftype == TType.STRING:
-          self.submission_time = iprot.readString()
+        if ftype == TType.I32:
+          self.pending = iprot.readI32()
+        else:
+          iprot.skip(ftype)
+      elif fid == 4:
+        if ftype == TType.I32:
+          self.available = iprot.readI32()
         else:
           iprot.skip(ftype)
       else:
@@ -90,18 +98,22 @@ class JobStatus:
     if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
-    oprot.writeStructBegin('JobStatus')
-    if self.id is not None:
-      oprot.writeFieldBegin('id', TType.STRING, 1)
-      oprot.writeString(self.id)
+    oprot.writeStructBegin('WorkerStatus')
+    if self.wid is not None:
+      oprot.writeFieldBegin('wid', TType.STRING, 1)
+      oprot.writeString(self.wid)
       oprot.writeFieldEnd()
-    if self.state is not None:
-      oprot.writeFieldBegin('state', TType.I32, 2)
-      oprot.writeI32(self.state)
+    if self.running is not None:
+      oprot.writeFieldBegin('running', TType.I32, 2)
+      oprot.writeI32(self.running)
       oprot.writeFieldEnd()
-    if self.submission_time is not None:
-      oprot.writeFieldBegin('submission_time', TType.STRING, 3)
-      oprot.writeString(self.submission_time)
+    if self.pending is not None:
+      oprot.writeFieldBegin('pending', TType.I32, 3)
+      oprot.writeI32(self.pending)
+      oprot.writeFieldEnd()
+    if self.available is not None:
+      oprot.writeFieldBegin('available', TType.I32, 4)
+      oprot.writeI32(self.available)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
@@ -112,9 +124,10 @@ class JobStatus:
 
   def __hash__(self):
     value = 17
-    value = (value * 31) ^ hash(self.id)
-    value = (value * 31) ^ hash(self.state)
-    value = (value * 31) ^ hash(self.submission_time)
+    value = (value * 31) ^ hash(self.wid)
+    value = (value * 31) ^ hash(self.running)
+    value = (value * 31) ^ hash(self.pending)
+    value = (value * 31) ^ hash(self.available)
     return value
 
   def __repr__(self):
@@ -128,9 +141,10 @@ class JobStatus:
   def __ne__(self, other):
     return not (self == other)
 
-class Job:
+class Task:
   """
   Attributes:
+   - tid
    - src
    - dest
    - src_path
@@ -147,21 +161,23 @@ class Job:
 
   thrift_spec = (
     None, # 0
-    (1, TType.STRING, 'src', None, None, ), # 1
-    (2, TType.STRING, 'dest', None, None, ), # 2
-    (3, TType.STRING, 'src_path', None, None, ), # 3
-    (4, TType.STRING, 'dest_path', None, None, ), # 4
-    (5, TType.STRING, 'include_pattern', None, "*", ), # 5
-    (6, TType.I64, 'min_size', None, 0, ), # 6
-    (7, TType.BOOL, 'preserve', None, True, ), # 7
-    (8, TType.BOOL, 'force', None, True, ), # 8
-    (9, TType.BOOL, 'checksum', None, False, ), # 9
-    (10, TType.BOOL, 'files_only', None, False, ), # 10
-    (11, TType.I64, 'part_size', None, 65536, ), # 11
-    (12, TType.I64, 'buffer_size', None, 65536, ), # 12
+    (1, TType.STRING, 'tid', None, None, ), # 1
+    (2, TType.STRING, 'src', None, None, ), # 2
+    (3, TType.STRING, 'dest', None, None, ), # 3
+    (4, TType.STRING, 'src_path', None, None, ), # 4
+    (5, TType.STRING, 'dest_path', None, None, ), # 5
+    (6, TType.STRING, 'include_pattern', None, "*", ), # 6
+    (7, TType.I64, 'min_size', None, 0, ), # 7
+    (8, TType.BOOL, 'preserve', None, True, ), # 8
+    (9, TType.BOOL, 'force', None, True, ), # 9
+    (10, TType.BOOL, 'checksum', None, False, ), # 10
+    (11, TType.BOOL, 'files_only', None, False, ), # 11
+    (12, TType.I64, 'part_size', None, 65536, ), # 12
+    (13, TType.I64, 'buffer_size', None, 65536, ), # 13
   )
 
-  def __init__(self, src=None, dest=None, src_path=None, dest_path=None, include_pattern=thrift_spec[5][4], min_size=thrift_spec[6][4], preserve=thrift_spec[7][4], force=thrift_spec[8][4], checksum=thrift_spec[9][4], files_only=thrift_spec[10][4], part_size=thrift_spec[11][4], buffer_size=thrift_spec[12][4],):
+  def __init__(self, tid=None, src=None, dest=None, src_path=None, dest_path=None, include_pattern=thrift_spec[6][4], min_size=thrift_spec[7][4], preserve=thrift_spec[8][4], force=thrift_spec[9][4], checksum=thrift_spec[10][4], files_only=thrift_spec[11][4], part_size=thrift_spec[12][4], buffer_size=thrift_spec[13][4],):
+    self.tid = tid
     self.src = src
     self.dest = dest
     self.src_path = src_path
@@ -186,60 +202,65 @@ class Job:
         break
       if fid == 1:
         if ftype == TType.STRING:
-          self.src = iprot.readString()
+          self.tid = iprot.readString()
         else:
           iprot.skip(ftype)
       elif fid == 2:
         if ftype == TType.STRING:
-          self.dest = iprot.readString()
+          self.src = iprot.readString()
         else:
           iprot.skip(ftype)
       elif fid == 3:
         if ftype == TType.STRING:
-          self.src_path = iprot.readString()
+          self.dest = iprot.readString()
         else:
           iprot.skip(ftype)
       elif fid == 4:
         if ftype == TType.STRING:
-          self.dest_path = iprot.readString()
+          self.src_path = iprot.readString()
         else:
           iprot.skip(ftype)
       elif fid == 5:
         if ftype == TType.STRING:
-          self.include_pattern = iprot.readString()
+          self.dest_path = iprot.readString()
         else:
           iprot.skip(ftype)
       elif fid == 6:
+        if ftype == TType.STRING:
+          self.include_pattern = iprot.readString()
+        else:
+          iprot.skip(ftype)
+      elif fid == 7:
         if ftype == TType.I64:
           self.min_size = iprot.readI64()
         else:
           iprot.skip(ftype)
-      elif fid == 7:
+      elif fid == 8:
         if ftype == TType.BOOL:
           self.preserve = iprot.readBool()
         else:
           iprot.skip(ftype)
-      elif fid == 8:
+      elif fid == 9:
         if ftype == TType.BOOL:
           self.force = iprot.readBool()
         else:
           iprot.skip(ftype)
-      elif fid == 9:
+      elif fid == 10:
         if ftype == TType.BOOL:
           self.checksum = iprot.readBool()
         else:
           iprot.skip(ftype)
-      elif fid == 10:
+      elif fid == 11:
         if ftype == TType.BOOL:
           self.files_only = iprot.readBool()
         else:
           iprot.skip(ftype)
-      elif fid == 11:
+      elif fid == 12:
         if ftype == TType.I64:
           self.part_size = iprot.readI64()
         else:
           iprot.skip(ftype)
-      elif fid == 12:
+      elif fid == 13:
         if ftype == TType.I64:
           self.buffer_size = iprot.readI64()
         else:
@@ -253,59 +274,65 @@ class Job:
     if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
-    oprot.writeStructBegin('Job')
+    oprot.writeStructBegin('Task')
+    if self.tid is not None:
+      oprot.writeFieldBegin('tid', TType.STRING, 1)
+      oprot.writeString(self.tid)
+      oprot.writeFieldEnd()
     if self.src is not None:
-      oprot.writeFieldBegin('src', TType.STRING, 1)
+      oprot.writeFieldBegin('src', TType.STRING, 2)
       oprot.writeString(self.src)
       oprot.writeFieldEnd()
     if self.dest is not None:
-      oprot.writeFieldBegin('dest', TType.STRING, 2)
+      oprot.writeFieldBegin('dest', TType.STRING, 3)
       oprot.writeString(self.dest)
       oprot.writeFieldEnd()
     if self.src_path is not None:
-      oprot.writeFieldBegin('src_path', TType.STRING, 3)
+      oprot.writeFieldBegin('src_path', TType.STRING, 4)
       oprot.writeString(self.src_path)
       oprot.writeFieldEnd()
     if self.dest_path is not None:
-      oprot.writeFieldBegin('dest_path', TType.STRING, 4)
+      oprot.writeFieldBegin('dest_path', TType.STRING, 5)
       oprot.writeString(self.dest_path)
       oprot.writeFieldEnd()
     if self.include_pattern is not None:
-      oprot.writeFieldBegin('include_pattern', TType.STRING, 5)
+      oprot.writeFieldBegin('include_pattern', TType.STRING, 6)
       oprot.writeString(self.include_pattern)
       oprot.writeFieldEnd()
     if self.min_size is not None:
-      oprot.writeFieldBegin('min_size', TType.I64, 6)
+      oprot.writeFieldBegin('min_size', TType.I64, 7)
       oprot.writeI64(self.min_size)
       oprot.writeFieldEnd()
     if self.preserve is not None:
-      oprot.writeFieldBegin('preserve', TType.BOOL, 7)
+      oprot.writeFieldBegin('preserve', TType.BOOL, 8)
       oprot.writeBool(self.preserve)
       oprot.writeFieldEnd()
     if self.force is not None:
-      oprot.writeFieldBegin('force', TType.BOOL, 8)
+      oprot.writeFieldBegin('force', TType.BOOL, 9)
       oprot.writeBool(self.force)
       oprot.writeFieldEnd()
     if self.checksum is not None:
-      oprot.writeFieldBegin('checksum', TType.BOOL, 9)
+      oprot.writeFieldBegin('checksum', TType.BOOL, 10)
       oprot.writeBool(self.checksum)
       oprot.writeFieldEnd()
     if self.files_only is not None:
-      oprot.writeFieldBegin('files_only', TType.BOOL, 10)
+      oprot.writeFieldBegin('files_only', TType.BOOL, 11)
       oprot.writeBool(self.files_only)
       oprot.writeFieldEnd()
     if self.part_size is not None:
-      oprot.writeFieldBegin('part_size', TType.I64, 11)
+      oprot.writeFieldBegin('part_size', TType.I64, 12)
       oprot.writeI64(self.part_size)
       oprot.writeFieldEnd()
     if self.buffer_size is not None:
-      oprot.writeFieldBegin('buffer_size', TType.I64, 12)
+      oprot.writeFieldBegin('buffer_size', TType.I64, 13)
       oprot.writeI64(self.buffer_size)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
   def validate(self):
+    if self.tid is None:
+      raise TProtocol.TProtocolException(message='Required field tid is unset!')
     if self.src is None:
       raise TProtocol.TProtocolException(message='Required field src is unset!')
     if self.dest is None:
@@ -319,6 +346,7 @@ class Job:
 
   def __hash__(self):
     value = 17
+    value = (value * 31) ^ hash(self.tid)
     value = (value * 31) ^ hash(self.src)
     value = (value * 31) ^ hash(self.dest)
     value = (value * 31) ^ hash(self.src_path)
@@ -331,99 +359,6 @@ class Job:
     value = (value * 31) ^ hash(self.files_only)
     value = (value * 31) ^ hash(self.part_size)
     value = (value * 31) ^ hash(self.buffer_size)
-    return value
-
-  def __repr__(self):
-    L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
-    return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
-
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
-class Worker:
-  """
-  Attributes:
-   - wid
-   - address
-   - port
-  """
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.STRING, 'wid', None, None, ), # 1
-    (2, TType.STRING, 'address', None, None, ), # 2
-    (3, TType.I32, 'port', None, None, ), # 3
-  )
-
-  def __init__(self, wid=None, address=None, port=None,):
-    self.wid = wid
-    self.address = address
-    self.port = port
-
-  def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      if fid == 1:
-        if ftype == TType.STRING:
-          self.wid = iprot.readString()
-        else:
-          iprot.skip(ftype)
-      elif fid == 2:
-        if ftype == TType.STRING:
-          self.address = iprot.readString()
-        else:
-          iprot.skip(ftype)
-      elif fid == 3:
-        if ftype == TType.I32:
-          self.port = iprot.readI32()
-        else:
-          iprot.skip(ftype)
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
-    oprot.writeStructBegin('Worker')
-    if self.wid is not None:
-      oprot.writeFieldBegin('wid', TType.STRING, 1)
-      oprot.writeString(self.wid)
-      oprot.writeFieldEnd()
-    if self.address is not None:
-      oprot.writeFieldBegin('address', TType.STRING, 2)
-      oprot.writeString(self.address)
-      oprot.writeFieldEnd()
-    if self.port is not None:
-      oprot.writeFieldBegin('port', TType.I32, 3)
-      oprot.writeI32(self.port)
-      oprot.writeFieldEnd()
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-
-  def validate(self):
-    if self.wid is None:
-      raise TProtocol.TProtocolException(message='Required field wid is unset!')
-    return
-
-
-  def __hash__(self):
-    value = 17
-    value = (value * 31) ^ hash(self.wid)
-    value = (value * 31) ^ hash(self.address)
-    value = (value * 31) ^ hash(self.port)
     return value
 
   def __repr__(self):

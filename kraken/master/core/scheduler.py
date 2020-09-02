@@ -20,9 +20,9 @@ class SimpleScheduler(object):
     def _run(self):
         while True:
             if (not self.lqueue.empty()):
-                task = self.lqueue.get()
-                _logger.debug("Scheduling next task %s for execution.", task.tid)
-                self.cqueue.put(task)
+                task_exec = self.lqueue.get()
+                _logger.debug("Scheduling next task %s for execution.", task_exec.task.tid)
+                self.cqueue.put(task_exec)
                 self.lqueue.task_done()
             else:
                 _logger.debug("No new tasks to schedule, sleeping for %s seconds...", 2)

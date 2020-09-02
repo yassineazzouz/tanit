@@ -19,21 +19,14 @@ except:
 
 
 class Iface:
-  def submit_job(self, job):
+  def submit(self, task):
     """
     Parameters:
-     - job
+     - task
     """
     pass
 
-  def list_jobs(self):
-    pass
-
-  def job_status(self, jid):
-    """
-    Parameters:
-     - jid
-    """
+  def worker_status(self):
     pass
 
 
@@ -44,23 +37,23 @@ class Client(Iface):
       self._oprot = oprot
     self._seqid = 0
 
-  def submit_job(self, job):
+  def submit(self, task):
     """
     Parameters:
-     - job
+     - task
     """
-    self.send_submit_job(job)
-    self.recv_submit_job()
+    self.send_submit(task)
+    self.recv_submit()
 
-  def send_submit_job(self, job):
-    self._oprot.writeMessageBegin('submit_job', TMessageType.CALL, self._seqid)
-    args = submit_job_args()
-    args.job = job
+  def send_submit(self, task):
+    self._oprot.writeMessageBegin('submit', TMessageType.CALL, self._seqid)
+    args = submit_args()
+    args.task = task
     args.write(self._oprot)
     self._oprot.writeMessageEnd()
     self._oprot.trans.flush()
 
-  def recv_submit_job(self):
+  def recv_submit(self):
     iprot = self._iprot
     (fname, mtype, rseqid) = iprot.readMessageBegin()
     if mtype == TMessageType.EXCEPTION:
@@ -68,23 +61,23 @@ class Client(Iface):
       x.read(iprot)
       iprot.readMessageEnd()
       raise x
-    result = submit_job_result()
+    result = submit_result()
     result.read(iprot)
     iprot.readMessageEnd()
     return
 
-  def list_jobs(self):
-    self.send_list_jobs()
-    return self.recv_list_jobs()
+  def worker_status(self):
+    self.send_worker_status()
+    return self.recv_worker_status()
 
-  def send_list_jobs(self):
-    self._oprot.writeMessageBegin('list_jobs', TMessageType.CALL, self._seqid)
-    args = list_jobs_args()
+  def send_worker_status(self):
+    self._oprot.writeMessageBegin('worker_status', TMessageType.CALL, self._seqid)
+    args = worker_status_args()
     args.write(self._oprot)
     self._oprot.writeMessageEnd()
     self._oprot.trans.flush()
 
-  def recv_list_jobs(self):
+  def recv_worker_status(self):
     iprot = self._iprot
     (fname, mtype, rseqid) = iprot.readMessageBegin()
     if mtype == TMessageType.EXCEPTION:
@@ -92,52 +85,20 @@ class Client(Iface):
       x.read(iprot)
       iprot.readMessageEnd()
       raise x
-    result = list_jobs_result()
+    result = worker_status_result()
     result.read(iprot)
     iprot.readMessageEnd()
     if result.success is not None:
       return result.success
-    raise TApplicationException(TApplicationException.MISSING_RESULT, "list_jobs failed: unknown result")
-
-  def job_status(self, jid):
-    """
-    Parameters:
-     - jid
-    """
-    self.send_job_status(jid)
-    return self.recv_job_status()
-
-  def send_job_status(self, jid):
-    self._oprot.writeMessageBegin('job_status', TMessageType.CALL, self._seqid)
-    args = job_status_args()
-    args.jid = jid
-    args.write(self._oprot)
-    self._oprot.writeMessageEnd()
-    self._oprot.trans.flush()
-
-  def recv_job_status(self):
-    iprot = self._iprot
-    (fname, mtype, rseqid) = iprot.readMessageBegin()
-    if mtype == TMessageType.EXCEPTION:
-      x = TApplicationException()
-      x.read(iprot)
-      iprot.readMessageEnd()
-      raise x
-    result = job_status_result()
-    result.read(iprot)
-    iprot.readMessageEnd()
-    if result.success is not None:
-      return result.success
-    raise TApplicationException(TApplicationException.MISSING_RESULT, "job_status failed: unknown result")
+    raise TApplicationException(TApplicationException.MISSING_RESULT, "worker_status failed: unknown result")
 
 
 class Processor(Iface, TProcessor):
   def __init__(self, handler):
     self._handler = handler
     self._processMap = {}
-    self._processMap["submit_job"] = Processor.process_submit_job
-    self._processMap["list_jobs"] = Processor.process_list_jobs
-    self._processMap["job_status"] = Processor.process_job_status
+    self._processMap["submit"] = Processor.process_submit
+    self._processMap["worker_status"] = Processor.process_worker_status
 
   def process(self, iprot, oprot):
     (name, type, seqid) = iprot.readMessageBegin()
@@ -154,13 +115,13 @@ class Processor(Iface, TProcessor):
       self._processMap[name](self, seqid, iprot, oprot)
     return True
 
-  def process_submit_job(self, seqid, iprot, oprot):
-    args = submit_job_args()
+  def process_submit(self, seqid, iprot, oprot):
+    args = submit_args()
     args.read(iprot)
     iprot.readMessageEnd()
-    result = submit_job_result()
+    result = submit_result()
     try:
-      self._handler.submit_job(args.job)
+      self._handler.submit(args.task)
       msg_type = TMessageType.REPLY
     except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
       raise
@@ -168,18 +129,18 @@ class Processor(Iface, TProcessor):
       msg_type = TMessageType.EXCEPTION
       logging.exception(ex)
       result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
-    oprot.writeMessageBegin("submit_job", msg_type, seqid)
+    oprot.writeMessageBegin("submit", msg_type, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
     oprot.trans.flush()
 
-  def process_list_jobs(self, seqid, iprot, oprot):
-    args = list_jobs_args()
+  def process_worker_status(self, seqid, iprot, oprot):
+    args = worker_status_args()
     args.read(iprot)
     iprot.readMessageEnd()
-    result = list_jobs_result()
+    result = worker_status_result()
     try:
-      result.success = self._handler.list_jobs()
+      result.success = self._handler.worker_status()
       msg_type = TMessageType.REPLY
     except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
       raise
@@ -187,26 +148,7 @@ class Processor(Iface, TProcessor):
       msg_type = TMessageType.EXCEPTION
       logging.exception(ex)
       result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
-    oprot.writeMessageBegin("list_jobs", msg_type, seqid)
-    result.write(oprot)
-    oprot.writeMessageEnd()
-    oprot.trans.flush()
-
-  def process_job_status(self, seqid, iprot, oprot):
-    args = job_status_args()
-    args.read(iprot)
-    iprot.readMessageEnd()
-    result = job_status_result()
-    try:
-      result.success = self._handler.job_status(args.jid)
-      msg_type = TMessageType.REPLY
-    except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
-      raise
-    except Exception as ex:
-      msg_type = TMessageType.EXCEPTION
-      logging.exception(ex)
-      result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
-    oprot.writeMessageBegin("job_status", msg_type, seqid)
+    oprot.writeMessageBegin("worker_status", msg_type, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
     oprot.trans.flush()
@@ -214,19 +156,19 @@ class Processor(Iface, TProcessor):
 
 # HELPER FUNCTIONS AND STRUCTURES
 
-class submit_job_args:
+class submit_args:
   """
   Attributes:
-   - job
+   - task
   """
 
   thrift_spec = (
     None, # 0
-    (1, TType.STRUCT, 'job', (Job, Job.thrift_spec), None, ), # 1
+    (1, TType.STRUCT, 'task', (Task, Task.thrift_spec), None, ), # 1
   )
 
-  def __init__(self, job=None,):
-    self.job = job
+  def __init__(self, task=None,):
+    self.task = task
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -239,8 +181,8 @@ class submit_job_args:
         break
       if fid == 1:
         if ftype == TType.STRUCT:
-          self.job = Job()
-          self.job.read(iprot)
+          self.task = Task()
+          self.task.read(iprot)
         else:
           iprot.skip(ftype)
       else:
@@ -252,10 +194,10 @@ class submit_job_args:
     if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
-    oprot.writeStructBegin('submit_job_args')
-    if self.job is not None:
-      oprot.writeFieldBegin('job', TType.STRUCT, 1)
-      self.job.write(oprot)
+    oprot.writeStructBegin('submit_args')
+    if self.task is not None:
+      oprot.writeFieldBegin('task', TType.STRUCT, 1)
+      self.task.write(oprot)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
@@ -266,7 +208,7 @@ class submit_job_args:
 
   def __hash__(self):
     value = 17
-    value = (value * 31) ^ hash(self.job)
+    value = (value * 31) ^ hash(self.task)
     return value
 
   def __repr__(self):
@@ -280,7 +222,7 @@ class submit_job_args:
   def __ne__(self, other):
     return not (self == other)
 
-class submit_job_result:
+class submit_result:
 
   thrift_spec = (
   )
@@ -303,7 +245,7 @@ class submit_job_result:
     if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
-    oprot.writeStructBegin('submit_job_result')
+    oprot.writeStructBegin('submit_result')
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
@@ -326,7 +268,7 @@ class submit_job_result:
   def __ne__(self, other):
     return not (self == other)
 
-class list_jobs_args:
+class worker_status_args:
 
   thrift_spec = (
   )
@@ -349,7 +291,7 @@ class list_jobs_args:
     if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
-    oprot.writeStructBegin('list_jobs_args')
+    oprot.writeStructBegin('worker_status_args')
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
@@ -372,152 +314,14 @@ class list_jobs_args:
   def __ne__(self, other):
     return not (self == other)
 
-class list_jobs_result:
+class worker_status_result:
   """
   Attributes:
    - success
   """
 
   thrift_spec = (
-    (0, TType.LIST, 'success', (TType.STRUCT,(JobStatus, JobStatus.thrift_spec)), None, ), # 0
-  )
-
-  def __init__(self, success=None,):
-    self.success = success
-
-  def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      if fid == 0:
-        if ftype == TType.LIST:
-          self.success = []
-          (_etype3, _size0) = iprot.readListBegin()
-          for _i4 in xrange(_size0):
-            _elem5 = JobStatus()
-            _elem5.read(iprot)
-            self.success.append(_elem5)
-          iprot.readListEnd()
-        else:
-          iprot.skip(ftype)
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
-    oprot.writeStructBegin('list_jobs_result')
-    if self.success is not None:
-      oprot.writeFieldBegin('success', TType.LIST, 0)
-      oprot.writeListBegin(TType.STRUCT, len(self.success))
-      for iter6 in self.success:
-        iter6.write(oprot)
-      oprot.writeListEnd()
-      oprot.writeFieldEnd()
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-
-  def validate(self):
-    return
-
-
-  def __hash__(self):
-    value = 17
-    value = (value * 31) ^ hash(self.success)
-    return value
-
-  def __repr__(self):
-    L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
-    return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
-
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
-class job_status_args:
-  """
-  Attributes:
-   - jid
-  """
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.STRING, 'jid', None, None, ), # 1
-  )
-
-  def __init__(self, jid=None,):
-    self.jid = jid
-
-  def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      if fid == 1:
-        if ftype == TType.STRING:
-          self.jid = iprot.readString()
-        else:
-          iprot.skip(ftype)
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
-    oprot.writeStructBegin('job_status_args')
-    if self.jid is not None:
-      oprot.writeFieldBegin('jid', TType.STRING, 1)
-      oprot.writeString(self.jid)
-      oprot.writeFieldEnd()
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-
-  def validate(self):
-    return
-
-
-  def __hash__(self):
-    value = 17
-    value = (value * 31) ^ hash(self.jid)
-    return value
-
-  def __repr__(self):
-    L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
-    return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
-
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
-class job_status_result:
-  """
-  Attributes:
-   - success
-  """
-
-  thrift_spec = (
-    (0, TType.STRUCT, 'success', (JobStatus, JobStatus.thrift_spec), None, ), # 0
+    (0, TType.STRUCT, 'success', (WorkerStatus, WorkerStatus.thrift_spec), None, ), # 0
   )
 
   def __init__(self, success=None,):
@@ -534,7 +338,7 @@ class job_status_result:
         break
       if fid == 0:
         if ftype == TType.STRUCT:
-          self.success = JobStatus()
+          self.success = WorkerStatus()
           self.success.read(iprot)
         else:
           iprot.skip(ftype)
@@ -547,7 +351,7 @@ class job_status_result:
     if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
-    oprot.writeStructBegin('job_status_result')
+    oprot.writeStructBegin('worker_status_result')
     if self.success is not None:
       oprot.writeFieldBegin('success', TType.STRUCT, 0)
       self.success.write(oprot)
