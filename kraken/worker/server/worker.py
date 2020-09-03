@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ...master.client.client import MasterWorkerClient
+from ...master.client.client_factory import ClientFactory
 from ..core.executor_pool import ExecutorPool
 from ...common.model.worker import WorkerStatus
 
@@ -16,8 +16,11 @@ class Worker(object):
         self.address = address
         self.port = port
         self.lqueue = Queue()
-        self.master = MasterWorkerClient("localhost", 9091)
-        self.executor = ExecutorPool(self.wid, self.lqueue, concurrency)
+        
+        factory = ClientFactory("localhost", 9091)
+        self.master = factory.create_client('master-worker')
+        self.executor = ExecutorPool(self.wid, factory ,self.lqueue, concurrency)
+        
         self.stopped = False
         
     

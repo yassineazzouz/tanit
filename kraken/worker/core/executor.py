@@ -8,13 +8,12 @@ import os.path as osp
 from pywhdfs.utils.utils import HdfsError
 from threading import Thread, Lock
 from ...common.core.engine import Engine
-from ...master.client.client import MasterWorkerClient
 
 _logger = lg.getLogger(__name__)
 
 class Executor(Thread):
     
-    def __init__(self, eid, cqueue):
+    def __init__(self, eid, cqueue, factory):
         super(Executor, self).__init__()
         self.cqueue = cqueue
         self.eid = eid
@@ -26,7 +25,7 @@ class Executor(Thread):
         synchronizing the client calls with locks will came with performance penalty
         the best approach seems to be, using a separe thrift client (connection) per thread.
         '''
-        self.master = MasterWorkerClient("localhost", 9091)
+        self.master = factory.create_client('master-worker')
         
         self.current_task = None
         

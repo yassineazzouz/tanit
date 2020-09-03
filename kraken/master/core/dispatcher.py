@@ -76,12 +76,12 @@ class FairDispatcher(Dispatcher):
         next_status = next_worker.status()  
         for worker in self.workers[1:len(self.workers)]:
             status = worker.status()
-            if (status.num_pending < next_status.num_pending):
+            if (status.pending < next_status.pending):
                 next_worker = worker
                 next_status = status
                 continue
-            elif (status.num_pending == next_status.num_pending):
-                if (status.num_available > next_status.num_available):
+            elif (status.pending == next_status.pending):
+                if (status.available > next_status.available):
                     next_worker = worker
                     next_status = status
                     continue

@@ -9,7 +9,7 @@ _logger = lg.getLogger(__name__)
 
 class ExecutorPool(object):
     
-    def __init__(self, wid, cqueue, concurrency):
+    def __init__(self, wid, factory, cqueue, concurrency):
         self.cqueue = cqueue
         self.concurrency = concurrency
         self.wid = wid
@@ -17,7 +17,7 @@ class ExecutorPool(object):
         self.stopped = True
         
         for i in range(0, concurrency):
-            self.executors.append(Executor("%s-executor-%s" % (wid,i),cqueue))
+            self.executors.append(Executor("%s-executor-%s" % (wid,i), cqueue, factory))
     
     def start(self):
         _logger.info("Starting Kraken worker executor pool [ %s ].", self.wid)
