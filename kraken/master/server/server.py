@@ -35,7 +35,8 @@ class MasterWorkerServer(Thread):
             MasterWorkerService.Processor(handler),
             TSocket.TServerSocket(self.listen_address, self.listen_port),
             TTransport.TBufferedTransportFactory(),
-            TBinaryProtocol.TBinaryProtocolFactory()
+            TBinaryProtocol.TBinaryProtocolFactory(),
+            daemon=True
         )
         
         # Start Kraken server
@@ -61,7 +62,8 @@ class MasterClientServer(Thread):
             MasterClientService.Processor(handler),
             TSocket.TServerSocket(self.listen_address, self.listen_port),
             TTransport.TBufferedTransportFactory(),
-            TBinaryProtocol.TBinaryProtocolFactory()
+            TBinaryProtocol.TBinaryProtocolFactory(),
+            daemon=True
         )
         
         # Start Kraken server

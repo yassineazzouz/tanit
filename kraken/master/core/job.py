@@ -6,7 +6,7 @@ import logging as lg
 from pywhdfs.config import WebHDFSConfig
 from pywhdfs.utils import hglob
 from pywhdfs.utils.utils import HdfsError
-
+from threading import Lock
 from ...common.model.task import Task
 from ...common.core.engine import Engine
 
@@ -46,27 +46,31 @@ class JobExecution(object):
         self.failed_tasks = 0
 
         self.job = job
+        self.jlock = Lock()
 
 
     def on_task_start(self, tid):
-        self.started_tasks += 1
-        if (self.state == "SUBMITTED"):
-            _logger.info("Job [ %s ] execution started.", self.job.jid)
-        if (self.state != "FAILED"):
-            self.state = "RUNNING"
+        with self.jlock:
+            self.started_tasks += 1
+            if (self.state == "SUBMITTED"):
+                _logger.info("Job [ %s ] execution started.", self.job.jid)
+            if (self.state != "FAILED"):
+                self.state = "RUNNING"
 
     def on_task_finish(self, tid):
-        self.finished_tasks += 1
-        if (self.finished_tasks == len(self.tasks)):
-            _logger.info("Job [ %s ] execution finished.", self.job.jid)
-            self.state = "FINISHED"
-            self.finish_time = time.strftime("%Y-%m-%d %H:%M:%S")
+        with self.jlock:
+            self.finished_tasks += 1
+            if (self.finished_tasks == len(self.tasks)):
+                _logger.info("Job [ %s ] execution finished.", self.job.jid)
+                self.state = "FINISHED"
+                self.finish_time = time.strftime("%Y-%m-%d %H:%M:%S")
 
     def on_task_fail(self, tid):
-        self.failed_tasks += 1
-        if (self.state != "FAILED"):
-            self.state = "FAILED"
-            _logger.info("Job [ %s ] execution failed.", self.job.jid)
+        with self.jlock:
+            self.failed_tasks += 1
+            if (self.state != "FAILED"):
+                self.state = "FAILED"
+                _logger.info("Job [ %s ] execution failed.", self.job.jid)
         
     def get_state(self):
         return self.state

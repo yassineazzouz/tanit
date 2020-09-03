@@ -28,7 +28,7 @@ class MasterClient(object):
         return self.client.list_jobs()
     
     def dummy_job(self):
-        job = Job("swh", "swhstg", "/user/yassine.azzouz/wws_30002", "/user/yassine.azzouz/data/wws_30002", preserve=False)
+        job = Job("swh", "swhstg", "/user/hive/warehouse/swh.db/wws_30002", "/user/yassine.azzouz/data/wws_30002", preserve=False)
         self.client.submit_job(job)
         
     def stop(self):

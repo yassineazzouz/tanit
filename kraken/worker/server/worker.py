@@ -17,7 +17,7 @@ class Worker(object):
         self.port = port
         self.lqueue = Queue()
         self.master = MasterWorkerClient("localhost", 9091)
-        self.executor = ExecutorPool(self.master, self.lqueue, concurrency)
+        self.executor = ExecutorPool(self.wid, self.lqueue, concurrency)
         self.stopped = False
         
     
@@ -46,10 +46,11 @@ class Worker(object):
         
     
     def stop(self):
-        _logger.info("Stopping kraken worker [%s].", self.wid)
+        _logger.info("Stopping Kraken worker [ %s ].", self.wid)
         self.stopped = True
         self.executor.stop()
         self.master.stop()
+        _logger.info("Kraken worker [ %s ] stopped.", self.wid)
         
 class WorkerStoppedException(Exception):
     """Raised when trying to submit a task to a stopped worker"""

@@ -16,11 +16,10 @@ class Engine(object):
     
     @staticmethod 
     def getInstance():
-        _glock.acquire()
-        """ Static access method. """
-        if Engine.__instance == None:
-            Engine()
-        _glock.release()
+        with _glock:
+            """ Static access method. """
+            if Engine.__instance == None:
+                Engine()
         return Engine.__instance
     
     def __init__(self):

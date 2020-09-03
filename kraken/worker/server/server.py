@@ -35,7 +35,8 @@ class WorkerServer(object):
             WorkerService.Processor(handler),
             TSocket.TServerSocket(self.listen_address, self.listen_port),
             TTransport.TBufferedTransportFactory(),
-            TBinaryProtocol.TBinaryProtocolFactory()
+            TBinaryProtocol.TBinaryProtocolFactory(),
+            daemon=True
         )
         
         # Start Kraken server
@@ -62,4 +63,5 @@ class WorkerServer(object):
             _logger.exception("Fatal server exception : %s, exiting", e)
         finally:
             _logger.info("Stopping Kraken worker server.")
+            self.worker.stop()
             _logger.info("Kraken worker server stopped.") 

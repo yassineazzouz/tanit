@@ -8,31 +8,45 @@ import os.path as osp
 from pywhdfs.utils.utils import HdfsError
 from threading import Thread, Lock
 from ...common.core.engine import Engine
+from ...master.client.client import MasterWorkerClient
 
 _logger = lg.getLogger(__name__)
 
 class Executor(Thread):
     
-    def __init__(self, cqueue, master):
+    def __init__(self, eid, cqueue):
         super(Executor, self).__init__()
-        self.master = master
         self.cqueue = cqueue
+        self.eid = eid
         self.stopped = False
         self.idle = True
 
+        '''
+        Apparently Thrift clients are not thread safe, so can not use without synchronization
+        synchronizing the client calls with locks will came with performance penalty
+        the best approach seems to be, using a separe thrift client (connection) per thread.
+        '''
+        self.master = MasterWorkerClient("localhost", 9091)
+        
+        self.current_task = None
+        
     def stop(self):
         self.stopped = True
     
     def run(self):
+        # start the client
+        self.master.start()
         while True:
+            self.idle = True
             try:
-                task = self.cqueue.get(0.5)
+                task = self.cqueue.get(timeout=0.5)
                 self.idle = False
                 self.master.task_start(str(task.tid))
+                self.current_task = task
                 self._run(task)
                 self.master.task_success(str(task.tid))
+                self.cqueue.task_done()
             except Queue.Empty:
-                self.idle = True
                 if (self.stopped):
                     break
                 time.sleep(0.5)
@@ -40,6 +54,9 @@ class Executor(Thread):
                 _logger.error("Error executing task [%s]", str(task.tid))
                 _logger.error(e, exc_info=True)
                 self.master.task_failure(str(task.tid))
+                self.cqueue.task_done()
+        
+        self.master.stop()
 
     def isIdle(self):
         return self.idle
@@ -52,7 +69,7 @@ class Executor(Thread):
       
       checksum = task.checksum
       overwrite = task.force
-      preserve = task.preserve
+      preserve = False
       buffer_size = task.buffer_size
       chunk_size = task.part_size
       
@@ -63,8 +80,6 @@ class Executor(Thread):
 
       lock = Lock()
       stat_lock = Lock()
-      
-      _logger.info('Attempting Copy %r to %r.', _src_path, _dst_path)
 
       def _preserve(_src_path, _dst_path):
         # set the base path attributes

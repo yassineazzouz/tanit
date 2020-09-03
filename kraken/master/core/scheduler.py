@@ -42,3 +42,4 @@ class SimpleScheduler(object):
         _logger.info("Stopping kraken scheduler.")
         self.stopped = True
         self.daemon.join()
+        _logger.info("Kraken scheduler stopped.")
