@@ -4,40 +4,43 @@
 """kraken-client: A simple thrift client for kraken service.
 
 Usage:
-  kraken-client [-v...] [--status jid] [--list]
-  kraken-client (--version | -h)
+  kraken-client job [-v...] [--submit job-spec] [--status jid] [--list]
+  kraken-client -h | --help
+  kraken-client --version
 
 Options:
   --version                     Show version and exit.
   -h --help                     Show help and exit.
   -v --verbose                  Enable log output. Can be specified up to three
                                 times (increasing verbosity each time).
-  --status JOB_ID               Disable checksum check prior to file transfer. This will force
-                                overwrite.
-  --list                        Do not create the same directory strecture at the destination and copy
-                                files only under DEST_PATH.
+  --status JOB_ID               Print the status of a job.
+  --submit job-spec             Submit a job to the kraken master.
+  --list                        List all jobs.
 
 Examples:
-  pydistcp -s prod -d preprod -v /tmp/src /tmp/dest
+  kraken-client --submit "{ \"src\":\"prod\", \"dest\": \"dr\", \"src_path\": \"/data/important_dataset\", \"dest_path\": \"/data/important_dataset\", \"preserve\": False }"
 
 """
 
 from ... import __version__
 from .client import MasterClient
 from ..config.config import MasterConfig
+import json
 import requests as rq
 import logging as lg
 from docopt import docopt
 
+_logger = lg.getLogger(__name__)
+
 def configure_logging():
     # capture warnings issued by the warnings module  
     try:
-      # This is not available in python 2.6
-      lg.captureWarnings(True)
+        # This is not available in python 2.6
+        lg.captureWarnings(True)
     except:
-      # disable annoying url3lib warnings
-      rq.packages.urllib3.disable_warnings()
-      pass
+        # disable annoying url3lib warnings
+        rq.packages.urllib3.disable_warnings()
+        pass
 
     logger = lg.getLogger()
     logger.setLevel(lg.DEBUG)
@@ -58,15 +61,31 @@ def main(argv=None):
     
     configure_logging()
     
-    config = MasterConfig()
-    client = MasterClient(config.client_service_host, config.client_service_port)
-    client.start()
-    if (args['--list']):
-        for job in client.list_jobs():
+    if (args['job']):
+        config = MasterConfig()
+        client = MasterClient(config.client_service_host, config.client_service_port)
+        client.start()
+        if (args['--list']):
+            for job in client.list_jobs():
+                print("id: {}, state: {}".format(job.id, job.state))
+        elif (args['--submit']):
+            try:
+                if (args['--submit'].startswith('@')):
+                    with open(args['--submit'][1:], "r") as json_spec_file:
+                        job_spec = json.load(json_spec_file)
+                else:
+                    job_spec = json.loads(args['--submit'])
+            except Exception as e:
+                _logger.error("Error parsing job json specification.")
+                raise e
+            client.submit_job(job_spec)
+        elif (args['--status']):
+            job = client.job_status(args['--status'])
             print("id: {}, state: {}".format(job.id, job.state))
-    else:
-        client.dummy_job()
-    client.stop()
+        else:
+            _logger.error("Nothing to do !")
+        
+        client.stop()
 
 if __name__ == '__main__':
     main()

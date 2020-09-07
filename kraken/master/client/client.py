@@ -4,11 +4,17 @@
 from ..thrift import MasterClientService, MasterWorkerService
 from ..thrift.ttypes import Job, Worker
 
+import json
+
 # Thrift files
 from thrift import Thrift
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
+
+import logging as lg
+
+_logger = lg.getLogger(__name__)
 
 class MasterClient(object):
 
@@ -30,6 +36,19 @@ class MasterClient(object):
     
     def list_jobs(self):
         return self.client.list_jobs()
+    
+    def job_status(self, jid):
+        return self.client.job_status(jid)
+        
+    def submit_job(self, job_spec):
+        try:
+            job = Job(**job_spec)
+        except Exception as e:
+            _logger.error("Error resolving job parameters.")
+            raise e
+        
+        self.client.submit_job(job)
+        
     
     def dummy_job(self):
         job = Job("swh", "swhstg", "/user/hive/warehouse/swh.db/wws_30002", "/user/yassine.azzouz/data/wws_30002", preserve=False)
