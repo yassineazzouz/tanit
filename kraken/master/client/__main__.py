@@ -24,7 +24,7 @@ Examples:
 
 from ... import __version__
 from .client import MasterClient
-
+from ..config.config import MasterConfig
 import requests as rq
 import logging as lg
 from docopt import docopt
@@ -58,7 +58,8 @@ def main(argv=None):
     
     configure_logging()
     
-    client = MasterClient()
+    config = MasterConfig()
+    client = MasterClient(config.client_service_host, config.client_service_port)
     client.start()
     if (args['--list']):
         for job in client.list_jobs():

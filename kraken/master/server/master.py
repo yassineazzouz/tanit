@@ -30,6 +30,9 @@ class Master(object):
         # dispatcher
         self.dispatcher  = FairDispatcher(self.cqueue)
     
+    def configure(self, config):
+        pass
+    
     def submit_job(self, job):
         if (not self.started):
             raise MasterStoppedException("Can not submit job [ %s ] : master server stopped.", job.jid)

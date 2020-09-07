@@ -5,6 +5,7 @@ import time
 from .handler import MasterClientServiceHandler, MasterWorkerServiceHandler
 from kraken.master.server.master import Master, StandaloneMaster
 from ..thrift import MasterClientService, MasterWorkerService
+from ..config.config import MasterConfig
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
@@ -18,14 +19,15 @@ _logger = lg.getLogger(__name__)
 
 class MasterWorkerServer(Thread):
     
-    def __init__(self, master, listen_address = "0.0.0.0", listen_port = 9091, n_threads = 10):
+    def __init__(self, master):
         super(MasterWorkerServer, self).__init__()
-        
         self.master = master
-        self.listen_address = listen_address
-        self.listen_port = listen_port
-        self.n_threads = n_threads
     
+    def configure(self, config):
+        self.listen_address = config.bind_address
+        self.listen_port = config.worker_service_port
+        self.n_threads = config.thrift_threads
+        
     def run(self):
         
         # Create Service handler
@@ -44,14 +46,14 @@ class MasterWorkerServer(Thread):
         
 class MasterClientServer(Thread):
     
-    def __init__(self, master, listen_address = "0.0.0.0", listen_port = 9090, n_threads = 10):
+    def __init__(self, master):
         super(MasterClientServer, self).__init__()
-        
         self.master = master
-        self.listen_address = listen_address
-        self.listen_port = listen_port
-        self.n_threads = n_threads
-        
+
+    def configure(self, config):
+        self.listen_address = config.bind_address
+        self.listen_port = config.client_service_port
+        self.n_threads = config.thrift_threads        
 
     def run(self):
         # Create Service handler
@@ -72,8 +74,13 @@ class MasterClientServer(Thread):
 class MasterServer(object):
     
     def __init__(self, standalone = False):
+        
+        self.config = MasterConfig()
+        self.config.load()
+        
         self.standalone = standalone
         self.master = Master() if not standalone else StandaloneMaster()
+        self.master.configure(self.config)
               
     def start(self):
         
@@ -83,6 +90,7 @@ class MasterServer(object):
         _logger.info("Stating Kraken master client server.")
         
         self.mcserver = MasterClientServer(self.master)
+        self.mcserver.configure(self.config)
         self.mcserver.setDaemon(True)
         self.mcserver.start()        
         _logger.info("Kraken master client server started, listening  at %s:%s", self.mcserver.listen_address, self.mcserver.listen_port)
@@ -90,6 +98,7 @@ class MasterServer(object):
         if (not self.standalone):
             _logger.info("Stating Kraken master worker server.")
             self.mwserver = MasterWorkerServer(self.master)
+            self.mwserver.configure(self.config)
             self.mwserver.setDaemon(True)
             self.mwserver.start()        
             _logger.info("Kraken master worker server started, listening  at %s:%s", self.mwserver.listen_address, self.mwserver.listen_port)

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import socket
 from .handler import WorkerServiceHandler
 from .worker import Worker
 from ..thrift import WorkerService
+from ..config.config import WorkerConfig
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
@@ -17,14 +17,13 @@ _logger = lg.getLogger(__name__)
 
 class WorkerServer(object):
     
-    def __init__(self, listen_address = "0.0.0.0", listen_port = 9093, n_threads = 10):
-        super(WorkerServer, self).__init__()
+    def __init__(self):
         
-        self.listen_address = listen_address
-        self.listen_port = listen_port
-        self.n_threads = n_threads
+        self.config = WorkerConfig()
+        self.config.load()
         
-        self.worker = Worker(socket.gethostname(), listen_port)
+        self.worker = Worker()
+        self.worker.configure(self.config)
         
 
     def _run(self):
@@ -33,7 +32,7 @@ class WorkerServer(object):
 
         server = TServer.TThreadedServer(
             WorkerService.Processor(handler),
-            TSocket.TServerSocket(self.listen_address, self.listen_port),
+            TSocket.TServerSocket(self.config.bind_address, self.config.bind_port),
             TTransport.TBufferedTransportFactory(),
             TBinaryProtocol.TBinaryProtocolFactory(),
             daemon=True
@@ -48,10 +47,15 @@ class WorkerServer(object):
         self.daemon = Thread(target=self._run, args=())
         self.daemon.setDaemon(True)
         self.daemon.start()     
-        _logger.info("Kraken worker server started, listening  at %s:%s", self.listen_address, self.listen_port)
+        _logger.info("Kraken worker server started, listening  at %s:%s", self.config.bind_address, self.config.bind_port)
         
         # Start worker services
-        self.worker.start()
+        try:
+            self.worker.start()
+        except Exception as e:
+            _logger.error(e, exc_info=True)
+            _logger.error("Failed to start Kraken server.")
+            exit(1)
         
         try:
             while self.daemon.is_alive():

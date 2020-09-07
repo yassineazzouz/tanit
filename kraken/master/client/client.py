@@ -12,9 +12,13 @@ from thrift.protocol import TBinaryProtocol
 
 class MasterClient(object):
 
-    def start(self, host = "localhost", port = 9090):
+    def __init__(self, master_host, master_port):
+        self.master_host = master_host
+        self.master_port = master_port
+        
+    def start(self):
         # Init thrift connection and protocol handlers
-        socket = TSocket.TSocket( host , port)
+        socket = TSocket.TSocket( self.master_host , self.master_port)
         self.transport = TTransport.TBufferedTransport(socket)
         protocol = TBinaryProtocol.TBinaryProtocol(self.transport)
         
@@ -37,16 +41,20 @@ class MasterClient(object):
 
 class MasterWorkerClient(object):
     
-    def __init__(self, host = "localhost", port = 9091):
+    def __init__(self, master_host, master_port):
+        self.master_host = master_host
+        self.master_port = master_port
+
+    def start(self):
+        
         # Init thrift connection and protocol handlers
-        socket = TSocket.TSocket( host , port)
+        socket = TSocket.TSocket( self.master_host , self.master_port)
         self.transport = TTransport.TBufferedTransport(socket)
         protocol = TBinaryProtocol.TBinaryProtocol(self.transport)
         
         # Set client to our Example
         self.client = MasterWorkerService.Client(protocol)
         
-    def start(self):
         # Connect to server
         self.transport.open()
 

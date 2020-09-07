@@ -11,19 +11,20 @@ _logger = lg.getLogger(__name__)
 
 class Worker(object):
 
-    def __init__(self, address, port, concurrency = 25):
-        self.wid = "kraken-worker-%s-%s" % (address, port)
-        self.address = address
-        self.port = port
+    def __init__(self):
         self.lqueue = Queue()
-        
-        factory = ClientFactory("localhost", 9091)
-        self.master = factory.create_client('master-worker')
-        self.executor = ExecutorPool(self.wid, factory ,self.lqueue, concurrency)
-        
         self.stopped = False
         
-    
+    def configure(self, config):
+        self.address = config.worker_host
+        self.port = config.worker_port
+        
+        self.wid = "kraken-worker-%s-%s" % (self.address, self.port)
+        factory = ClientFactory(config.master_host, config.master_port)
+        self.master = factory.create_client('master-worker')
+        
+        self.executor = ExecutorPool(self.wid, factory ,self.lqueue, config.executor_threads)
+
     def submit(self, task):
         if (not self.stopped):
             self.lqueue.put(task)
@@ -41,7 +42,12 @@ class Worker(object):
     def start(self):
         _logger.info("Starting kraken worker [%s].", self.wid)
         self.stopped = False
-        self.master.start()
+        try:
+            self.master.start()
+        except Exception as e:
+            _logger.error("Could not connect to master on [%s:%s]", self.address, self.port)
+            _logger.error(e, exc_info=True)
+            raise e
         self.executor.start()
         
         #register the worker
