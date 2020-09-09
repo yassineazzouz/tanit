@@ -6,7 +6,7 @@ from Queue import Queue
 from ...common.core.engine import Engine
 from ..core.dispatcher import FairDispatcher
 from ..core.scheduler import SimpleScheduler
-from ..core.worker import ThreadPoolWorker, RemoteThriftWorker
+from ..core.worker import RemoteThriftWorker
 from ..core.job import JobExecution
 
 import logging as lg
@@ -103,20 +103,7 @@ class Master(object):
         self.scheduler.stop()
         self.dispatcher.stop()
         _logger.info("Kraken master services stopped.")
-
-class StandaloneMaster(Master):
-    def __init__(self):
-        super(StandaloneMaster, self).__init__()
-        self.worker = ThreadPoolWorker("worker-local-%s-1" % socket.gethostname(),self.engine)
-        
-    def start(self):
-        super(StandaloneMaster, self).start()
-        _logger.info("Registering new local Worker [ %s ].", self.worker.wid)
-        self.dispatcher.register_worker(self.worker)
-        _logger.info("Worker [ %s ] registered.", self.worker.wid)
-         
-    
-                
+      
 class MasterStoppedException(Exception):
     """Raised when trying to submit a task to a stopped master"""
     pass

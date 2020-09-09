@@ -35,6 +35,7 @@ class Executor(Thread):
     def run(self):
         # start the client
         self.master.start()
+        
         while True:
             self.idle = True
             try:

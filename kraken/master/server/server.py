@@ -3,7 +3,8 @@
 import time
 
 from .handler import MasterClientServiceHandler, MasterWorkerServiceHandler
-from kraken.master.server.master import Master, StandaloneMaster
+from .master import Master
+from ..standalone.master import StandaloneMaster
 from ..thrift import MasterClientService, MasterWorkerService
 from ..config.config import MasterConfig
 from thrift.transport import TSocket
