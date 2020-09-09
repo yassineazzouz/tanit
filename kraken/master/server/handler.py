@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import time
+from datetime import datetime
 from hashlib import md5
 
 from ...common.model.job import Job
@@ -18,7 +18,7 @@ class MasterClientServiceHandler(object):
     def submit_job(self, job):
         jid = "job-%s-%s" % (
             md5("{}-{}-{}-{}".format(job.src, job.src_path, job.dest, job.dest_path)).hexdigest(),
-            time.strftime("%d%m%Y%H%M%S")
+            datetime.now().strftime("%d%m%Y%H%M%S")
         )
         job = Job( jid,
                    job.src,
@@ -38,14 +38,30 @@ class MasterClientServiceHandler(object):
     def list_jobs(self):
         status = []
         for job_exec in self.master.list_jobs():
-            status.append(JobStatus(job_exec.job.jid, JobState._NAMES_TO_VALUES[job_exec.state], job_exec.submission_time))
+            status.append( 
+                JobStatus(
+                    job_exec.job.jid,
+                    JobState._NAMES_TO_VALUES[job_exec.state],
+                    job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "-" if (job_exec.start_time == None) else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "-" if (job_exec.finish_time == None) else job_exec.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
+                    job_exec.execution_time_s
+                )
+            )
         return status
 
     def job_status(self, jid):
         job_exec = self.master.get_job(jid)
         if (job_exec == None):
             raise JobNotFoundException("No such job [ %s ]", jid)
-        return JobStatus(job_exec.job.jid, JobState._NAMES_TO_VALUES[job_exec.state], job_exec.submission_time)
+        return  JobStatus(
+                    job_exec.job.jid,
+                    JobState._NAMES_TO_VALUES[job_exec.state],
+                    job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "-" if (job_exec.start_time == None) else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "-" if (job_exec.finish_time == None) else job_exec.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
+                    job_exec.execution_time_s
+                )
 
 class MasterWorkerServiceHandler(object):
 

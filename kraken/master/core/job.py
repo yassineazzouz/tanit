@@ -1,8 +1,9 @@
+#!/usr/bin/env python
 
-import time
 import os
 import os.path as osp
 import logging as lg
+from datetime import datetime
 from pywhdfs.config import WebHDFSConfig
 from pywhdfs.utils import hglob
 from pywhdfs.utils.utils import HdfsError
@@ -19,7 +20,15 @@ class TaskExecution(object):
         self.state = "SUBMITTED"
         self.task = task
         self.job = job
+
+    def on_schedule(self):
+        self.state =     "SCHEDULED"
+        self.job.on_task_schedule(self.task.tid)
     
+    def on_dispatch(self):
+        self.state =     "DISPATCHED"
+        self.job.on_task_dispatch(self.task.tid)
+
     def on_start(self):
         self.state =     "RUNNING"
         self.job.on_task_start(self.task.tid)
@@ -33,14 +42,32 @@ class TaskExecution(object):
         self.job.on_task_fail(self.task.tid)
 
 class JobExecution(object):
-    '''JobExecution represent the execution flow of a job in the master'''
+    '''
+    JobExecution represent the execution flow of a job in the master
+    The job state diagram is as follow:
+    ----------------------------------------------------------------------
+    |   SUBMITTED --> SCHEDULED --> DISPATCHED --> RUNNING --> FINISHED  |
+    |                                                |                   |
+    |                                                |                   |
+    |                                              FAILED                |
+    ---------------------------------------------------------------------|
+    '''
 
     def __init__(self, job):
+        
         self.state = "SUBMITTED"
-        self.submission_time = time.strftime("%Y-%m-%d %H:%M:%S")
+        
+        self.submission_time = datetime.now()
+        self.schedule_time = None
+        self.dispatch_time = None
+        self.start_time = None
+        self.finish_time = None
+        self.execution_time_s = -1
 
         self.tasks = {}
         
+        self.scheduled_tasks = 0
+        self.dispatched_tasks = 0
         self.started_tasks = 0
         self.finished_tasks = 0
         self.failed_tasks = 0
@@ -49,21 +76,43 @@ class JobExecution(object):
         self.jlock = Lock()
 
 
+    def on_task_schedule(self, tid):
+        with self.jlock:
+            self.scheduled_tasks += 1
+            # Only the first task transition the state of the job
+            if (self.state == "SUBMITTED" and self.scheduled_tasks == 1):
+                _logger.info("Job [ %s ] execution scheduled.", self.job.jid)
+                self.schedule_time = datetime.now()
+                self.state = "SCHEDULED"
+    
+    def on_task_dispatch(self, tid):
+        with self.jlock:
+            self.dispatched_tasks += 1
+            # Only the first task transition the state of the job
+            if (self.state == "SCHEDULED" and self.dispatched_tasks == 1):
+                _logger.info("Job [ %s ] execution dispatched.", self.job.jid)
+                self.dispatch_time = datetime.now()
+                self.state = "DISPATCHED"
+    
+
     def on_task_start(self, tid):
         with self.jlock:
             self.started_tasks += 1
-            if (self.state == "SUBMITTED"):
+            # Only the first task transition the state of the job
+            if (self.state == "DISPATCHED" and self.started_tasks == 1):
                 _logger.info("Job [ %s ] execution started.", self.job.jid)
-            if (self.state != "FAILED"):
+                self.start_time = datetime.now()
                 self.state = "RUNNING"
 
     def on_task_finish(self, tid):
         with self.jlock:
             self.finished_tasks += 1
+            # All tasks need to finish (successfully) to consider the job finished
             if (self.finished_tasks == len(self.tasks)):
                 _logger.info("Job [ %s ] execution finished.", self.job.jid)
                 self.state = "FINISHED"
-                self.finish_time = time.strftime("%Y-%m-%d %H:%M:%S")
+                self.finish_time = datetime.now()
+                self.execution_time_s = (self.finish_time - self.start_time).total_seconds()
 
     def on_task_fail(self, tid):
         with self.jlock:

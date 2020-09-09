@@ -2,15 +2,20 @@ namespace py thrift
 
 enum JobState {
   SUBMITTED = 1,
-  RUNNING = 2,
-  FINISHED = 3,
-  FAILED = 4,
+  SCHEDULED = 2,
+  DISPATCHED = 3,
+  RUNNING = 4,
+  FINISHED = 5,
+  FAILED = 6,
 }
 
 struct JobStatus {
   	1: string id,
   	2: JobState state,
   	3: string submission_time,
+  	4: string start_time,
+  	5: string finish_time,
+  	6: i32 execution_time,
 }
 
 struct Job {

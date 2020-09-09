@@ -18,22 +18,28 @@ except:
 
 class JobState:
   SUBMITTED = 1
-  RUNNING = 2
-  FINISHED = 3
-  FAILED = 4
+  SCHEDULED = 2
+  DISPATCHED = 3
+  RUNNING = 4
+  FINISHED = 5
+  FAILED = 6
 
   _VALUES_TO_NAMES = {
     1: "SUBMITTED",
-    2: "RUNNING",
-    3: "FINISHED",
-    4: "FAILED",
+    2: "SCHEDULED",
+    3: "DISPATCHED",
+    4: "RUNNING",
+    5: "FINISHED",
+    6: "FAILED",
   }
 
   _NAMES_TO_VALUES = {
     "SUBMITTED": 1,
-    "RUNNING": 2,
-    "FINISHED": 3,
-    "FAILED": 4,
+    "SCHEDULED": 2,
+    "DISPATCHED": 3,
+    "RUNNING": 4,
+    "FINISHED": 5,
+    "FAILED": 6,
   }
 
 
@@ -43,6 +49,9 @@ class JobStatus:
    - id
    - state
    - submission_time
+   - start_time
+   - finish_time
+   - execution_time
   """
 
   thrift_spec = (
@@ -50,12 +59,18 @@ class JobStatus:
     (1, TType.STRING, 'id', None, None, ), # 1
     (2, TType.I32, 'state', None, None, ), # 2
     (3, TType.STRING, 'submission_time', None, None, ), # 3
+    (4, TType.STRING, 'start_time', None, None, ), # 4
+    (5, TType.STRING, 'finish_time', None, None, ), # 5
+    (6, TType.I32, 'execution_time', None, None, ), # 6
   )
 
-  def __init__(self, id=None, state=None, submission_time=None,):
+  def __init__(self, id=None, state=None, submission_time=None, start_time=None, finish_time=None, execution_time=None,):
     self.id = id
     self.state = state
     self.submission_time = submission_time
+    self.start_time = start_time
+    self.finish_time = finish_time
+    self.execution_time = execution_time
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -81,6 +96,21 @@ class JobStatus:
           self.submission_time = iprot.readString()
         else:
           iprot.skip(ftype)
+      elif fid == 4:
+        if ftype == TType.STRING:
+          self.start_time = iprot.readString()
+        else:
+          iprot.skip(ftype)
+      elif fid == 5:
+        if ftype == TType.STRING:
+          self.finish_time = iprot.readString()
+        else:
+          iprot.skip(ftype)
+      elif fid == 6:
+        if ftype == TType.I32:
+          self.execution_time = iprot.readI32()
+        else:
+          iprot.skip(ftype)
       else:
         iprot.skip(ftype)
       iprot.readFieldEnd()
@@ -103,6 +133,18 @@ class JobStatus:
       oprot.writeFieldBegin('submission_time', TType.STRING, 3)
       oprot.writeString(self.submission_time)
       oprot.writeFieldEnd()
+    if self.start_time is not None:
+      oprot.writeFieldBegin('start_time', TType.STRING, 4)
+      oprot.writeString(self.start_time)
+      oprot.writeFieldEnd()
+    if self.finish_time is not None:
+      oprot.writeFieldBegin('finish_time', TType.STRING, 5)
+      oprot.writeString(self.finish_time)
+      oprot.writeFieldEnd()
+    if self.execution_time is not None:
+      oprot.writeFieldBegin('execution_time', TType.I32, 6)
+      oprot.writeI32(self.execution_time)
+      oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
@@ -115,6 +157,9 @@ class JobStatus:
     value = (value * 31) ^ hash(self.id)
     value = (value * 31) ^ hash(self.state)
     value = (value * 31) ^ hash(self.submission_time)
+    value = (value * 31) ^ hash(self.start_time)
+    value = (value * 31) ^ hash(self.finish_time)
+    value = (value * 31) ^ hash(self.execution_time)
     return value
 
   def __repr__(self):

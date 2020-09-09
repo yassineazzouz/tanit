@@ -33,6 +33,7 @@ class Dispatcher(object):
                 else:
                     task_exec = self.cqueue.get()
                     _logger.debug("Dispatching next task [ %s ] for execution.", task_exec.task.tid)
+                    task_exec.on_dispatch()
                     worker.submit(task_exec)
             else:
                 _logger.debug("No new tasks to dispatch, sleeping for %s seconds...", 2)

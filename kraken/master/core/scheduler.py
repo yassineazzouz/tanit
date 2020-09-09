@@ -22,6 +22,7 @@ class SimpleScheduler(object):
             if (not self.lqueue.empty()):
                 task_exec = self.lqueue.get()
                 _logger.debug("Scheduling next task %s for execution.", task_exec.task.tid)
+                task_exec.on_schedule()
                 self.cqueue.put(task_exec)
                 self.lqueue.task_done()
             else:

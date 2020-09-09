@@ -67,7 +67,7 @@ def main(argv=None):
         client.start()
         if (args['--list']):
             for job in client.list_jobs():
-                print("id: {}, state: {}".format(job.id, job.state))
+                print(str(job))
         elif (args['--submit']):
             try:
                 if (args['--submit'].startswith('@')):
@@ -81,7 +81,7 @@ def main(argv=None):
             client.submit_job(job_spec)
         elif (args['--status']):
             job = client.job_status(args['--status'])
-            print("id: {}, state: {}".format(job.id, job.state))
+            print(str(job))
         else:
             _logger.error("Nothing to do !")
         

@@ -2,9 +2,9 @@
 # encoding: utf-8
 
 from ..thrift import MasterClientService, MasterWorkerService
-from ..thrift.ttypes import Job, Worker
+from ..thrift.ttypes import Job, Worker, JobState
 
-import json
+from ...common.model.job import JobStatus
 
 # Thrift files
 from thrift import Thrift
@@ -35,10 +35,15 @@ class MasterClient(object):
         self.transport.open()
     
     def list_jobs(self):
-        return self.client.list_jobs()
+        jobs = []
+        for job in self.client.list_jobs():
+            jobs.append(
+                JobStatus( job.id, JobState._VALUES_TO_NAMES[job.state], job.submission_time, job.start_time, job.finish_time, job.execution_time))
+        return jobs
     
     def job_status(self, jid):
-        return self.client.job_status(jid)
+        st = self.client.job_status(jid)
+        return JobStatus(st.id, JobState._VALUES_TO_NAMES[st.state], st.submission_time, st.start_time, st.finish_time, st.execution_time)
         
     def submit_job(self, job_spec):
         try:
@@ -47,11 +52,6 @@ class MasterClient(object):
             _logger.error("Error resolving job parameters.")
             raise e
         
-        self.client.submit_job(job)
-        
-    
-    def dummy_job(self):
-        job = Job("swh", "swhstg", "/user/hive/warehouse/swh.db/wws_30002", "/user/yassine.azzouz/data/wws_30002", preserve=False)
         self.client.submit_job(job)
         
     def stop(self):
