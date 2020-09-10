@@ -2,9 +2,10 @@
 # encoding: utf-8
 
 from ..thrift import MasterClientService, MasterWorkerService
-from ..thrift.ttypes import Job, Worker, JobState
+from ..thrift import ttypes
 
 from ...common.model.job import JobStatus
+from ...common.model.worker import Worker
 
 # Thrift files
 from thrift import Thrift
@@ -38,16 +39,16 @@ class MasterClient(object):
         jobs = []
         for job in self.client.list_jobs():
             jobs.append(
-                JobStatus( job.id, JobState._VALUES_TO_NAMES[job.state], job.submission_time, job.start_time, job.finish_time, job.execution_time))
+                JobStatus( job.id, ttypes.JobState._VALUES_TO_NAMES[job.state], job.submission_time, job.start_time, job.finish_time, job.execution_time))
         return jobs
     
     def job_status(self, jid):
         st = self.client.job_status(jid)
-        return JobStatus(st.id, JobState._VALUES_TO_NAMES[st.state], st.submission_time, st.start_time, st.finish_time, st.execution_time)
+        return JobStatus(st.id, ttypes.JobState._VALUES_TO_NAMES[st.state], st.submission_time, st.start_time, st.finish_time, st.execution_time)
         
     def submit_job(self, job_spec):
         try:
-            job = Job(**job_spec)
+            job = ttypes.Job(**job_spec)
         except Exception as e:
             _logger.error("Error resolving job parameters.")
             raise e
@@ -77,8 +78,17 @@ class MasterWorkerClient(object):
         # Connect to server
         self.transport.open()
 
+    def list_workers(self):
+        wkr_list = []
+        for wkr in self.client.list_workers():
+            wkr_list.append(Worker(wkr.wid, wkr.address, wkr.port))
+        return wkr_list
+
     def register_worker(self, wid, address, port):
-        return self.client.register_worker(Worker(wid, address, port))
+        return self.client.register_worker(ttypes.Worker(wid, address, port))
+
+    def unregister_worker(self, wid, address, port):
+        return self.client.unregister_worker(ttypes.Worker(wid, address, port))
     
     def task_start(self, tid):
         self.client.task_start(tid) 

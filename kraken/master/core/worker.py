@@ -1,15 +1,37 @@
 #!/usr/bin/env python
-# The execution engine controls the execution environement
 # encoding: utf-8
 
+import abc
 from ...worker.client.client import WorkerClient
 
 import logging as lg
 _logger = lg.getLogger(__name__)
 
-class RemoteThriftWorker(object):
+class WorkerIFace(object):
+    __metaclass__ = abc.ABCMeta
+    
+    @abc.abstractmethod
+    def start(self):
+        pass
+    
+    @abc.abstractmethod    
+    def stop(self):
+        pass
+
+    @abc.abstractmethod
+    def submit(self, task):
+        pass
+    
+    @abc.abstractmethod
+    def status(self):
+        pass
+
+class RemoteThriftWorker(WorkerIFace):
     def __init__(self, wid, address, port):
         self.wid = wid
+        self.address = address
+        self.port = port
+        
         self.client = WorkerClient(address, port)
         
         self.stopped = True
@@ -30,7 +52,7 @@ class RemoteThriftWorker(object):
         
     def status(self):
         return self.client.worker_status()
-        
+             
 class WorkerStoppedException(Exception):
     """Raised when trying to submit a task to a stopped worker"""
     pass

@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-# The execution engine controls the execution environement
 # encoding: utf-8
 
 import abc
 import time
-from threading import Thread
+from threading import Thread, Lock
 
 import logging as lg
 _logger = lg.getLogger(__name__)
@@ -22,11 +21,12 @@ class Dispatcher(object):
         self.workers = []
         self.cqueue = cqueue
         self.stopped = False
+        self.lock = Lock()
 
     def _run(self):
         while True:
             if (not self.cqueue.empty()):
-                worker = self.get_worker()
+                worker = self.next_worker()
                 if (worker == None):
                     _logger.warn("Failed to dispatch tasks : no workers found !")
                     time.sleep(2)
@@ -42,13 +42,26 @@ class Dispatcher(object):
             if (self.stopped and self.cqueue.empty()):
                 _logger.debug("No new tasks to dispatch, terminating dispatcher thread.")
                 return
+
+    def list_workers(self):
+        with self.lock:
+            return self.workers
         
     def register_worker(self, worker):
-        worker.start()
-        self.workers.append(worker)
+        with self.lock:
+            worker.start()
+            self.workers.append(worker)
+    
+    def unregister_worker(self, wid):
+        with self.lock:
+            for wkr in self.workers:
+                if(wkr.wid == wid):
+                    wkr.stop()
+                    self.workers.remove(wkr)
+                    return
     
     @abc.abstractmethod
-    def get_worker(self):
+    def next_worker(self):
         return
 
     def start(self):
@@ -69,21 +82,22 @@ class Dispatcher(object):
     
 class FairDispatcher(Dispatcher):
         
-    def get_worker(self):
-        if(len(self.workers) == 0):
-            return None
+    def next_worker(self):
+        with self.lock:
+            if(len(self.workers) == 0):
+                return None
         
-        next_worker = self.workers[0]
-        next_status = next_worker.status()  
-        for worker in self.workers[1:len(self.workers)]:
-            status = worker.status()
-            if (status.pending < next_status.pending):
-                next_worker = worker
-                next_status = status
-                continue
-            elif (status.pending == next_status.pending):
-                if (status.available > next_status.available):
+            next_worker = self.workers[0]
+            next_status = next_worker.status()  
+            for worker in self.workers[1:len(self.workers)]:
+                status = worker.status()
+                if (status.pending < next_status.pending):
                     next_worker = worker
                     next_status = status
                     continue
-        return next_worker
+                elif (status.pending == next_status.pending):
+                    if (status.available > next_status.available):
+                        next_worker = worker
+                        next_status = status
+                        continue
+            return next_worker

@@ -54,7 +54,11 @@ service MasterClientService{
 
 service MasterWorkerService{
 
+    list<Worker> list_workers(),
+
     void register_worker(1:Worker worker),
+    
+    void unregister_worker(1:Worker worker),
     
     void send_heartbeat(1:Worker worker),
    

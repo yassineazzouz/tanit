@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ..server.master import Master
+from ..core.master import Master
 from .worker import LocalWorker
 
 import logging as lg

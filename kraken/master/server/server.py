@@ -3,7 +3,7 @@
 import time
 
 from .handler import MasterClientServiceHandler, MasterWorkerServiceHandler
-from .master import Master
+from ..core.master import Master
 from ..standalone.master import StandaloneMaster
 from ..thrift import MasterClientService, MasterWorkerService
 from ..config.config import MasterConfig

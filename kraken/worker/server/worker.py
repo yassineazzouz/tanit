@@ -58,6 +58,11 @@ class Worker(object):
         _logger.info("Stopping Kraken worker [ %s ].", self.wid)
         self.stopped = True
         self.executor.stop()
+        #unregister the worker
+        try:
+            self.master.unregister_worker(self.wid, self.address, self.port)
+        except:
+            _logger.error("Could not unregister worker from master, exiting.")
         self.master.stop()
         _logger.info("Kraken worker [ %s ] stopped.", self.wid)
         

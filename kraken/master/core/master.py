@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-import socket
-
 from Queue import Queue
+from .dispatcher import FairDispatcher
+from .scheduler import SimpleScheduler
+from .worker import RemoteThriftWorker
+from .job import JobExecution
 from ...common.core.engine import Engine
-from ..core.dispatcher import FairDispatcher
-from ..core.scheduler import SimpleScheduler
-from ..core.worker import RemoteThriftWorker
-from ..core.job import JobExecution
+from ...common.model.worker import Worker
 
 import logging as lg
 
@@ -79,7 +78,15 @@ class Master(object):
                 task_exec = job_exec.tasks[tid]
                 task_exec.on_fail()
                 break
-            
+
+    def list_workers(self):
+        _logger.info("Listing Workers.")
+        wkr_list = []
+        for wkr in self.dispatcher.list_workers():
+            wkr_list.append(Worker(wkr.wid, wkr.address, wkr.port))
+        return wkr_list
+        return self.dispatcher.list_workers()
+                    
     def register_worker(self, worker):
         if (not self.started):
             raise MasterStoppedException("Can not register worker [ %s ] : master server stopped.", worker.wid)
@@ -89,7 +96,14 @@ class Master(object):
         wkr.start()
         self.dispatcher.register_worker(wkr)
         _logger.info("Worker [ %s ] registered.", worker.wid)   
-            
+    
+    def unregister_worker(self, worker):
+        if (not self.started):
+            raise MasterStoppedException("Can not register worker [ %s ] : master server stopped.", worker.wid)
+        _logger.info("Unregistering Worker [ %s ].", worker.wid)
+        self.dispatcher.unregister_worker(worker.wid)
+        _logger.info("Worker [ %s ] unregistered.", worker.wid)
+        
     def start(self):
         _logger.info("Stating Kraken master services.")
         self.dispatcher.start()

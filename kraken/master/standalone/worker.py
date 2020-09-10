@@ -6,14 +6,14 @@ import multiprocessing
 from ...worker.core.executor_pool import ExecutorPool
 from ...worker.core.executor import Executor
 from ...common.model.worker import WorkerStatus
-
+from ..core.worker import WorkerIFace
 
 import logging as lg
 from Queue import Queue, Empty
 
 _logger = lg.getLogger(__name__)
 
-class LocalWorker(object):
+class LocalWorker(WorkerIFace):
 
     def __init__(self, master):
         self.wid = "kraken-local-worker"

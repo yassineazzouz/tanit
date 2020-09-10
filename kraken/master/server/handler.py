@@ -5,7 +5,7 @@ from hashlib import md5
 
 from ...common.model.job import Job
 from ...common.model.worker import Worker
-from ..thrift.ttypes import JobStatus, JobState
+from ..thrift import ttypes
 
 import logging as lg
 
@@ -40,9 +40,9 @@ class MasterClientServiceHandler(object):
         status = []
         for job_exec in self.master.list_jobs():
             status.append( 
-                JobStatus(
+                ttypes.JobStatus(
                     job_exec.job.jid,
-                    JobState._NAMES_TO_VALUES[job_exec.state],
+                    ttypes.JobState._NAMES_TO_VALUES[job_exec.state],
                     job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "-" if (job_exec.start_time == None) else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "-" if (job_exec.finish_time == None) else job_exec.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -55,9 +55,9 @@ class MasterClientServiceHandler(object):
         job_exec = self.master.get_job(jid)
         if (job_exec == None):
             raise JobNotFoundException("No such job [ %s ]", jid)
-        return  JobStatus(
+        return  ttypes.JobStatus(
                     job_exec.job.jid,
-                    JobState._NAMES_TO_VALUES[job_exec.state],
+                    ttypes.JobState._NAMES_TO_VALUES[job_exec.state],
                     job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "-" if (job_exec.start_time == None) else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "-" if (job_exec.finish_time == None) else job_exec.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -68,10 +68,20 @@ class MasterWorkerServiceHandler(object):
 
     def __init__(self, master):
         self.master = master
+
+    def list_workers(self):
+        workers = []
+        for wkr in self.master.list_workers():
+            workers.append(ttypes.Worker(wkr.wid,wkr.address, wkr.port))
+        return workers
         
     def register_worker(self, worker):
         wker = Worker(worker.wid, worker.address, worker.port)
         self.master.register_worker(wker)
+
+    def unregister_worker(self, worker):
+        wker = Worker(worker.wid, worker.address, worker.port)
+        self.master.unregister_worker(wker)
      
     def task_start(self, tid):
         self.master.task_start(tid)

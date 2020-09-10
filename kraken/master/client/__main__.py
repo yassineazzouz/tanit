@@ -5,6 +5,7 @@
 
 Usage:
   kraken-client job [-v...] [--submit job-spec] [--status jid] [--list]
+  kraken-client worker [-v...] [--list]
   kraken-client -h | --help
   kraken-client --version
 
@@ -23,7 +24,7 @@ Examples:
 """
 
 from ... import __version__
-from .client import MasterClient
+from .client import MasterClient, MasterWorkerClient
 from ..config.config import MasterConfig
 import json
 import requests as rq
@@ -60,9 +61,9 @@ def main(argv=None):
     args = docopt(__doc__, argv=argv, version=__version__)
     
     configure_logging()
+    config = MasterConfig()
     
     if (args['job']):
-        config = MasterConfig()
         client = MasterClient(config.client_service_host, config.client_service_port)
         client.start()
         if (args['--list']):
@@ -86,6 +87,15 @@ def main(argv=None):
             _logger.error("Nothing to do !")
         
         client.stop()
-
+    elif (args['worker']):
+        client = MasterWorkerClient(config.worker_service_host, config.worker_service_port)
+        client.start()
+        if (args['--list']):
+            for worker in client.list_workers():
+                print(str(worker))
+        else:
+            _logger.error("Nothing to do !")
+            
+        client.stop()
 if __name__ == '__main__':
     main()
