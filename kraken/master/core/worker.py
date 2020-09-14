@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import abc
+from datetime import datetime
 from ...worker.client.client import WorkerClient
 
 import logging as lg
@@ -31,6 +32,7 @@ class RemoteThriftWorker(WorkerIFace):
         self.wid = wid
         self.address = address
         self.port = port
+        self.last_hear_beat = datetime.now()
         
         self.client = WorkerClient(address, port)
         

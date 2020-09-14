@@ -60,7 +60,7 @@ service MasterWorkerService{
     
     void unregister_worker(1:Worker worker),
     
-    void send_heartbeat(1:Worker worker),
+    void register_heartbeat(1:Worker worker),
    
     void task_start(1:string tid),
         

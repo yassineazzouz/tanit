@@ -36,7 +36,7 @@ class Iface:
     """
     pass
 
-  def send_heartbeat(self, worker):
+  def register_heartbeat(self, worker):
     """
     Parameters:
      - worker
@@ -156,23 +156,23 @@ class Client(Iface):
     iprot.readMessageEnd()
     return
 
-  def send_heartbeat(self, worker):
+  def register_heartbeat(self, worker):
     """
     Parameters:
      - worker
     """
-    self.send_send_heartbeat(worker)
-    self.recv_send_heartbeat()
+    self.send_register_heartbeat(worker)
+    self.recv_register_heartbeat()
 
-  def send_send_heartbeat(self, worker):
-    self._oprot.writeMessageBegin('send_heartbeat', TMessageType.CALL, self._seqid)
-    args = send_heartbeat_args()
+  def send_register_heartbeat(self, worker):
+    self._oprot.writeMessageBegin('register_heartbeat', TMessageType.CALL, self._seqid)
+    args = register_heartbeat_args()
     args.worker = worker
     args.write(self._oprot)
     self._oprot.writeMessageEnd()
     self._oprot.trans.flush()
 
-  def recv_send_heartbeat(self):
+  def recv_register_heartbeat(self):
     iprot = self._iprot
     (fname, mtype, rseqid) = iprot.readMessageBegin()
     if mtype == TMessageType.EXCEPTION:
@@ -180,7 +180,7 @@ class Client(Iface):
       x.read(iprot)
       iprot.readMessageEnd()
       raise x
-    result = send_heartbeat_result()
+    result = register_heartbeat_result()
     result.read(iprot)
     iprot.readMessageEnd()
     return
@@ -280,7 +280,7 @@ class Processor(Iface, TProcessor):
     self._processMap["list_workers"] = Processor.process_list_workers
     self._processMap["register_worker"] = Processor.process_register_worker
     self._processMap["unregister_worker"] = Processor.process_unregister_worker
-    self._processMap["send_heartbeat"] = Processor.process_send_heartbeat
+    self._processMap["register_heartbeat"] = Processor.process_register_heartbeat
     self._processMap["task_start"] = Processor.process_task_start
     self._processMap["task_success"] = Processor.process_task_success
     self._processMap["task_failure"] = Processor.process_task_failure
@@ -357,13 +357,13 @@ class Processor(Iface, TProcessor):
     oprot.writeMessageEnd()
     oprot.trans.flush()
 
-  def process_send_heartbeat(self, seqid, iprot, oprot):
-    args = send_heartbeat_args()
+  def process_register_heartbeat(self, seqid, iprot, oprot):
+    args = register_heartbeat_args()
     args.read(iprot)
     iprot.readMessageEnd()
-    result = send_heartbeat_result()
+    result = register_heartbeat_result()
     try:
-      self._handler.send_heartbeat(args.worker)
+      self._handler.register_heartbeat(args.worker)
       msg_type = TMessageType.REPLY
     except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
       raise
@@ -371,7 +371,7 @@ class Processor(Iface, TProcessor):
       msg_type = TMessageType.EXCEPTION
       logging.exception(ex)
       result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
-    oprot.writeMessageBegin("send_heartbeat", msg_type, seqid)
+    oprot.writeMessageBegin("register_heartbeat", msg_type, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
     oprot.trans.flush()
@@ -779,7 +779,7 @@ class unregister_worker_result:
   def __ne__(self, other):
     return not (self == other)
 
-class send_heartbeat_args:
+class register_heartbeat_args:
   """
   Attributes:
    - worker
@@ -817,7 +817,7 @@ class send_heartbeat_args:
     if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
-    oprot.writeStructBegin('send_heartbeat_args')
+    oprot.writeStructBegin('register_heartbeat_args')
     if self.worker is not None:
       oprot.writeFieldBegin('worker', TType.STRUCT, 1)
       self.worker.write(oprot)
@@ -845,7 +845,7 @@ class send_heartbeat_args:
   def __ne__(self, other):
     return not (self == other)
 
-class send_heartbeat_result:
+class register_heartbeat_result:
 
   thrift_spec = (
   )
@@ -868,7 +868,7 @@ class send_heartbeat_result:
     if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
-    oprot.writeStructBegin('send_heartbeat_result')
+    oprot.writeStructBegin('register_heartbeat_result')
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 

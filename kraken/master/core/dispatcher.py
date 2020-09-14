@@ -3,7 +3,7 @@
 
 import abc
 import time
-from threading import Thread, Lock
+from threading import Thread
 
 import logging as lg
 _logger = lg.getLogger(__name__)
@@ -17,13 +17,13 @@ class Dispatcher(object):
     the appropriate worker for execution.
     '''
     
-    def __init__(self, cqueue):
-        self.workers = []
+    def __init__(self, cqueue, workers_manager):
+        self.workers_manager = workers_manager
         self.cqueue = cqueue
         self.stopped = False
-        self.lock = Lock()
 
     def _run(self):
+        task_exec = None
         while True:
             if (not self.cqueue.empty()):
                 worker = self.next_worker()
@@ -31,10 +31,15 @@ class Dispatcher(object):
                     _logger.warn("Failed to dispatch tasks : no workers found !")
                     time.sleep(2)
                 else:
-                    task_exec = self.cqueue.get()
+                    task_exec = self.cqueue.get() if task_exec == None else task_exec
                     _logger.debug("Dispatching next task [ %s ] for execution.", task_exec.task.tid)
-                    task_exec.on_dispatch()
-                    worker.submit(task_exec.task)
+                    task_exec.on_dispatch(worker.wid)
+                    try:
+                        worker.submit(task_exec.task)
+                        task_exec = None
+                    except Exception:
+                        _logger.exception("Exception submitting task [ %s ] to worker [ %s ]", task_exec.task.tid, worker.wid)
+                        
             else:
                 _logger.debug("No new tasks to dispatch, sleeping for %s seconds...", 2)
                 time.sleep(2)
@@ -42,23 +47,6 @@ class Dispatcher(object):
             if (self.stopped and self.cqueue.empty()):
                 _logger.debug("No new tasks to dispatch, terminating dispatcher thread.")
                 return
-
-    def list_workers(self):
-        with self.lock:
-            return self.workers
-        
-    def register_worker(self, worker):
-        with self.lock:
-            worker.start()
-            self.workers.append(worker)
-    
-    def unregister_worker(self, wid):
-        with self.lock:
-            for wkr in self.workers:
-                if(wkr.wid == wid):
-                    wkr.stop()
-                    self.workers.remove(wkr)
-                    return
     
     @abc.abstractmethod
     def next_worker(self):
@@ -75,29 +63,36 @@ class Dispatcher(object):
         _logger.info("Stopping kraken dispatcher.")
         self.stopped = True
         self.daemon.join()
-        for worker in self.workers:
-            worker.stop()
         _logger.info("kraken dispatcher Stopped.")
         
     
 class FairDispatcher(Dispatcher):
         
     def next_worker(self):
-        with self.lock:
-            if(len(self.workers) == 0):
-                return None
+        live_workers = self.workers_manager.list_live_workers()
         
-            next_worker = self.workers[0]
-            next_status = next_worker.status()  
-            for worker in self.workers[1:len(self.workers)]:
+        if(len(live_workers) == 0):
+            return None
+        
+        best_status = None
+        best_worker = None
+
+        for worker in live_workers:
+            try:
                 status = worker.status()
-                if (status.pending < next_status.pending):
-                    next_worker = worker
-                    next_status = status
+            except:
+                _logger.exception("Exception while fetching worker [ %s ] status", worker.wid)
+                continue
+            if (best_status == None):
+                best_status = status
+                best_worker = worker
+            elif (status.pending < best_status.pending):
+                best_worker = worker
+                best_status = status
+                continue
+            elif (status.pending == best_status.pending):
+                if (status.available > best_status.available):
+                    best_worker = worker
+                    best_status = status
                     continue
-                elif (status.pending == next_status.pending):
-                    if (status.available > next_status.available):
-                        next_worker = worker
-                        next_status = status
-                        continue
-            return next_worker
+        return best_worker

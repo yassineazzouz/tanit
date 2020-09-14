@@ -20,13 +20,15 @@ class TaskExecution(object):
         self.state = "SUBMITTED"
         self.task = task
         self.job = job
+        self.worker = None
 
     def on_schedule(self):
         self.state =     "SCHEDULED"
         self.job.on_task_schedule(self.task.tid)
     
-    def on_dispatch(self):
+    def on_dispatch(self, worker = None):
         self.state =     "DISPATCHED"
+        self.worker = worker
         self.job.on_task_dispatch(self.task.tid)
 
     def on_start(self):
@@ -76,6 +78,9 @@ class JobExecution(object):
         self.jlock = Lock()
 
 
+    def get_tasks(self):
+        return self.tasks.values()
+
     def on_task_schedule(self, tid):
         with self.jlock:
             self.scheduled_tasks += 1
@@ -124,6 +129,35 @@ class JobExecution(object):
     def get_state(self):
         return self.state
     
+    def reset_task(self, tid):
+        task = self.tasks[tid]
+        with self.jlock:
+            if (task.state == "SCHEDULED"):
+                self.scheduled_tasks -= 1
+            elif (task.state == "DISPATCHED"):
+                self.scheduled_tasks -= 1
+                self.dispatched_tasks -= 1
+            elif (task.state == "RUNNING"):
+                self.scheduled_tasks -= 1
+                self.dispatched_tasks -= 1
+                self.started_tasks -= 1
+            elif (task.state == "FINISHED"):
+                self.scheduled_tasks -= 1
+                self.dispatched_tasks -= 1
+                self.started_tasks -= 1
+                self.finished_tasks -= 1
+                if (self.state == "FINISHED"):
+                    self.state = "RUNNING"
+            elif (task.state == "FAILED"):
+                self.scheduled_tasks -= 1
+                self.dispatched_tasks -= 1
+                self.started_tasks -= 1
+                if (self.state == "FAILED" and self.failed_tasks == 1):
+                    self.state = "RUNNING"
+                self.failed_tasks -= 1
+    
+        self.tasks[tid] = TaskExecution(task.task, self)
+                
     def setup(self):
 
         src = Engine.getInstance().get_client(self.job.src)

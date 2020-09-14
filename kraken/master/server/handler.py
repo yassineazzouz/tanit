@@ -74,6 +74,10 @@ class MasterWorkerServiceHandler(object):
         for wkr in self.master.list_workers():
             workers.append(ttypes.Worker(wkr.wid,wkr.address, wkr.port))
         return workers
+
+    def register_heartbeat(self, worker):
+        wker = Worker(worker.wid, worker.address, worker.port)
+        self.master.register_heartbeat(wker)
         
     def register_worker(self, worker):
         wker = Worker(worker.wid, worker.address, worker.port)

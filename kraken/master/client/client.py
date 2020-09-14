@@ -89,7 +89,10 @@ class MasterWorkerClient(object):
 
     def unregister_worker(self, wid, address, port):
         return self.client.unregister_worker(ttypes.Worker(wid, address, port))
-    
+
+    def register_heartbeat(self, wid, address, port):
+        self.client.register_heartbeat(ttypes.Worker(wid, address, port))
+            
     def task_start(self, tid):
         self.client.task_start(tid) 
         

@@ -3,6 +3,8 @@
 from ...master.client.client_factory import ClientFactory
 from ..core.executor_pool import ExecutorPool
 from ...common.model.worker import WorkerStatus
+from threading import Thread
+import time
 
 import logging as lg
 from Queue import Queue
@@ -48,10 +50,15 @@ class Worker(object):
             _logger.error("Could not connect to master on [%s:%s]", self.address, self.port)
             _logger.error(e, exc_info=True)
             raise e
+        
         self.executor.start()
         
         #register the worker
         self.master.register_worker(self.wid, self.address, self.port)
+        
+        self.reporter = WorkerHearbeatReporter(self)
+        self.reporter.setDaemon(True)
+        self.reporter.start()
         
     
     def stop(self):
@@ -63,9 +70,36 @@ class Worker(object):
             self.master.unregister_worker(self.wid, self.address, self.port)
         except:
             _logger.error("Could not unregister worker from master, exiting.")
+        
+        self.reporter.stop()
+        self.reporter.join()
+        
         self.master.stop()
         _logger.info("Kraken worker [ %s ] stopped.", self.wid)
-        
+    
+
+class WorkerHearbeatReporter(Thread):
+    
+    # in seconds
+    heartbeat_interval = 2
+    
+    def __init__(self, worker):
+        super(WorkerHearbeatReporter, self).__init__()
+        self.worker = worker
+        self.client = worker.master
+        self.stopped = False
+
+    def stop(self):
+        _logger.info("Stopping kraken worker hearbeat reporter.")
+        self.stopped = True
+
+    def run(self):
+        _logger.info("Started kraken worker hearbeat reporter.")
+        while (not self.stopped):
+            self.client.register_heartbeat(self.worker.wid, self.worker.address, self.worker.port)
+            time.sleep(self.heartbeat_interval)
+        _logger.info("Kraken worker hearbeat reporter stopped.")
+
 class WorkerStoppedException(Exception):
     """Raised when trying to submit a task to a stopped worker"""
     pass

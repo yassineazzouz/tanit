@@ -27,7 +27,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print('   list_workers()')
   print('  void register_worker(Worker worker)')
   print('  void unregister_worker(Worker worker)')
-  print('  void send_heartbeat(Worker worker)')
+  print('  void register_heartbeat(Worker worker)')
   print('  void task_start(string tid)')
   print('  void task_success(string tid)')
   print('  void task_failure(string tid)')
@@ -105,11 +105,11 @@ elif cmd == 'unregister_worker':
     sys.exit(1)
   pp.pprint(client.unregister_worker(eval(args[0]),))
 
-elif cmd == 'send_heartbeat':
+elif cmd == 'register_heartbeat':
   if len(args) != 1:
-    print('send_heartbeat requires 1 args')
+    print('register_heartbeat requires 1 args')
     sys.exit(1)
-  pp.pprint(client.send_heartbeat(eval(args[0]),))
+  pp.pprint(client.register_heartbeat(eval(args[0]),))
 
 elif cmd == 'task_start':
   if len(args) != 1:
