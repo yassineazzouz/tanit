@@ -26,6 +26,9 @@ class Worker(object):
         self.master = factory.create_client('master-worker')
         
         self.executor = ExecutorPool(self.wid, factory ,self.lqueue, config.executor_threads)
+        
+        self.reporter = WorkerHearbeatReporter(self)
+        self.reporter.setDaemon(True)
 
     def submit(self, task):
         if (not self.stopped):
@@ -48,16 +51,18 @@ class Worker(object):
             self.master.start()
         except Exception as e:
             _logger.error("Could not connect to master on [%s:%s]", self.address, self.port)
-            _logger.error(e, exc_info=True)
             raise e
         
         self.executor.start()
         
         #register the worker
-        self.master.register_worker(self.wid, self.address, self.port)
-        
-        self.reporter = WorkerHearbeatReporter(self)
-        self.reporter.setDaemon(True)
+        try:
+            self.master.register_worker(self.wid, self.address, self.port)
+        except:
+            _logger.error("Could not register worker to the master server. exiting")
+            self.stop()
+            raise
+            
         self.reporter.start()
         
     
@@ -81,7 +86,7 @@ class Worker(object):
 class WorkerHearbeatReporter(Thread):
     
     # in seconds
-    heartbeat_interval = 2
+    heartbeat_interval = 3
     
     def __init__(self, worker):
         super(WorkerHearbeatReporter, self).__init__()
@@ -96,7 +101,10 @@ class WorkerHearbeatReporter(Thread):
     def run(self):
         _logger.info("Started kraken worker hearbeat reporter.")
         while (not self.stopped):
-            self.client.register_heartbeat(self.worker.wid, self.worker.address, self.worker.port)
+            try:
+                self.client.register_heartbeat(self.worker.wid, self.worker.address, self.worker.port)
+            except:
+                _logger.exception("Could not send heartbeat to master, is the server running !")
             time.sleep(self.heartbeat_interval)
         _logger.info("Kraken worker hearbeat reporter stopped.")
 

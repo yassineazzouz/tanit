@@ -53,8 +53,7 @@ class WorkerServer(object):
         try:
             self.worker.start()
         except Exception as e:
-            _logger.error(e, exc_info=True)
-            _logger.error("Failed to start Kraken server.")
+            _logger.exception("Failed to start Kraken worker services.")
             exit(1)
         
         try:
