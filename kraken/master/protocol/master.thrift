@@ -39,16 +39,20 @@ struct Worker {
   	3: optional i32 port,
 }
 
+exception JobNotFoundException {
+  1: string message,
+}
+
 service MasterClientService{
 
     // submit a job 
-    void submit_job(1:Job job),
+    string submit_job(1:Job job),
     
     // list jobs
     list<JobStatus> list_jobs(),
 
     // job status
-    JobStatus job_status(1:string jid),
+    JobStatus job_status(1:string jid) throws (1:JobNotFoundException e),
     
 }
 

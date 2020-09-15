@@ -50,7 +50,7 @@ class Client(Iface):
      - job
     """
     self.send_submit_job(job)
-    self.recv_submit_job()
+    return self.recv_submit_job()
 
   def send_submit_job(self, job):
     self._oprot.writeMessageBegin('submit_job', TMessageType.CALL, self._seqid)
@@ -71,7 +71,9 @@ class Client(Iface):
     result = submit_job_result()
     result.read(iprot)
     iprot.readMessageEnd()
-    return
+    if result.success is not None:
+      return result.success
+    raise TApplicationException(TApplicationException.MISSING_RESULT, "submit_job failed: unknown result")
 
   def list_jobs(self):
     self.send_list_jobs()
@@ -128,6 +130,8 @@ class Client(Iface):
     iprot.readMessageEnd()
     if result.success is not None:
       return result.success
+    if result.e is not None:
+      raise result.e
     raise TApplicationException(TApplicationException.MISSING_RESULT, "job_status failed: unknown result")
 
 
@@ -160,7 +164,7 @@ class Processor(Iface, TProcessor):
     iprot.readMessageEnd()
     result = submit_job_result()
     try:
-      self._handler.submit_job(args.job)
+      result.success = self._handler.submit_job(args.job)
       msg_type = TMessageType.REPLY
     except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
       raise
@@ -202,6 +206,9 @@ class Processor(Iface, TProcessor):
       msg_type = TMessageType.REPLY
     except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
       raise
+    except JobNotFoundException as e:
+      msg_type = TMessageType.REPLY
+      result.e = e
     except Exception as ex:
       msg_type = TMessageType.EXCEPTION
       logging.exception(ex)
@@ -281,9 +288,17 @@ class submit_job_args:
     return not (self == other)
 
 class submit_job_result:
+  """
+  Attributes:
+   - success
+  """
 
   thrift_spec = (
+    (0, TType.STRING, 'success', None, None, ), # 0
   )
+
+  def __init__(self, success=None,):
+    self.success = success
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -294,6 +309,11 @@ class submit_job_result:
       (fname, ftype, fid) = iprot.readFieldBegin()
       if ftype == TType.STOP:
         break
+      if fid == 0:
+        if ftype == TType.STRING:
+          self.success = iprot.readString()
+        else:
+          iprot.skip(ftype)
       else:
         iprot.skip(ftype)
       iprot.readFieldEnd()
@@ -304,6 +324,10 @@ class submit_job_result:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
     oprot.writeStructBegin('submit_job_result')
+    if self.success is not None:
+      oprot.writeFieldBegin('success', TType.STRING, 0)
+      oprot.writeString(self.success)
+      oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
@@ -313,6 +337,7 @@ class submit_job_result:
 
   def __hash__(self):
     value = 17
+    value = (value * 31) ^ hash(self.success)
     return value
 
   def __repr__(self):
@@ -514,14 +539,17 @@ class job_status_result:
   """
   Attributes:
    - success
+   - e
   """
 
   thrift_spec = (
     (0, TType.STRUCT, 'success', (JobStatus, JobStatus.thrift_spec), None, ), # 0
+    (1, TType.STRUCT, 'e', (JobNotFoundException, JobNotFoundException.thrift_spec), None, ), # 1
   )
 
-  def __init__(self, success=None,):
+  def __init__(self, success=None, e=None,):
     self.success = success
+    self.e = e
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -538,6 +566,12 @@ class job_status_result:
           self.success.read(iprot)
         else:
           iprot.skip(ftype)
+      elif fid == 1:
+        if ftype == TType.STRUCT:
+          self.e = JobNotFoundException()
+          self.e.read(iprot)
+        else:
+          iprot.skip(ftype)
       else:
         iprot.skip(ftype)
       iprot.readFieldEnd()
@@ -552,6 +586,10 @@ class job_status_result:
       oprot.writeFieldBegin('success', TType.STRUCT, 0)
       self.success.write(oprot)
       oprot.writeFieldEnd()
+    if self.e is not None:
+      oprot.writeFieldBegin('e', TType.STRUCT, 1)
+      self.e.write(oprot)
+      oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
 
@@ -562,6 +600,7 @@ class job_status_result:
   def __hash__(self):
     value = 17
     value = (value * 31) ^ hash(self.success)
+    value = (value * 31) ^ hash(self.e)
     return value
 
   def __repr__(self):

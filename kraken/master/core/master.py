@@ -58,7 +58,7 @@ class Master(object):
         return self.execution_manager.list_jobs()
     
     def get_job(self, jid):
-        self.execution_manager.get_job(jid)
+        return self.execution_manager.get_job(jid)
   
     def task_start(self, tid):
         self.execution_manager.task_start(tid)

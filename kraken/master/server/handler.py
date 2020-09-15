@@ -20,7 +20,7 @@ class MasterClientServiceHandler(object):
     def submit_job(self, job):
         jid = "job-%s-%s" % (
             md5("{}-{}-{}-{}".format(job.src, job.src_path, job.dest, job.dest_path)).hexdigest(),
-            datetime.now().strftime("%d%m%Y%H%M%S")
+            str(datetime.now().strftime("%d%m%Y%H%M%S"))
         )
         job = Job( jid,
                    job.src,
@@ -36,6 +36,7 @@ class MasterClientServiceHandler(object):
                    job.part_size,
                    job.buffer_size)
         self.master.submit_job(job)
+        return jid
 
     def list_jobs(self):
         status = []
@@ -55,7 +56,7 @@ class MasterClientServiceHandler(object):
     def job_status(self, jid):
         job_exec = self.master.get_job(jid)
         if (job_exec == None):
-            raise JobNotFoundException("No such job [ %s ]", jid)
+            raise ttypes.JobNotFoundException("No such job [ %s ]" % jid)
         return  ttypes.JobStatus(
                     job_exec.job.jid,
                     ttypes.JobState._NAMES_TO_VALUES[ExecutionState._VALUES_TO_NAMES[job_exec.state]],
@@ -64,7 +65,7 @@ class MasterClientServiceHandler(object):
                     "-" if (job_exec.finish_time == None) else job_exec.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
                     job_exec.execution_time_s
                 )
-
+        
 class MasterWorkerServiceHandler(object):
 
     def __init__(self, master):

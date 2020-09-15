@@ -43,17 +43,23 @@ class MasterClient(object):
         return jobs
     
     def job_status(self, jid):
-        st = self.client.job_status(jid)
-        return JobStatus(st.id, ttypes.JobState._VALUES_TO_NAMES[st.state], st.submission_time, st.start_time, st.finish_time, st.execution_time)
+        try:
+            st = self.client.job_status(jid)
+            return JobStatus(st.id, ttypes.JobState._VALUES_TO_NAMES[st.state], st.submission_time, st.start_time, st.finish_time, st.execution_time)
+        except ttypes.JobNotFoundException:
+            return None
         
     def submit_job(self, job_spec):
+        _logger.info("Submitting new job.")
         try:
             job = ttypes.Job(**job_spec)
         except Exception as e:
             _logger.error("Error resolving job parameters.")
             raise e
         
-        self.client.submit_job(job)
+        id = self.client.submit_job(job)
+        _logger.info("Job submitted : %s.", id)
+        return id
         
     def stop(self):
         self.transport.close()

@@ -148,7 +148,7 @@ class ExecutionManager(object):
     
     def get_job(self, jid):
         for job_exec in self.jobs:
-            if (job_exec.job.jid == jid):
+            if job_exec.job.jid == jid:
                 return job_exec
         return None
     

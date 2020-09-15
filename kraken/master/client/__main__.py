@@ -82,7 +82,10 @@ def main(argv=None):
             client.submit_job(job_spec)
         elif (args['--status']):
             job = client.job_status(args['--status'])
-            print(str(job))
+            if (job == None):
+                _logger.info("No such job %s", args['--status'])
+            else:
+                print(str(job))
         else:
             _logger.error("Nothing to do !")
         

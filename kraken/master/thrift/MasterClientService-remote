@@ -24,7 +24,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
   print('Usage: ' + sys.argv[0] + ' [-h host[:port]] [-u url] [-f[ramed]] [-s[sl]] function [arg1 [arg2...]]')
   print('')
   print('Functions:')
-  print('  void submit_job(Job job)')
+  print('  string submit_job(Job job)')
   print('   list_jobs()')
   print('  JobStatus job_status(string jid)')
   print('')
