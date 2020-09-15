@@ -11,9 +11,10 @@ class SimpleScheduler(object):
     '''
     Manages Job objects and the waiting between job executions
     '''
-    def __init__(self, lqueue, cqueue):
+    def __init__(self, lqueue, cqueue, execution_manager):
         self.cqueue = cqueue
         self.lqueue = lqueue
+        self.execution_manager = execution_manager
         self.stopped = False
 
 
@@ -22,7 +23,7 @@ class SimpleScheduler(object):
             if (not self.lqueue.empty()):
                 task_exec = self.lqueue.get()
                 _logger.debug("Scheduling next task %s for execution.", task_exec.task.tid)
-                task_exec.on_schedule()
+                self.execution_manager.task_schedule(task_exec.task.tid)
                 self.cqueue.put(task_exec)
                 self.lqueue.task_done()
             else:

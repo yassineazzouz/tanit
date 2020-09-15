@@ -3,7 +3,7 @@
 
 import abc
 from datetime import datetime
-from ...worker.client.client import WorkerClient
+from ....worker.client.client import WorkerClient
 
 import logging as lg
 _logger = lg.getLogger(__name__)

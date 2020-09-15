@@ -5,6 +5,7 @@ from hashlib import md5
 
 from ...common.model.job import Job
 from ...common.model.worker import Worker
+from ..core.execution.execution_state import ExecutionState
 from ..thrift import ttypes
 
 import logging as lg
@@ -42,7 +43,7 @@ class MasterClientServiceHandler(object):
             status.append( 
                 ttypes.JobStatus(
                     job_exec.job.jid,
-                    ttypes.JobState._NAMES_TO_VALUES[job_exec.state],
+                    ttypes.JobState._NAMES_TO_VALUES[ExecutionState._VALUES_TO_NAMES[job_exec.state]],
                     job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "-" if (job_exec.start_time == None) else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "-" if (job_exec.finish_time == None) else job_exec.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -57,7 +58,7 @@ class MasterClientServiceHandler(object):
             raise JobNotFoundException("No such job [ %s ]", jid)
         return  ttypes.JobStatus(
                     job_exec.job.jid,
-                    ttypes.JobState._NAMES_TO_VALUES[job_exec.state],
+                    ttypes.JobState._NAMES_TO_VALUES[ExecutionState._VALUES_TO_NAMES[job_exec.state]],
                     job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "-" if (job_exec.start_time == None) else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "-" if (job_exec.finish_time == None) else job_exec.finish_time.strftime("%Y-%m-%d %H:%M:%S"),

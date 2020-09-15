@@ -6,7 +6,7 @@ import multiprocessing
 from ...worker.core.executor_pool import ExecutorPool
 from ...worker.core.executor import Executor
 from ...common.model.worker import WorkerStatus
-from ..core.worker import WorkerIFace
+from ..core.worker.worker import WorkerIFace
 
 import logging as lg
 from Queue import Queue, Empty

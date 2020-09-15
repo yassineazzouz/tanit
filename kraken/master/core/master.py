@@ -5,8 +5,9 @@ from Queue import Queue
 from threading import Thread
 from .dispatcher import FairDispatcher
 from .scheduler import SimpleScheduler
-from .worker_manager import WorkerManager
-from .job import JobExecution
+from .worker.worker_manager import WorkerManager
+from .execution.execution_manager import ExecutionManager
+from .execution.execution_state import ExecutionState
 from ...common.core.engine import Engine
 from ...common.model.worker import Worker
 
@@ -17,11 +18,8 @@ _logger = lg.getLogger(__name__)
 class Master(object):
 
     def __init__(self):
-        # list of jobs
-        self.jobs = []
-          
-        self.started = False
-
+        # execution manager
+        self.execution_manager = ExecutionManager()
         # Lister queue
         self.lqueue = Queue()
         # Call queue
@@ -31,12 +29,14 @@ class Master(object):
         # workers manager
         self.workers_manager = WorkerManager()
         # scheduler
-        self.scheduler = SimpleScheduler(self.lqueue, self.cqueue)
+        self.scheduler = SimpleScheduler(self.lqueue, self.cqueue, self.execution_manager)
         # dispatcher
-        self.dispatcher  = FairDispatcher(self.cqueue, self.workers_manager)
+        self.dispatcher  = FairDispatcher(self.cqueue, self.workers_manager, self.execution_manager)
         # dicommissionner
         self.dicommissionner = WorkerDicommission(self)
         self.dicommissionner.setDaemon(True)
+        
+        self.started = False
     
     def configure(self, config):
         pass
@@ -47,46 +47,27 @@ class Master(object):
         
         _logger.info("Received new job [ %s ].", job.jid)
         
-        _logger.info("Configuring job [ %s ].", job.jid)
-        job_exec = JobExecution(job)
-        job_exec.setup()
-        
         _logger.info("Submitting job [ %s ] for execution.", job.jid)
-        for tid in job_exec.tasks:
-            self.lqueue.put(job_exec.tasks[tid])
-        _logger.info("Submitted %s tasks for execution in job [ %s ].", len(job_exec.tasks) ,job.jid)
-        
-        self.jobs.append(job_exec)
+        self.execution_manager.submit_job(job)
+
+        for task_exec in self.execution_manager.get_tasks(jid = job.jid):
+            self.lqueue.put(task_exec)
+        _logger.info("Submitted %s tasks for execution in job [ %s ].", len(self.execution_manager.get_tasks(jid = job.jid)) ,job.jid)
 
     def list_jobs(self):
-        return self.jobs
+        return self.execution_manager.list_jobs()
     
     def get_job(self, jid):
-        for job_exec in self.jobs:
-            if (job_exec.job.jid == jid):
-                return job_exec
-        return None
+        self.execution_manager.get_job(jid)
   
     def task_start(self, tid):
-        for job_exec in self.jobs:
-            if tid in job_exec.tasks:
-                task_exec = job_exec.tasks[tid]
-                task_exec.on_start()
-                break
+        self.execution_manager.task_start(tid)
       
     def task_success(self, tid):
-        for job_exec in self.jobs:
-            if tid in job_exec.tasks:
-                task_exec = job_exec.tasks[tid]
-                task_exec.on_finish()
-                break
+        self.execution_manager.task_finish(tid)
     
     def task_failure(self, tid):
-        for job_exec in self.jobs:
-            if tid in job_exec.tasks:
-                task_exec = job_exec.tasks[tid]
-                task_exec.on_fail()
-                break
+        self.execution_manager.task_failure(tid)
 
     def list_workers(self):
         _logger.info("Listing Workers.")
@@ -142,6 +123,7 @@ class WorkerDicommission(Thread):
     def __init__(self, master):
         super(WorkerDicommission, self).__init__()
         self.master = master
+        self.execution_manager = master.execution_manager
         self.workers_manager = master.workers_manager
         self.stopped = False
         
@@ -155,14 +137,8 @@ class WorkerDicommission(Thread):
         self.stopped = True
 
     def _decommission_worker(self, worker):
-        worker_tasks = []
-        for job_exec in self.master.jobs:
-            if (job_exec.state not in ["FINISHED", "FAILED"]):
-                for task_exec in job_exec.get_tasks():
-                    if (task_exec.worker == worker.wid):
-                        worker_tasks.append(task_exec)
-        
-        
+        worker_tasks = self.execution_manager.get_tasks(worker = worker.wid) 
+          
         while(not self.stopped):
             # While the worker is up, wait for the tasks to finish
             # check if the worker is still alive
@@ -171,9 +147,9 @@ class WorkerDicommission(Thread):
             except:
                 break
             # check how many tasks are still alive
-            for task_exec in worker_tasks:
-                if (task_exec.state in ["FAILED", "FINISHED"]):
-                    worker_tasks.pop(task_exec)
+            for task in worker_tasks:
+                if (task.state in [ExecutionState.FINISHED, ExecutionState.FAILED]):
+                    worker_tasks.pop(task)
             
             if (len(worker_tasks) == 0):
                 break
@@ -187,11 +163,8 @@ class WorkerDicommission(Thread):
             _logger.info("Worker [ %s ] still have %s active tasks.", worker.wid, len(worker_tasks))
             # reschedule the tasks
             for task_exec in worker_tasks:
-                job_exec = task_exec.job
-                tid = task_exec.task.tid
-                
-                job_exec.reset_task(tid)
-                self.master.lqueue.put(job_exec.tasks[tid])
+                self.execution_manager.task_reset(task_exec.task.tid)
+                self.master.lqueue.put(self.execution_manager.get_task(task_exec.task.tid))
           
 class MasterStoppedException(Exception):
     """Raised when trying to submit a task to a stopped master"""
