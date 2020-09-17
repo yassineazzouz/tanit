@@ -7,8 +7,9 @@ from .dispatcher import FairDispatcher
 from .scheduler import SimpleScheduler
 from .worker.worker_manager import WorkerManager
 from .execution.execution_manager import ExecutionManager
+from .execution.execution_job import JobExecution
 from .execution.execution_state import ExecutionState
-from ...common.core.engine import Engine
+from ...client.client_factory import ClientFactory
 from ...common.model.worker import Worker
 
 import logging as lg
@@ -18,14 +19,14 @@ _logger = lg.getLogger(__name__)
 class Master(object):
 
     def __init__(self):
+        # execution engine
+        self.factory = ClientFactory()
         # execution manager
         self.execution_manager = ExecutionManager()
         # Lister queue
         self.lqueue = Queue()
         # Call queue
         self.cqueue = Queue()
-        # execution engine
-        self.engine = Engine()
         # workers manager
         self.workers_manager = WorkerManager()
         # scheduler
@@ -48,7 +49,9 @@ class Master(object):
         _logger.info("Received new job [ %s ].", job.jid)
         
         _logger.info("Submitting job [ %s ] for execution.", job.jid)
-        self.execution_manager.submit_job(job)
+        job_exec = JobExecution(job)
+        job_exec.setup()
+        self.execution_manager.register_job(job_exec)
 
         for task_exec in self.execution_manager.get_tasks(jid = job.jid):
             self.lqueue.put(task_exec)

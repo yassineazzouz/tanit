@@ -5,9 +5,9 @@ import time
 import Queue
 import logging as lg
 import os.path as osp
-from pywhdfs.utils.utils import HdfsError
 from threading import Thread, Lock
-from ...common.core.engine import Engine
+from ...client.client_factory import ClientFactory
+from ...common.core.exception import KrakenError
 
 _logger = lg.getLogger(__name__)
 
@@ -64,8 +64,8 @@ class Executor(Thread):
     def _run(self, task):
 
       # Can cache the clients in the engine
-      src = Engine.getInstance().get_client(task.src)
-      dst = Engine.getInstance().get_client(task.dest)
+      src = ClientFactory.getInstance().get_client(task.src)
+      dst = ClientFactory.getInstance().get_client(task.dest)
       
       checksum = task.checksum
       overwrite = task.force
@@ -104,7 +104,7 @@ class Executor(Thread):
       else:
         # destination exist
         if not overwrite:
-          raise HdfsError('Destination file exist and Missing overwrite parameter.')
+          raise KrakenError('Destination file exist and Missing overwrite parameter.')
         _tmp_path = '%s.temp-%s' % (_dst_path, int(time.time()))
 
         if checksum == True:
