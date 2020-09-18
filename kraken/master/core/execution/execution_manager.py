@@ -2,6 +2,12 @@
 
 import logging as lg
 
+from Queue import Queue
+from ..dispatcher import FairDispatcher
+from ..scheduler import SimpleScheduler
+from .execution_job import JobExecution
+from ..worker.worker_manager import WorkerManager
+
 _logger = lg.getLogger(__name__)
 
 class ExecutionManager(object):
@@ -10,7 +16,49 @@ class ExecutionManager(object):
     def __init__(self):
         # jobs list
         self.jobs = []
+        # Lister queue
+        self.lqueue = Queue()
+        # Call queue
+        self.cqueue = Queue()
+        # workers manager
+        self.workers_manager = WorkerManager(self)
+        # scheduler
+        self.scheduler = SimpleScheduler(self.lqueue, self.cqueue, self.task_schedule )
+        # dispatcher
+        self.dispatcher  = FairDispatcher(self.cqueue, self.workers_manager, self.task_dispatch)
 
+    def configure(self, config):
+        pass
+
+    def start(self):
+        _logger.info("Stating Kraken master services.")
+        self.workers_manager.start()
+        self.dispatcher.start()
+        self.scheduler.start()
+        _logger.info("Kraken master services started.")
+        
+    def stop(self):
+        _logger.info("Stopping Kraken master services.")
+        self.scheduler.stop()
+        self.dispatcher.stop()
+        self.workers_manager.stop()
+        _logger.info("Kraken master services stopped.")
+
+
+    def submit_job(self, conf):       
+        _logger.info("Submitting job [ %s ] for execution.", conf.jid)
+        job = JobExecution(conf)
+        job.setup()
+
+        self.jobs.append(job)
+        for task_exec in self.get_tasks(jid = conf.jid):
+            self.lqueue.put(task_exec)
+            
+        _logger.info("Submitted %s tasks for execution in job [ %s ].", len(self.get_tasks(jid = conf.jid)) ,conf.jid)
+
+    def cancel_job(self, conf):
+        pass
+    
     def register_job(self, job):
         self.jobs.append(job)
 
@@ -53,9 +101,7 @@ class ExecutionManager(object):
                         valid = False
                 if valid:
                     target_tasks.append(task)
-        return target_tasks
-        
-        
+        return target_tasks   
 
     def get_task(self, tid):
         for job_exec in self.jobs:
@@ -103,6 +149,7 @@ class ExecutionManager(object):
         task = self.get_task(tid)
         if (task != None):
             task.on_reset()
+            self.lqueue.put(task)
         else:
             raise NoSuchTaskException("No such task [ %s ]", tid)
 

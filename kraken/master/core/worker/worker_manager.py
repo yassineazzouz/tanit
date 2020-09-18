@@ -1,6 +1,9 @@
+#!/usr/bin/env python
 
 from .worker import RemoteThriftWorker
-from threading import Thread, RLock
+from .worker_decommissioner import WorkerDecommissioner
+from .worker_monitor import WorkerMonitor
+from threading import RLock
 from datetime import datetime
 
 import logging as lg
@@ -12,7 +15,9 @@ class WorkerManager(object):
     maintain the list of active/dead workers.
     '''
     
-    def __init__(self):
+    def __init__(self, execution_manager):
+        self.execution_manager = execution_manager
+        
         self.live_workers = []
         self.decommissioning_workers = []
         self.dead_workers = []
@@ -21,15 +26,23 @@ class WorkerManager(object):
 
     def start(self):
         _logger.info("Stating kraken worker manager.")
-        self.monitor = WorkersMonitor(self)
+        # monitor
+        self.monitor = WorkerMonitor(self)
         self.monitor.setDaemon(True)
         self.monitor.start()
+        
+        # decommissioner
+        self.decommissioner = WorkerDecommissioner(self.execution_manager)
+        self.decommissioner.setDaemon(True)
+        self.decommissioner.start()
         _logger.info("Kraken worker manager started.")
     
     def stop(self):
         _logger.info("Stopping kraken worker manager.")
         self.monitor.stop()
         self.monitor.join()
+        self.decommissioner.stop()
+        self.decommissioner.join()
         _logger.info("Kraken worker manager stopped.")
         
     def get_live_worker(self, wid):
@@ -96,28 +109,6 @@ class WorkerManager(object):
                     self.dead_workers.append(wkr)
                     break
         _logger.info("Worker [ %s ] Deleted", wid)
-
-            
-class WorkersMonitor(Thread):
-    
-    # in seconds
-    heartbeat_check_interval = 30
-    
-    def __init__(self, manager):
-        super(WorkersMonitor, self).__init__()
-        self.manager = manager
-        self.stopped = False
-        
-    def stop(self):
-        self.stopped = True
-
-    def run(self):
-        while not self.stopped:
-            for worker in self.manager.list_live_workers():
-                if (datetime.now() - worker.last_hear_beat).total_seconds() > self.heartbeat_check_interval:
-                    _logger.warn("Missing worker hearbeat from [ %s ] after %s seconds", worker.wid, self.heartbeat_check_interval)
-                    self.manager.decommission_worker(worker.wid)
-                
 
 class IllegalWorkerStateException(Exception):
     pass

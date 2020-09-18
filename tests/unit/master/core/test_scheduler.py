@@ -3,12 +3,10 @@ from Queue import Queue
 
 from kraken.master.core.scheduler import SimpleScheduler
 from kraken.master.core.execution.execution_job import JobExecution
-from kraken.master.core.execution.execution_manager import ExecutionManager
-from kraken.master.core.execution.execution_state import ExecutionState
 from kraken.common.model.task import Task
 from kraken.common.model.job import Job
 
-def mock_job(num_tasks):
+def simple_job(num_tasks):
     job = JobExecution(
         Job(
             jid = "job-1",
@@ -32,58 +30,42 @@ def mock_job(num_tasks):
     return job
 
 def test_simple_scheduler():
-    lqueue = Queue()
-    cqueue = Queue()
-    manager = ExecutionManager()
+
+    simple_scheduler = SimpleScheduler(Queue(), Queue(), None)
+    simple_scheduler.start()
     
-    scheduler = SimpleScheduler(lqueue, cqueue, manager)
-    scheduler.start()
+    for task in simple_job(2).get_tasks():
+        simple_scheduler.lqueue.put(task)
     
-    job =  mock_job(2)
-    manager.register_job(job)
-    
-    for task in job.get_tasks():
-        lqueue.put(task)
-    
-    scheduler.stop()
-    assert lqueue.qsize() == 0
-    assert cqueue.qsize() == 2
+    simple_scheduler.stop()
+
+    assert simple_scheduler.lqueue.qsize() == 0
+    assert simple_scheduler.cqueue.qsize() == 2
 
 def test_scheduler_stop():
-    lqueue = Queue()
-    cqueue = Queue()
-    manager = ExecutionManager()
+    simple_scheduler = SimpleScheduler(Queue(), Queue(), None)
+    simple_scheduler.start()
+    simple_scheduler.stop()
     
-    scheduler = SimpleScheduler(lqueue, cqueue, manager)
-    scheduler.start()
-    scheduler.stop()
-    
-    job =  mock_job(2)
-    manager.register_job(job)
-    
-    for task in job.get_tasks():
-        lqueue.put(task)
+    for task in simple_job(2).get_tasks():
+        simple_scheduler.lqueue.put(task)
 
-    assert lqueue.qsize() == 2
-    assert cqueue.qsize() == 0
+    assert simple_scheduler.lqueue.qsize() == 2
+    assert simple_scheduler.cqueue.qsize() == 0
 
-def test_scheduler_task_state():
-    lqueue = Queue()
-    cqueue = Queue()
-    manager = ExecutionManager()
+def test_scheduler_callback():
     
-    scheduler = SimpleScheduler(lqueue, cqueue, manager)
-    scheduler.start()
+    callback_received = []
     
-    job =  mock_job(2)
-    manager.register_job(job)
+    def callback(tid):
+        callback_received.append(tid)
+
+    simple_scheduler = SimpleScheduler(Queue(), Queue(), callback)
+    simple_scheduler.start()
     
-    for task in job.get_tasks():
-        lqueue.put(task)
+    for task in simple_job(2).get_tasks():
+        simple_scheduler.lqueue.put(task)
     
-    scheduler.stop()
+    simple_scheduler.stop()
     
-    for job in manager.list_jobs():
-        assert job.state == ExecutionState.SCHEDULED
-        for task in job.get_tasks():
-            assert task.state == ExecutionState.SCHEDULED
+    assert len(callback_received) == 2

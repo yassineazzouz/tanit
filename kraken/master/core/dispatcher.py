@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 
 import abc
 import time
@@ -17,9 +16,9 @@ class Dispatcher(object):
     the appropriate worker for execution.
     '''
     
-    def __init__(self, cqueue, workers_manager, execution_manager):
+    def __init__(self, cqueue, workers_manager, callback = None):
         self.workers_manager = workers_manager
-        self.execution_manager = execution_manager
+        self.callback = callback
         self.cqueue = cqueue
         self.stopped = False
 
@@ -34,7 +33,8 @@ class Dispatcher(object):
                 else:
                     task_exec = self.cqueue.get() if task_exec == None else task_exec
                     _logger.debug("Dispatching next task [ %s ] for execution.", task_exec.task.tid)
-                    self.execution_manager.task_dispatch(task_exec.task.tid, worker.wid)
+                    if (self.callback != None):
+                        self.callback(task_exec.task.tid, worker.wid)
                     try:
                         worker.submit(task_exec.task)
                         task_exec = None
