@@ -11,8 +11,8 @@ _logger = lg.getLogger(__name__)
 class Master(object):
 
     def __init__(self):
-        # execution engine
-        self.factory = ClientFactory()
+        # client factory
+        self.client_factory = ClientFactory()
         # execution manager
         self.execution_manager = ExecutionManager()
         

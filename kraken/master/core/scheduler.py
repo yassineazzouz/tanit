@@ -17,7 +17,7 @@ class SimpleScheduler(object):
         self.callback = callback
         self.stopped = False
 
-    def submit(self, task):
+    def schedule(self, task):
         self.lqueue.put(task)
 
     def _run(self):

@@ -5,27 +5,33 @@ import logging as lg
 from Queue import Queue
 from ..dispatcher import FairDispatcher
 from ..scheduler import SimpleScheduler
-from .execution_job import JobExecution
+from .job_factory import JobFactory
 from ..worker.worker_manager import WorkerManager
 
 _logger = lg.getLogger(__name__)
 
 class ExecutionManager(object):
-    '''The ExecutionManager manage the state of execution of jobs and tasks'''
+    '''
+    The ExecutionManager monitor the state of execution of jobs and tasks.
+    It interacts with the different components involved in the execution pipeline
+    and ensure the execution state is properly updated and reflect the real progress.
+    '''
     
-    def __init__(self):
+    def __init__(self, jobs_factory = None, workers_manager = None):
         # jobs list
         self.jobs = []
+        # job factory
+        self.jobs_factory = jobs_factory if jobs_factory != None else JobFactory()
         # Lister queue
-        self.lqueue = Queue()
+        lqueue = Queue()
         # Call queue
-        self.cqueue = Queue()
+        cqueue = Queue()
         # workers manager
-        self.workers_manager = WorkerManager(self)
+        self.workers_manager = workers_manager if workers_manager else WorkerManager(self)
         # scheduler
-        self.scheduler = SimpleScheduler(self.lqueue, self.cqueue, self.task_schedule )
+        self.scheduler = SimpleScheduler(lqueue, cqueue, self.task_schedule )
         # dispatcher
-        self.dispatcher  = FairDispatcher(self.cqueue, self.workers_manager, self.task_dispatch)
+        self.dispatcher  = FairDispatcher(cqueue, self.workers_manager, self.task_dispatch)
 
     def configure(self, config):
         pass
@@ -44,30 +50,19 @@ class ExecutionManager(object):
         self.workers_manager.stop()
         _logger.info("Kraken master services stopped.")
 
-
     def submit_job(self, conf):       
         _logger.info("Submitting job [ %s ] for execution.", conf.jid)
-        job = JobExecution(conf)
+        job = self.jobs_factory.create_job(conf)
         job.setup()
 
         self.jobs.append(job)
         for task_exec in self.get_tasks(jid = conf.jid):
-            self.lqueue.put(task_exec)
+            self.scheduler.schedule(task_exec)
             
         _logger.info("Submitted %s tasks for execution in job [ %s ].", len(self.get_tasks(jid = conf.jid)) ,conf.jid)
 
     def cancel_job(self, conf):
         pass
-    
-    def register_job(self, job):
-        self.jobs.append(job)
-
-    def register_task(self, jid, task):
-        job = self.get_job(jid)
-        if (job != None):
-            job.add_task(task, job)
-        else:
-            raise NoSuchJobException("No such job [ %s ]", jid)
        
     def list_jobs(self):
         return self.jobs
@@ -149,7 +144,7 @@ class ExecutionManager(object):
         task = self.get_task(tid)
         if (task != None):
             task.on_reset()
-            self.lqueue.put(task)
+            self.scheduler.schedule(task)
         else:
             raise NoSuchTaskException("No such task [ %s ]", tid)
 
