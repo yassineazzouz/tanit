@@ -10,14 +10,20 @@ _logger = lg.getLogger(__name__)
 
 class WorkerIFace(object):
     __metaclass__ = abc.ABCMeta
+
+    def __init__(self, wid, address, port):
+        self.wid = wid
+        self.address = address
+        self.port = port
+        self.last_hear_beat = datetime.now()
+        
+        self.stopped = True
     
-    @abc.abstractmethod
     def start(self):
-        pass
-    
-    @abc.abstractmethod    
+        self.stopped = False
+      
     def stop(self):
-        pass
+        self.stopped = True
 
     @abc.abstractmethod
     def submit(self, task):
@@ -29,21 +35,15 @@ class WorkerIFace(object):
 
 class RemoteThriftWorker(WorkerIFace):
     def __init__(self, wid, address, port):
-        self.wid = wid
-        self.address = address
-        self.port = port
-        self.last_hear_beat = datetime.now()
-        
+        super(RemoteThriftWorker, self).__init__(wid, address, port)
         self.client = WorkerClient(address, port)
         
-        self.stopped = True
-        
     def start(self):
-        self.stopped = False
+        super(RemoteThriftWorker, self).start()
         self.client.start()
         
     def stop(self):
-        self.stopped = True
+        super(RemoteThriftWorker, self).stop()
         self.client.stop()
 
     def submit(self, task):

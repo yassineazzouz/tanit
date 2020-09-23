@@ -1,19 +1,21 @@
 
 from kraken.master.core.worker.worker_manager import WorkerManager
+from kraken.master.core.worker.worker_factory import WorkerFactory
 from kraken.master.core.worker.worker import WorkerIFace
 from kraken.common.model.worker import WorkerStatus
 
 class MockWorker(WorkerIFace):
     def __init__(self, wid, cores = 10):
-        self.wid = wid
+        super(MockWorker, self).__init__(wid, None, None)
+        
         self.tasks = []
-        self.concurrency = cores
+        self.cores = cores
         
     def start(self):
-        pass
+        super(MockWorker, self).start()
         
     def stop(self):
-        pass
+        super(MockWorker, self).stop()
 
     def submit(self, task):
         self.tasks.append(task)
@@ -22,14 +24,19 @@ class MockWorker(WorkerIFace):
         return WorkerStatus(
                    self.wid,
                    len(self.tasks),
-                   0 if len(self.tasks) < self.concurrency else len(self.tasks) - self.concurrency,
-                   0 if self.concurrency < len(self.tasks) else self.concurrency - len(self.tasks)
+                   0 if len(self.tasks) < self.cores else len(self.tasks) - self.cores,
+                   0 if self.cores < len(self.tasks) else self.cores - len(self.tasks)
                 )
 
+
+class MockWorkerFactory(WorkerFactory):
+    def create_worker(self, worker):
+        return MockWorker(worker.wid , worker.cores)
+    
 class MockWorkerManager(WorkerManager):
     
     def __init__(self):
-        self.live_workers = []
+        super(MockWorkerManager, self).__init__(None, MockWorkerFactory())
     
     def start(self):
         pass
@@ -37,11 +44,6 @@ class MockWorkerManager(WorkerManager):
     def stop(self):
         pass
     
-    def register_worker(self, worker):
-        self.live_workers.append(worker)
-
-    def list_live_workers(self):
-        return self.live_workers
     
     def all_tasks(self):
         tasks = []

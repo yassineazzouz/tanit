@@ -19,7 +19,7 @@ def execution_manager():
         execution_manager = ExecutionManager(MockJobFactory(), workers_manager)
         
         execution_manager.start()
-        yield execution_manager  # provide the fixture value
+        yield execution_manager
         execution_manager.stop()
 
 def _verify_state(obj, state):

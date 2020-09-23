@@ -45,7 +45,7 @@ class Master(object):
         _logger.info("Listing Workers.")
         workers_manager = self.execution_manager.workers_manager
         wkr_list = []
-        for wkr in workers_manager.list_workers():
+        for wkr in workers_manager.list_live_workers():
             wkr_list.append(Worker(wkr.wid, wkr.address, wkr.port))
         return wkr_list
                     

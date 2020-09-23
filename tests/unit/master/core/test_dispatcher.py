@@ -7,8 +7,9 @@ from kraken.master.core.dispatcher import FairDispatcher
 from kraken.master.core.execution.execution_job import JobExecution
 from kraken.common.model.task import Task
 from kraken.common.model.job import Job
+from kraken.common.model.worker import Worker
 
-from .worker.mock_worker import MockWorkerManager, MockWorker
+from .worker.mock_worker import MockWorkerManager
 
 def simple_job(num_tasks):
     job = JobExecution(
@@ -37,8 +38,8 @@ def simple_job(num_tasks):
 def simple_dispatcher():
         cqueue = Queue()
         workers_manager = MockWorkerManager()
-        workers_manager.register_worker(MockWorker("worker 1", 10))
-        workers_manager.register_worker(MockWorker("worker 2", 10))
+        workers_manager.register_worker(mock_worker("worker 1", 10))
+        workers_manager.register_worker(mock_worker("worker 2", 10))
         
         return FairDispatcher( cqueue, workers_manager, None)
 
@@ -46,11 +47,16 @@ def simple_dispatcher():
 def simple_dispatcher_2():
         cqueue = Queue()
         workers_manager = MockWorkerManager()
-        workers_manager.register_worker(MockWorker("worker 1", 5))
-        workers_manager.register_worker(MockWorker("worker 2", 12))
+        workers_manager.register_worker(mock_worker("worker 1", 5))
+        workers_manager.register_worker(mock_worker("worker 2", 12))
         
         return FairDispatcher( cqueue, workers_manager, None)
-    
+
+def mock_worker(wid, cores):
+        worker = Worker(wid, None, None)
+        worker.cores = cores # hack
+        return worker
+
 class TestSimpleDispatcher:
 
     def test_simple_dipstacher(self, simple_dispatcher):
@@ -83,8 +89,8 @@ class TestSimpleDispatcher:
 
         cqueue = Queue()
         workers_manager = MockWorkerManager()
-        workers_manager.register_worker(MockWorker("worker 1", 10))
-        workers_manager.register_worker(MockWorker("worker 2", 10))
+        workers_manager.register_worker(mock_worker("worker 1", 10))
+        workers_manager.register_worker(mock_worker("worker 2", 10))
         
         simple_dispatcher = FairDispatcher( cqueue, workers_manager, callback)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from .worker import RemoteThriftWorker
+from .worker_factory import WorkerFactory
 from .worker_decommissioner import WorkerDecommissioner
 from .worker_monitor import WorkerMonitor
 from threading import RLock
@@ -15,9 +15,10 @@ class WorkerManager(object):
     maintain the list of active/dead workers.
     '''
     
-    def __init__(self, execution_manager):
+    def __init__(self, execution_manager, workers_factory = None):
         self.execution_manager = execution_manager
-        
+        self.worker_factory = workers_factory if workers_factory != None else WorkerFactory
+
         self.live_workers = []
         self.decommissioning_workers = []
         self.dead_workers = []
@@ -66,17 +67,18 @@ class WorkerManager(object):
                 if (wkr.wid == worker.wid):
                     _logger.error("Worker [ %s ] is already registered.", worker.wid)
                     raise AlreadyRegisteredWorkerException("Worker [ %s ] is already registered.", worker.wid)
-                elif (wkr.address == worker.address and wkr.port == worker.port):
+                elif (wkr.address == worker.address and wkr.port == worker.port and wkr.address != None and worker.port != None):
                     _logger.error("Worker running on address [ %s ] and port [ %s ] is already registered.", worker.address, worker.port)
                     raise AlreadyRegisteredWorkerException("Worker running on address [ %s ] and port [ %s ] is already registered.", worker.address, worker.port)
                 elif (wkr.address == worker.address):
                     _logger.warn("Another Worker [ %s ] is already running on [ %s ].", worker.wid, worker.address)
 
             for wkr in self.decommissioning_workers:
-                _logger.error("Worker [ %s ] is in decommissioning state in can not be regestired.", worker.wid)
-                raise AlreadyRegisteredWorkerException("Worker [ %s ] is in decommissioning state in can not be regestired.", worker.wid)
+                if (wkr.wid == worker.wid):
+                    _logger.error("Worker [ %s ] is in decommissioning state in can not be registered.", worker.wid)
+                    raise AlreadyRegisteredWorkerException("Worker [ %s ] is in decommissioning state in can not be registered.", worker.wid)
                 
-            remote_worker = RemoteThriftWorker(worker.wid,worker.address, worker.port)
+            remote_worker = self.worker_factory.create_worker(worker)
             remote_worker.start()
             self.live_workers.append(remote_worker)
 

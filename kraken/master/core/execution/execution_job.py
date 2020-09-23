@@ -23,23 +23,43 @@ class TaskExecution(object):
         self.worker = None
         
     def on_schedule(self):
+        if (self.state not in [ ExecutionState.SUBMITTED, ExecutionState.SCHEDULED ]):
+            raise IllegalStateTransitionException("Can not transition from state %s to state %s",
+                                                  ExecutionState._VALUES_TO_NAMES[self.state],
+                                                  ExecutionState._VALUES_TO_NAMES[ExecutionState.SCHEDULED])
         self.state = ExecutionState.SCHEDULED
         self.job.on_task_schedule(self.task.tid)
 
     def on_dispatch(self, worker = None):
+        if (self.state not in [ ExecutionState.DISPATCHED, ExecutionState.SCHEDULED ]):
+            raise IllegalStateTransitionException("Can not transition from state %s to state %s",
+                                                  ExecutionState._VALUES_TO_NAMES[self.state],
+                                                  ExecutionState._VALUES_TO_NAMES[ExecutionState.DISPATCHED])
         self.state = ExecutionState.DISPATCHED
         self.worker = worker
         self.job.on_task_dispatch(self.task.tid)
 
     def on_start(self):
+        if (self.state not in [ ExecutionState.RUNNING, ExecutionState.DISPATCHED, ExecutionState.FAILED ]):
+            raise IllegalStateTransitionException("Can not transition from state %s to state %s",
+                                                  ExecutionState._VALUES_TO_NAMES[self.state],
+                                                  ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING])
         self.state = ExecutionState.RUNNING
         self.job.on_task_start(self.task.tid)
 
     def on_finish(self):
+        if (self.state not in [ ExecutionState.RUNNING, ExecutionState.FINISHED ]):
+            raise IllegalStateTransitionException("Can not transition from state %s to state %s",
+                                                  ExecutionState._VALUES_TO_NAMES[self.state],
+                                                  ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING])
         self.state = ExecutionState.FINISHED
         self.job.on_task_finish(self.task.tid)
 
     def on_fail(self):
+        if (self.state not in [ ExecutionState.RUNNING, ExecutionState.FAILED ]):
+            raise IllegalStateTransitionException("Can not transition from state %s to state %s",
+                                                  ExecutionState._VALUES_TO_NAMES[self.state],
+                                                  ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING])
         self.state = ExecutionState.FAILED
         self.job.on_task_fail(self.task.tid)
         
@@ -49,6 +69,9 @@ class TaskExecution(object):
     def reset(self):
         self.state = ExecutionState.SUBMITTED
         self.worker = None
+
+class IllegalStateTransitionException(Exception):
+    pass
 
 class JobExecution(object):
     '''

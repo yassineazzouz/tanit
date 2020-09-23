@@ -39,4 +39,4 @@ Install
 
 ::
 
-    pip install kraken
+    pip install kraken-pyds
