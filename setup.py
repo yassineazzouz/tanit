@@ -28,7 +28,7 @@ def _get_long_description():
     return reader.read()
 
 setup(
-  name='kraken',
+  name='kraken-pyds',
   version=_get_version(),
   description=__doc__,
   long_description=_get_long_description(),
