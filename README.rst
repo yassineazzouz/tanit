@@ -1,6 +1,11 @@
+.. image:: https://img.shields.io/pypi/v/kraken-pyds
+    :target: https://pypi.org/project/kraken-pyds
+
+.. image:: https://img.shields.io/pypi/pyversions/kraken-pyds
+    :target: https://pypi.org/project/kraken-pyds
+
 .. image:: https://img.shields.io/travis/com/yassineazzouz/kraken
     :target: https://travis-ci.com/yassineazzouz/kraken
-
 
 .. image:: https://img.shields.io/codecov/c/github/yassineazzouz/kraken
     :target: https://codecov.io/gh/yassineazzouz/kraken
