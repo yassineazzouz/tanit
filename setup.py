@@ -52,7 +52,7 @@ setup(
     'docopt',
     'pywhdfs>=1.0.0',
     'thrift>=0.9',
-    'pyrsistent=0.14.0'
+    'pyrsistent<=0.15.0'
   ],
   entry_points={'console_scripts': 
      [ 'kraken-master = kraken.master.server.__main__:main',
