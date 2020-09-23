@@ -1,6 +1,9 @@
 .. image:: https://img.shields.io/travis/com/yassineazzouz/kraken
     :target: https://travis-ci.com/yassineazzouz/kraken
 
+.. image:: https://img.shields.io/codecov/c/github/yassineazzouz/kraken
+    :target: https://codecov.io/gh/yassineazzouz/kraken
+
 Kraken
 ==================================
 
