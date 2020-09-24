@@ -74,17 +74,21 @@ class MasterClientServer(Thread):
 
 class MasterServer(object):
     
-    def __init__(self, standalone = False):
+    def __init__(self, config = None, standalone = False):
         
-        self.config = MasterConfig()
+        self.config = MasterConfig(config)
         self.config.load()
         
         self.standalone = standalone
         self.master = Master() if not standalone else StandaloneMaster()
         self.master.configure(self.config)
-              
-    def start(self):
         
+        self.stopped = False
+    
+    def stop(self):
+        self.stopped = True
+           
+    def start(self):
         # Start master services
         self.master.start()
         
@@ -111,6 +115,9 @@ class MasterServer(object):
                     break
                 if (not self.standalone and not self.mwserver.isAlive()):
                     _logger.error("Unexpected Kraken worker client server exit, stopping.")
+                    break
+                if(self.stopped):
+                    _logger.info("Kraken server stopped, exiting.")
                     break
                 # wait for 0.5 seconds
                 time.sleep(0.5)

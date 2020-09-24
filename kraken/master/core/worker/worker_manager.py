@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from .worker_factory import WorkerFactory
-from .worker_decommissioner import WorkerDecommissioner
 from .worker_monitor import WorkerMonitor
 from threading import RLock
 from datetime import datetime
@@ -17,7 +16,7 @@ class WorkerManager(object):
     '''
     
     def __init__(self, workers_factory = None):
-        self.worker_factory = workers_factory if workers_factory != None else WorkerFactory
+        self.worker_factory = workers_factory if workers_factory != None else WorkerFactory()
 
         self.live_workers = []
         self.decommissioning_workers = []

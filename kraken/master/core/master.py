@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 from .execution.execution_manager import ExecutionManager
-from ...client.client_factory import ClientFactory
+from .worker.worker_manager import WorkerManager
+from .worker.worker_decommissioner import WorkerDecommissioner
 from ...common.model.worker import Worker
 
 import logging as lg
@@ -11,8 +12,6 @@ _logger = lg.getLogger(__name__)
 class Master(object):
 
     def __init__(self):
-        # client factory
-        self.client_factory = ClientFactory()
         # workers manager
         self.workers_manager = WorkerManager()
         # execution manager
