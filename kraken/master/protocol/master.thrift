@@ -43,7 +43,7 @@ exception JobNotFoundException {
   1: string message,
 }
 
-service MasterClientService{
+service MasterUserService{
 
     // submit a job 
     string submit_job(1:Job job),

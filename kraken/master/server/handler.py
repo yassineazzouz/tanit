@@ -12,7 +12,7 @@ import logging as lg
 
 _logger = lg.getLogger(__name__)
 
-class MasterClientServiceHandler(object):
+class UserServiceHandler(object):
 
     def __init__(self, master):
         self.master = master
@@ -66,7 +66,7 @@ class MasterClientServiceHandler(object):
                     job_exec.execution_time_s
                 )
         
-class MasterWorkerServiceHandler(object):
+class WorkerServiceHandler(object):
 
     def __init__(self, master):
         self.master = master

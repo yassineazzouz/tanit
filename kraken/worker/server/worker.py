@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ...master.client.client_factory import ClientFactory
+from ...master.client.client import ClientFactory
 from ..core.executor_pool import ExecutorPool
 from ...common.model.worker import WorkerStatus
 from threading import Thread
@@ -23,7 +23,7 @@ class Worker(object):
         
         self.wid = "kraken-worker-%s-%s" % (self.address, self.port)
         factory = ClientFactory(config.master_host, config.master_port)
-        self.master = factory.create_client('master-worker')
+        self.master = factory.create_client('worker-service')
         
         self.executor = ExecutorPool(self.wid, factory ,self.lqueue, config.executor_threads)
         

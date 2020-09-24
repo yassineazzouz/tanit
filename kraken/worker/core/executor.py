@@ -25,7 +25,7 @@ class Executor(Thread):
         synchronizing the client calls with locks will came with performance penalty
         the best approach seems to be, using a separe thrift client (connection) per thread.
         '''
-        self.master = factory.create_client('master-worker')
+        self.master = factory.create_client('worker-service')
         
         self.current_task = None
         

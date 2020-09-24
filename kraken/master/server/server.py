@@ -2,10 +2,10 @@
 
 import time
 
-from .handler import MasterClientServiceHandler, MasterWorkerServiceHandler
+from .handler import UserServiceHandler, WorkerServiceHandler
 from ..core.master import Master
 from ..standalone.master import StandaloneMaster
-from ..thrift import MasterClientService, MasterWorkerService
+from ..thrift import MasterUserService, MasterWorkerService
 from ..config.config import MasterConfig
 from thrift.transport import TSocket
 from thrift.transport import TTransport
@@ -32,7 +32,7 @@ class MasterWorkerServer(Thread):
     def run(self):
         
         # Create Service handler
-        handler = MasterWorkerServiceHandler(self.master)
+        handler = WorkerServiceHandler(self.master)
 
         server = TServer.TThreadedServer(
             MasterWorkerService.Processor(handler),
@@ -58,11 +58,11 @@ class MasterClientServer(Thread):
 
     def run(self):
         # Create Service handler
-        handler = MasterClientServiceHandler(self.master)
+        handler = UserServiceHandler(self.master)
         
         
         server = TServer.TThreadedServer(
-            MasterClientService.Processor(handler),
+            MasterUserService.Processor(handler),
             TSocket.TServerSocket(self.listen_address, self.listen_port),
             TTransport.TBufferedTransportFactory(),
             TBinaryProtocol.TBinaryProtocolFactory(),

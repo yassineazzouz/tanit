@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from ..thrift import MasterClientService, MasterWorkerService
+from ..thrift import MasterUserService, MasterWorkerService
 from ..thrift import ttypes
 
 from ...common.model.job import JobStatus
 from ...common.model.worker import Worker
 
 # Thrift files
-from thrift import Thrift
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
@@ -17,7 +16,10 @@ import logging as lg
 
 _logger = lg.getLogger(__name__)
 
-class MasterClient(object):
+WORKER_SERVICE_CLIENT_NAME = 'worker-service'
+USER_SERVICE_CLIENT_NAME = 'user-service'
+    
+class UserServiceClient(object):
 
     def __init__(self, master_host, master_port):
         self.master_host = master_host
@@ -30,7 +32,7 @@ class MasterClient(object):
         protocol = TBinaryProtocol.TBinaryProtocol(self.transport)
         
         # Set client to our Example
-        self.client = MasterClientService.Client(protocol)
+        self.client = MasterUserService.Client(protocol)
 
         # Connect to server
         self.transport.open()
@@ -57,15 +59,15 @@ class MasterClient(object):
             _logger.error("Error resolving job parameters.")
             raise e
         
-        id = self.client.submit_job(job)
-        _logger.info("Job submitted : %s.", id)
-        return id
+        jid = self.client.submit_job(job)
+        _logger.info("Job submitted : %s.", jid)
+        return jid
         
     def stop(self):
         self.transport.close()
         
 
-class MasterWorkerClient(object):
+class WorkerServiceClient(object):
     
     def __init__(self, master_host, master_port):
         self.master_host = master_host
@@ -110,3 +112,22 @@ class MasterWorkerClient(object):
     
     def stop(self):
         self.transport.close()
+        
+class ClientFactory(object):
+    
+    def __init__(self, host = "localhost", port = 9090):
+        self.host = host
+        self.port = port
+        
+    def create_client(self, name):
+        if name == 'worker-service':
+            return WorkerServiceClient(self.host, self.port)
+
+        elif name == 'user-service':
+            return UserServiceClient(self.host, self.port)
+
+        else:
+            raise NoSuchClientException("No such client [ %s ]", name)
+
+class NoSuchClientException(Exception):
+    pass

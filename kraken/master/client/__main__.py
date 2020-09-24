@@ -24,7 +24,7 @@ Examples:
 """
 
 from ... import __version__
-from .client import MasterClient, MasterWorkerClient
+from .client import ClientFactory
 from ..config.config import MasterConfig
 import json
 import requests as rq
@@ -64,7 +64,7 @@ def main(argv=None):
     config = MasterConfig()
     
     if (args['job']):
-        client = MasterClient(config.client_service_host, config.client_service_port)
+        client = ClientFactory(config.client_service_host, config.client_service_port).create_client('user-service')
         client.start()
         if (args['--list']):
             for job in client.list_jobs():
@@ -91,7 +91,7 @@ def main(argv=None):
         
         client.stop()
     elif (args['worker']):
-        client = MasterWorkerClient(config.worker_service_host, config.worker_service_port)
+        client = ClientFactory(config.worker_service_host, config.worker_service_port).create_client('worker-service')
         client.start()
         if (args['--list']):
             for worker in client.list_workers():
