@@ -5,7 +5,7 @@ import os
 from threading import Thread
 from kraken.master.config.config import MasterConfig
 from kraken.master.server.server import MasterServer
-from kraken.master.client.client import MasterClient
+from kraken.master.client.client import ClientFactory
 
 from ..resources import conf
 
@@ -13,9 +13,10 @@ config_dir = os.path.dirname(os.path.abspath(conf.__file__))
 
 @pytest.fixture
 def server():
-    def get_client():
+    def get_user_client():
         config = MasterConfig(path = config_dir)
-        return MasterClient(config.client_service_host, config.client_service_port)
+        factory = ClientFactory(config.client_service_host, config.client_service_port)
+        return factory.create_client('user-service')
 
     server = MasterServer(config = config_dir)
     server_daemon = Thread(target=server.start, args=())
@@ -24,7 +25,7 @@ def server():
     
     #wait for the server to start
     time.sleep(2.0)
-    client = get_client()
+    client = get_user_client()
     client.start()
         
     yield client
