@@ -6,40 +6,47 @@ from kraken.master.core.execution.execution_job import *
 from kraken.common.model.job import Job
 from .mock_job import MockJobFactory
 
-@pytest.fixture
-def test_job(): 
-        factory = MockJobFactory()
-        job = factory.create_job(Job(
-            jid = "job-1",
-            src = "src",
-            dest = "dest",
-            src_path = "/tmp/src_path",
-            dest_path = "/tmp/dest_path",
-        ))
-        job.setup()
-        return job
+
+job_factory = MockJobFactory()
+
+def mock_job(num_tasks):
+    job = Job(
+        jid = "job-1",
+        src = "src",
+        dest = "dest",
+        src_path = "/tmp/src_path",
+        dest_path = "/tmp/dest_path",
+    )
+    job.num_tasks = num_tasks
+    return job
+
+def mock_job_exec(num_tasks = 2): 
+    factory = MockJobFactory()
+    job = job_factory.create_job(mock_job(num_tasks))
+    job.setup()
+    return job
 
 class TestExecutionState:
     
-    def test_initial_state(self, test_job):
-        job = test_job
+    def test_initial_state(self):
+        job = mock_job_exec(2)
         assert job.state == ExecutionState.SUBMITTED
         for task in job.get_tasks():
             assert task.state == ExecutionState.SUBMITTED
     
-    def test_schedule_state_transition(self, test_job):
-        job = test_job
+    def test_schedule_state_transition(self):
+        job = mock_job_exec(2)
 
         job.get_tasks()[0].on_schedule()
-        assert test_job.state == ExecutionState.SCHEDULED
+        assert job.state == ExecutionState.SCHEDULED
         
         for task in job.get_tasks()[1:] :
             task.on_schedule()
     
-        assert test_job.state == ExecutionState.SCHEDULED
+        assert job.state == ExecutionState.SCHEDULED
     
-    def test_dispatch_state(self, test_job):
-        job = test_job
+    def test_dispatch_state(self):
+        job = mock_job_exec(2)
         
         job.get_tasks()[0].on_schedule()
         job.get_tasks()[0].on_dispatch()
@@ -54,8 +61,8 @@ class TestExecutionState:
         assert job.state == ExecutionState.DISPATCHED        
         
     
-    def test_running_state(self, test_job):
-        job = test_job
+    def test_running_state(self):
+        job = mock_job_exec(2)
         
         job.get_tasks()[0].on_schedule()
         job.get_tasks()[0].on_dispatch()
@@ -74,15 +81,15 @@ class TestExecutionState:
             task.on_start()
         assert job.state == ExecutionState.RUNNING
 
-    def test_running_state_2(self, test_job):
-        job = test_job
+    def test_running_state_2(self):
+        job = mock_job_exec(2)
         
         job.get_tasks()[0].on_schedule()
         with pytest.raises(IllegalStateTransitionException):
             job.get_tasks()[0].on_start()
         
-    def test_finish_state(self, test_job):
-        job = test_job
+    def test_finish_state(self):
+        job = mock_job_exec(2)
         
         job.get_tasks()[0].on_schedule()
         job.get_tasks()[0].on_dispatch()
@@ -106,16 +113,16 @@ class TestExecutionState:
             task.on_finish()
         assert job.state == ExecutionState.FINISHED
 
-    def test_finish_state_2(self, test_job):
-        job = test_job
+    def test_finish_state_2(self):
+        job = mock_job_exec(2)
         
         job.get_tasks()[0].on_schedule()
         job.get_tasks()[0].on_dispatch()
         with pytest.raises(IllegalStateTransitionException):
             job.get_tasks()[0].on_finish()
     
-    def test_fail_state_1(self, test_job):
-        job = test_job
+    def test_fail_state_1(self):
+        job = mock_job_exec(2)
         job.get_tasks()[0].on_schedule()
         job.get_tasks()[0].on_dispatch()
         job.get_tasks()[0].on_start()
@@ -129,9 +136,9 @@ class TestExecutionState:
             task.on_finish()
         assert job.state == ExecutionState.FAILED
     
-    def test_fail_state_2(self, test_job):
+    def test_fail_state_2(self):
         
-        job = test_job
+        job = mock_job_exec(2)
         job.get_tasks()[0].on_schedule()
         job.get_tasks()[0].on_dispatch()
         job.get_tasks()[0].on_start()
@@ -145,8 +152,8 @@ class TestExecutionState:
             task.on_fail()
         assert job.state == ExecutionState.FAILED
     
-    def test_state_reset(self, test_job):
-        job = test_job
+    def test_state_reset(self):
+        job = mock_job_exec(2)
         job.get_tasks()[0].on_schedule()
         job.get_tasks()[0].on_dispatch()
         job.get_tasks()[0].on_start()

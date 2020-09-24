@@ -1,4 +1,6 @@
 
+import pytest
+
 from Queue import Queue
 
 from kraken.master.core.scheduler import SimpleScheduler
@@ -6,68 +8,69 @@ from kraken.master.core.execution.execution_job import JobExecution
 from kraken.common.model.task import Task
 from kraken.common.model.job import Job
 
-def simple_job(num_tasks):
-    job = JobExecution(
-        Job(
-            jid = "job-1",
-            src = "src",
-            dest = "dest",
-            src_path = "/tmp/src_path",
-            dest_path = "/tmp/dest_path",
-        )
+from .execution.mock_job import MockJobFactory
+from .tutils import wait_until
+
+job_factory = MockJobFactory()
+
+def mock_job(num_tasks):
+    job = Job(
+        jid = "job-1",
+        src = "src",
+        dest = "dest",
+        src_path = "/tmp/src_path",
+        dest_path = "/tmp/dest_path",
     )
-    
-    for i in range(num_tasks):
-        job.add_task(
-            Task(
-                tid = "task-%s" % i,
-                src = "src",
-                dest = "dest",
-                src_path = "/tmp/src_path/%s" % i,
-                dest_path = "/tmp/dest_path/%s" % i,
-            )
-        )
+    job.num_tasks = num_tasks
     return job
+
+def mock_job_exec(num_tasks):
+    job = job_factory.create_job(mock_job(num_tasks))
+    job.setup()
+    return job
+
+def _verify_queue_size(cqueue, size):
+    return cqueue.qsize() == size
+
+@pytest.fixture
+def simple_scheduler():
+        simple_scheduler = SimpleScheduler(Queue(), Queue(), None)
+        simple_scheduler.start()
+        
+        yield simple_scheduler
+        
+        simple_scheduler.stop()
 
 class TestSimpleScheduler:
 
-    def test_schedule(self):
-
-        simple_scheduler = SimpleScheduler(Queue(), Queue(), None)
-        simple_scheduler.start()
+    def test_schedule(self, simple_scheduler):
     
-        for task in simple_job(2).get_tasks():
+        for task in mock_job_exec(2).get_tasks():
             simple_scheduler.lqueue.put(task)
-    
-        simple_scheduler.stop()
+            
+        assert wait_until( _verify_queue_size, 10, 0.5, simple_scheduler.lqueue, 0)
+        assert wait_until( _verify_queue_size, 10, 0.5, simple_scheduler.cqueue, 2)
 
-        assert simple_scheduler.lqueue.qsize() == 0
-        assert simple_scheduler.cqueue.qsize() == 2
-
-    def test_scheduler_stop(self):
-        simple_scheduler = SimpleScheduler(Queue(), Queue(), None)
-        simple_scheduler.start()
+    def test_scheduler_stop(self, simple_scheduler):
         simple_scheduler.stop()
         
-        for task in simple_job(2).get_tasks():
+        for task in mock_job_exec(2).get_tasks():
             simple_scheduler.lqueue.put(task)
 
-        assert simple_scheduler.lqueue.qsize() == 2
-        assert simple_scheduler.cqueue.qsize() == 0
-
-    def test_scheduler_callback(self):
+        assert wait_until( _verify_queue_size, 10, 0.5, simple_scheduler.lqueue, 2)
+        assert wait_until( _verify_queue_size, 10, 0.5, simple_scheduler.cqueue, 0)
         
-        callback_received = []
+
+    def test_scheduler_callback(self, simple_scheduler):
         
         def callback(tid):
             callback_received.append(tid)
-
-        simple_scheduler = SimpleScheduler(Queue(), Queue(), callback)
-        simple_scheduler.start()
         
-        for task in simple_job(2).get_tasks():
+        callback_received = []
+        simple_scheduler.callback = callback
+        
+        for task in mock_job_exec(2).get_tasks():
             simple_scheduler.lqueue.put(task)
         
-        simple_scheduler.stop()
-        
-        assert len(callback_received) == 2
+        assert wait_until(
+            lambda list, size: len(list) == size, 10, 0.5, callback_received, 2)

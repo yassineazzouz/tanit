@@ -14,6 +14,7 @@ class WorkerMonitor(Thread):
         super(WorkerMonitor, self).__init__()
         self.worker_manager = worker_manager
         self.stopped = False
+        self.setDaemon(True)
         
     def stop(self):
         self.stopped = True
@@ -21,6 +22,7 @@ class WorkerMonitor(Thread):
     def run(self):
         while not self.stopped:
             for worker in self.worker_manager.list_live_workers():
-                if (datetime.now() - worker.last_hear_beat).total_seconds() > self.heartbeat_check_interval:
-                    _logger.warn("Missing worker hearbeat from [ %s ] after %s seconds", worker.wid, self.heartbeat_check_interval)
-                    self.worker_manager.decommission_worker(worker.wid)
+                if self.heartbeat_check_interval > 0:
+                    if (datetime.now() - worker.last_hear_beat).total_seconds() > self.heartbeat_check_interval:
+                        _logger.warn("Missing worker hearbeat from [ %s ] after %s seconds", worker.wid, self.heartbeat_check_interval)
+                        self.worker_manager.decommission_worker(worker.wid)

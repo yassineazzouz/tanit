@@ -32,21 +32,3 @@ class MockWorker(WorkerIFace):
 class MockWorkerFactory(WorkerFactory):
     def create_worker(self, worker):
         return MockWorker(worker.wid , worker.cores)
-    
-class MockWorkerManager(WorkerManager):
-    
-    def __init__(self):
-        super(MockWorkerManager, self).__init__(None, MockWorkerFactory())
-    
-    def start(self):
-        pass
-    
-    def stop(self):
-        pass
-    
-    
-    def all_tasks(self):
-        tasks = []
-        for worker in self.live_workers:
-            tasks.extend(worker.tasks)
-        return tasks

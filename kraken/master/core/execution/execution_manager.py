@@ -7,6 +7,7 @@ from ..dispatcher import FairDispatcher
 from ..scheduler import SimpleScheduler
 from .job_factory import JobFactory
 from ..worker.worker_manager import WorkerManager
+from ..worker.worker_decommissioner import WorkerDecommissioner
 
 _logger = lg.getLogger(__name__)
 
@@ -17,7 +18,7 @@ class ExecutionManager(object):
     and ensure the execution state is properly updated and reflect the real progress.
     '''
     
-    def __init__(self, jobs_factory = None, workers_manager = None):
+    def __init__(self, workers_manager, jobs_factory = None):
         # jobs list
         self.jobs = []
         # job factory
@@ -26,19 +27,16 @@ class ExecutionManager(object):
         lqueue = Queue()
         # Call queue
         cqueue = Queue()
-        # workers manager
-        self.workers_manager = workers_manager if workers_manager else WorkerManager(self)
         # scheduler
         self.scheduler = SimpleScheduler(lqueue, cqueue, self.task_schedule )
         # dispatcher
-        self.dispatcher  = FairDispatcher(cqueue, self.workers_manager, self.task_dispatch)
+        self.dispatcher  = FairDispatcher(cqueue, workers_manager, self.task_dispatch)
 
     def configure(self, config):
         pass
 
     def start(self):
         _logger.info("Stating Kraken master services.")
-        self.workers_manager.start()
         self.dispatcher.start()
         self.scheduler.start()
         _logger.info("Kraken master services started.")
@@ -47,7 +45,6 @@ class ExecutionManager(object):
         _logger.info("Stopping Kraken master services.")
         self.scheduler.stop()
         self.dispatcher.stop()
-        self.workers_manager.stop()
         _logger.info("Kraken master services stopped.")
 
     def submit_job(self, conf):       

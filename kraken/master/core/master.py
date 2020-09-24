@@ -13,8 +13,12 @@ class Master(object):
     def __init__(self):
         # client factory
         self.client_factory = ClientFactory()
+        # workers manager
+        self.workers_manager = WorkerManager()
         # execution manager
-        self.execution_manager = ExecutionManager()
+        self.execution_manager = ExecutionManager(self.workers_manager)
+        # decommissioner
+        self.decommissioner = WorkerDecommissioner(self.execution_manager, self.workers_manager)
         
         self.started = False
     
@@ -43,9 +47,8 @@ class Master(object):
 
     def list_workers(self):
         _logger.info("Listing Workers.")
-        workers_manager = self.execution_manager.workers_manager
         wkr_list = []
-        for wkr in workers_manager.list_live_workers():
+        for wkr in self.workers_manager.list_live_workers():
             wkr_list.append(Worker(wkr.wid, wkr.address, wkr.port))
         return wkr_list
                     
@@ -53,35 +56,36 @@ class Master(object):
         if (not self.started):
             raise MasterStoppedException("Can not register worker [ %s ] : master server stopped.", worker.wid)
         
-        workers_manager = self.execution_manager.workers_manager
-        
         _logger.info("Registering new Worker [ %s ].", worker.wid)
-        workers_manager.register_worker(worker)
+        self.workers_manager.register_worker(worker)
         _logger.info("Worker [ %s ] registered.", worker.wid)   
 
     def register_heartbeat(self, worker):
         _logger.debug("Received heart beat from Worker [ %s ].", worker.wid)
-        workers_manager = self.execution_manager.workers_manager
-        workers_manager.register_heartbeat(worker)
+        self.workers_manager.register_heartbeat(worker)
             
     def unregister_worker(self, worker):
         if (not self.started):
             raise MasterStoppedException("Can not register worker [ %s ] : master server stopped.", worker.wid)
         
         # This will prevent any future tasks from being sent to the worker
-        workers_manager = self.execution_manager.workers_manager
-        workers_manager.decommission_worker(worker.wid)
+        self.workers_manager.decommission_worker(worker.wid)
         
     def start(self):
         _logger.info("Stating Kraken master services.")
         self.started = True
+        self.workers_manager.start()
         self.execution_manager.start()
+        self.decommissioner.start()
         _logger.info("Kraken master services started.")
         
     def stop(self):
         _logger.info("Stopping Kraken master services.")
         self.started = False
+        self.decommissioner.stop()
+        self.decommissioner.join()
         self.execution_manager.stop()
+        self.workers_manager.stop()
         _logger.info("Kraken master services stopped.")
           
 class MasterStoppedException(Exception):

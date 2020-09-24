@@ -7,10 +7,10 @@ _logger = lg.getLogger(__name__)
 
 class WorkerDecommissioner(Thread):
     
-    def __init__(self, execution_manager):
+    def __init__(self, execution_manager, workers_manager):
         super(WorkerDecommissioner, self).__init__()
         self.execution_manager = execution_manager
-        self.workers_manager = execution_manager.workers_manager
+        self.workers_manager = workers_manager
         self.stopped = False
         
     def run(self):

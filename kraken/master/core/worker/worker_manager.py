@@ -11,12 +11,12 @@ _logger = lg.getLogger(__name__)
 
 class WorkerManager(object):
     '''
-    The WorkerManager monitor the state of workers, and
-    maintain the list of active/dead workers.
+    The WorkerManager monitor the state of workers, and maintain the list of active/dead workers.
+    It is not really part of the execution pipeline, its role is just to keep tack of which
+    machines are active and fetch their state.
     '''
     
-    def __init__(self, execution_manager, workers_factory = None):
-        self.execution_manager = execution_manager
+    def __init__(self, workers_factory = None):
         self.worker_factory = workers_factory if workers_factory != None else WorkerFactory
 
         self.live_workers = []
@@ -24,28 +24,24 @@ class WorkerManager(object):
         self.dead_workers = []
         
         self.lock = RLock()
+        
+        # monitor
+        self.monitor = WorkerMonitor(self)
 
     def start(self):
         _logger.info("Stating kraken worker manager.")
-        # monitor
-        self.monitor = WorkerMonitor(self)
-        self.monitor.setDaemon(True)
         self.monitor.start()
-        
-        # decommissioner
-        self.decommissioner = WorkerDecommissioner(self.execution_manager)
-        self.decommissioner.setDaemon(True)
-        self.decommissioner.start()
         _logger.info("Kraken worker manager started.")
     
     def stop(self):
         _logger.info("Stopping kraken worker manager.")
         self.monitor.stop()
-        self.monitor.join()
-        self.decommissioner.stop()
-        self.decommissioner.join()
         _logger.info("Kraken worker manager stopped.")
-        
+
+    def disable_monitor(self):
+        ''' used for testing'''
+        self.monitor.heartbeat_check_interval = -1
+  
     def get_live_worker(self, wid):
         with self.lock:
             for wkr in self.live_workers:
