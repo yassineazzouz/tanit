@@ -6,7 +6,6 @@ from ..thrift.ttypes import Task
 from ...common.model.worker import WorkerStatus
 
 # Thrift files
-from thrift import Thrift
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
@@ -28,20 +27,8 @@ class WorkerClient(object):
         # Connect to server
         self.transport.open()
     
-    def submit(self, task):
-        self.client.submit(Task( task.tid,
-                  task.src,
-                  task.dest,
-                  task.src_path,
-                  task.dest_path,
-                  task.include_pattern,
-                  task.min_size,
-                  task.preserve,
-                  task.force,
-                  task.checksum,
-                  task.files_only,
-                  task.part_size,
-                  task.buffer_size))
+    def submit(self, tid, etype, params):
+        self.client.submit(Task(tid, etype, params))
     
     def worker_status(self):
         status = self.client.worker_status()

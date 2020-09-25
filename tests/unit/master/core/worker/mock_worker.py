@@ -1,5 +1,4 @@
 
-from kraken.master.core.worker.worker_manager import WorkerManager
 from kraken.master.core.worker.worker_factory import WorkerFactory
 from kraken.master.core.worker.worker import WorkerIFace
 from kraken.common.model.worker import WorkerStatus

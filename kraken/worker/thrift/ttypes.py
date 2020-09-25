@@ -16,24 +16,21 @@ except:
   fastbinary = None
 
 
-class TaskState:
-  SUBMITTED = 1
-  RUNNING = 2
-  FINISHED = 3
-  FAILED = 4
+class TaskType:
+  COPY = 1
+  UPLOAD = 2
+  MOCK = 3
 
   _VALUES_TO_NAMES = {
-    1: "SUBMITTED",
-    2: "RUNNING",
-    3: "FINISHED",
-    4: "FAILED",
+    1: "COPY",
+    2: "UPLOAD",
+    3: "MOCK",
   }
 
   _NAMES_TO_VALUES = {
-    "SUBMITTED": 1,
-    "RUNNING": 2,
-    "FINISHED": 3,
-    "FAILED": 4,
+    "COPY": 1,
+    "UPLOAD": 2,
+    "MOCK": 3,
   }
 
 
@@ -145,51 +142,21 @@ class Task:
   """
   Attributes:
    - tid
-   - src
-   - dest
-   - src_path
-   - dest_path
-   - include_pattern
-   - min_size
-   - preserve
-   - force
-   - checksum
-   - files_only
-   - part_size
-   - buffer_size
+   - type
+   - params
   """
 
   thrift_spec = (
     None, # 0
     (1, TType.STRING, 'tid', None, None, ), # 1
-    (2, TType.STRING, 'src', None, None, ), # 2
-    (3, TType.STRING, 'dest', None, None, ), # 3
-    (4, TType.STRING, 'src_path', None, None, ), # 4
-    (5, TType.STRING, 'dest_path', None, None, ), # 5
-    (6, TType.STRING, 'include_pattern', None, "*", ), # 6
-    (7, TType.I64, 'min_size', None, 0, ), # 7
-    (8, TType.BOOL, 'preserve', None, True, ), # 8
-    (9, TType.BOOL, 'force', None, True, ), # 9
-    (10, TType.BOOL, 'checksum', None, False, ), # 10
-    (11, TType.BOOL, 'files_only', None, False, ), # 11
-    (12, TType.I64, 'part_size', None, 65536, ), # 12
-    (13, TType.I64, 'buffer_size', None, 65536, ), # 13
+    (2, TType.I32, 'type', None, None, ), # 2
+    (3, TType.MAP, 'params', (TType.STRING,None,TType.STRING,None), None, ), # 3
   )
 
-  def __init__(self, tid=None, src=None, dest=None, src_path=None, dest_path=None, include_pattern=thrift_spec[6][4], min_size=thrift_spec[7][4], preserve=thrift_spec[8][4], force=thrift_spec[9][4], checksum=thrift_spec[10][4], files_only=thrift_spec[11][4], part_size=thrift_spec[12][4], buffer_size=thrift_spec[13][4],):
+  def __init__(self, tid=None, type=None, params=None,):
     self.tid = tid
-    self.src = src
-    self.dest = dest
-    self.src_path = src_path
-    self.dest_path = dest_path
-    self.include_pattern = include_pattern
-    self.min_size = min_size
-    self.preserve = preserve
-    self.force = force
-    self.checksum = checksum
-    self.files_only = files_only
-    self.part_size = part_size
-    self.buffer_size = buffer_size
+    self.type = type
+    self.params = params
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -206,63 +173,19 @@ class Task:
         else:
           iprot.skip(ftype)
       elif fid == 2:
-        if ftype == TType.STRING:
-          self.src = iprot.readString()
+        if ftype == TType.I32:
+          self.type = iprot.readI32()
         else:
           iprot.skip(ftype)
       elif fid == 3:
-        if ftype == TType.STRING:
-          self.dest = iprot.readString()
-        else:
-          iprot.skip(ftype)
-      elif fid == 4:
-        if ftype == TType.STRING:
-          self.src_path = iprot.readString()
-        else:
-          iprot.skip(ftype)
-      elif fid == 5:
-        if ftype == TType.STRING:
-          self.dest_path = iprot.readString()
-        else:
-          iprot.skip(ftype)
-      elif fid == 6:
-        if ftype == TType.STRING:
-          self.include_pattern = iprot.readString()
-        else:
-          iprot.skip(ftype)
-      elif fid == 7:
-        if ftype == TType.I64:
-          self.min_size = iprot.readI64()
-        else:
-          iprot.skip(ftype)
-      elif fid == 8:
-        if ftype == TType.BOOL:
-          self.preserve = iprot.readBool()
-        else:
-          iprot.skip(ftype)
-      elif fid == 9:
-        if ftype == TType.BOOL:
-          self.force = iprot.readBool()
-        else:
-          iprot.skip(ftype)
-      elif fid == 10:
-        if ftype == TType.BOOL:
-          self.checksum = iprot.readBool()
-        else:
-          iprot.skip(ftype)
-      elif fid == 11:
-        if ftype == TType.BOOL:
-          self.files_only = iprot.readBool()
-        else:
-          iprot.skip(ftype)
-      elif fid == 12:
-        if ftype == TType.I64:
-          self.part_size = iprot.readI64()
-        else:
-          iprot.skip(ftype)
-      elif fid == 13:
-        if ftype == TType.I64:
-          self.buffer_size = iprot.readI64()
+        if ftype == TType.MAP:
+          self.params = {}
+          (_ktype1, _vtype2, _size0 ) = iprot.readMapBegin()
+          for _i4 in xrange(_size0):
+            _key5 = iprot.readString()
+            _val6 = iprot.readString()
+            self.params[_key5] = _val6
+          iprot.readMapEnd()
         else:
           iprot.skip(ftype)
       else:
@@ -279,53 +202,17 @@ class Task:
       oprot.writeFieldBegin('tid', TType.STRING, 1)
       oprot.writeString(self.tid)
       oprot.writeFieldEnd()
-    if self.src is not None:
-      oprot.writeFieldBegin('src', TType.STRING, 2)
-      oprot.writeString(self.src)
+    if self.type is not None:
+      oprot.writeFieldBegin('type', TType.I32, 2)
+      oprot.writeI32(self.type)
       oprot.writeFieldEnd()
-    if self.dest is not None:
-      oprot.writeFieldBegin('dest', TType.STRING, 3)
-      oprot.writeString(self.dest)
-      oprot.writeFieldEnd()
-    if self.src_path is not None:
-      oprot.writeFieldBegin('src_path', TType.STRING, 4)
-      oprot.writeString(self.src_path)
-      oprot.writeFieldEnd()
-    if self.dest_path is not None:
-      oprot.writeFieldBegin('dest_path', TType.STRING, 5)
-      oprot.writeString(self.dest_path)
-      oprot.writeFieldEnd()
-    if self.include_pattern is not None:
-      oprot.writeFieldBegin('include_pattern', TType.STRING, 6)
-      oprot.writeString(self.include_pattern)
-      oprot.writeFieldEnd()
-    if self.min_size is not None:
-      oprot.writeFieldBegin('min_size', TType.I64, 7)
-      oprot.writeI64(self.min_size)
-      oprot.writeFieldEnd()
-    if self.preserve is not None:
-      oprot.writeFieldBegin('preserve', TType.BOOL, 8)
-      oprot.writeBool(self.preserve)
-      oprot.writeFieldEnd()
-    if self.force is not None:
-      oprot.writeFieldBegin('force', TType.BOOL, 9)
-      oprot.writeBool(self.force)
-      oprot.writeFieldEnd()
-    if self.checksum is not None:
-      oprot.writeFieldBegin('checksum', TType.BOOL, 10)
-      oprot.writeBool(self.checksum)
-      oprot.writeFieldEnd()
-    if self.files_only is not None:
-      oprot.writeFieldBegin('files_only', TType.BOOL, 11)
-      oprot.writeBool(self.files_only)
-      oprot.writeFieldEnd()
-    if self.part_size is not None:
-      oprot.writeFieldBegin('part_size', TType.I64, 12)
-      oprot.writeI64(self.part_size)
-      oprot.writeFieldEnd()
-    if self.buffer_size is not None:
-      oprot.writeFieldBegin('buffer_size', TType.I64, 13)
-      oprot.writeI64(self.buffer_size)
+    if self.params is not None:
+      oprot.writeFieldBegin('params', TType.MAP, 3)
+      oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.params))
+      for kiter7,viter8 in self.params.items():
+        oprot.writeString(kiter7)
+        oprot.writeString(viter8)
+      oprot.writeMapEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
@@ -333,32 +220,18 @@ class Task:
   def validate(self):
     if self.tid is None:
       raise TProtocol.TProtocolException(message='Required field tid is unset!')
-    if self.src is None:
-      raise TProtocol.TProtocolException(message='Required field src is unset!')
-    if self.dest is None:
-      raise TProtocol.TProtocolException(message='Required field dest is unset!')
-    if self.src_path is None:
-      raise TProtocol.TProtocolException(message='Required field src_path is unset!')
-    if self.dest_path is None:
-      raise TProtocol.TProtocolException(message='Required field dest_path is unset!')
+    if self.type is None:
+      raise TProtocol.TProtocolException(message='Required field type is unset!')
+    if self.params is None:
+      raise TProtocol.TProtocolException(message='Required field params is unset!')
     return
 
 
   def __hash__(self):
     value = 17
     value = (value * 31) ^ hash(self.tid)
-    value = (value * 31) ^ hash(self.src)
-    value = (value * 31) ^ hash(self.dest)
-    value = (value * 31) ^ hash(self.src_path)
-    value = (value * 31) ^ hash(self.dest_path)
-    value = (value * 31) ^ hash(self.include_pattern)
-    value = (value * 31) ^ hash(self.min_size)
-    value = (value * 31) ^ hash(self.preserve)
-    value = (value * 31) ^ hash(self.force)
-    value = (value * 31) ^ hash(self.checksum)
-    value = (value * 31) ^ hash(self.files_only)
-    value = (value * 31) ^ hash(self.part_size)
-    value = (value * 31) ^ hash(self.buffer_size)
+    value = (value * 31) ^ hash(self.type)
+    value = (value * 31) ^ hash(self.params)
     return value
 
   def __repr__(self):

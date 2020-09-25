@@ -23,6 +23,8 @@ class WorkerMonitor(Thread):
         while not self.stopped:
             for worker in self.worker_manager.list_live_workers():
                 if self.heartbeat_check_interval > 0:
-                    if (datetime.now() - worker.last_hear_beat).total_seconds() > self.heartbeat_check_interval:
-                        _logger.warn("Missing worker hearbeat from [ %s ] after %s seconds", worker.wid, self.heartbeat_check_interval)
-                        self.worker_manager.decommission_worker(worker.wid)
+                    # only remote workers are monitored
+                    if (worker.address != None and worker.port != None):
+                        if (datetime.now() - worker.last_hear_beat).total_seconds() > self.heartbeat_check_interval:
+                            _logger.warn("Missing worker hearbeat from [ %s ] after %s seconds", worker.wid, self.heartbeat_check_interval)
+                            self.worker_manager.decommission_worker(worker.wid)

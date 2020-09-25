@@ -2,7 +2,9 @@
 
 from ...master.client.client import ClientFactory
 from ..core.executor_pool import ExecutorPool
+from ..core.executor_factory import ExecutorFactory
 from ...common.model.worker import WorkerStatus
+from ..core.execution.task_factory import TaskFactory
 from threading import Thread
 import time
 
@@ -22,20 +24,25 @@ class Worker(object):
         self.port = config.worker_port
         
         self.wid = "kraken-worker-%s-%s" % (self.address, self.port)
-        factory = ClientFactory(config.master_host, config.master_port)
-        self.master = factory.create_client('worker-service')
+        client_factory = ClientFactory(config.master_host, config.master_port)
+        self.master = client_factory.create_client('worker-service')
         
-        self.executor = ExecutorPool(self.wid, factory ,self.lqueue, config.executor_threads)
+        self.executor = ExecutorPool( self.wid,
+                                      ExecutorFactory(client_factory ,self.lqueue, config.executor_threads),
+                                      self.lqueue,
+                                      config.executor_threads)
+        
+        self.task_factory = TaskFactory()
         
         self.reporter = WorkerHearbeatReporter(self)
         self.reporter.setDaemon(True)
 
     def submit(self, task):
+        task_exec = self.task_factory.create_task(task)
         if (not self.stopped):
-            self.lqueue.put(task)
+            self.lqueue.put(task_exec)
         else:
-            raise WorkerStoppedException("Can not submit task [ %s ] to [ %s ] : worker stopped.", task.tid, self.wid)
-    
+            raise WorkerStoppedException("Can not submit task [ %s ] to [ %s ] : worker stopped.", task_exec.tid, self.wid)
     
     def get_stats(self):
         return WorkerStatus(

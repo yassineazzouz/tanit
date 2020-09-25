@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-from datetime import datetime
-from hashlib import md5
-
-from ...common.model.job import Job
 from ...common.model.worker import Worker
+from ...common.model.job import Job
+from ...common.model.execution_type import ExecutionType
 from ..core.execution.execution_state import ExecutionState
 from ..thrift import ttypes
 
@@ -18,25 +16,18 @@ class UserServiceHandler(object):
         self.master = master
 
     def submit_job(self, job):
-        jid = "job-%s-%s" % (
-            md5("{}-{}-{}-{}".format(job.src, job.src_path, job.dest, job.dest_path)).hexdigest(),
-            str(datetime.now().strftime("%d%m%Y%H%M%S"))
-        )
-        job = Job( jid,
-                   job.src,
-                   job.dest,
-                   job.src_path,
-                   job.dest_path,
-                   job.include_pattern,
-                   job.min_size,
-                   job.preserve,
-                   job.force,
-                   job.checksum,
-                   job.files_only,
-                   job.part_size,
-                   job.buffer_size)
-        self.master.submit_job(job)
-        return jid
+        if job.type == ttypes.JobType.COPY:
+            etype = ExecutionType.COPY
+        elif job.type == ttypes.JobType.UPLOAD:
+            etype = ExecutionType.UPLOAD
+        elif job.type == ttypes.JobType.MOCK:
+            etype = ExecutionType.MOCK
+        else:
+            # should raise exception here
+            pass
+
+        job_exec = self.master.submit_job(Job(etype, job.params))
+        return job_exec.jid
 
     def list_jobs(self):
         status = []

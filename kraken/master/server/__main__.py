@@ -15,7 +15,7 @@ Options:
   --standalone                  Run in standalone mode.
 
 Examples:
-  pydistcp -s prod -d preprod -v /tmp/src /tmp/dest
+  kraken-client job --submit @test-job.json
 
 """
 
@@ -56,7 +56,7 @@ def main(argv=None):
     
     configure_logging()
     
-    server = MasterServer(True if args['--standalone'] else False)
+    server = MasterServer( standalone = True if args['--standalone'] else False)
     server.start()
 
 if __name__ == '__main__':

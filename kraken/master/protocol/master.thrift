@@ -9,6 +9,12 @@ enum JobState {
   FAILED = 6,
 }
 
+enum JobType {
+  COPY = 1,
+  UPLOAD = 2,
+  MOCK = 3, // for testing
+}
+
 struct JobStatus {
   	1: string id,
   	2: JobState state,
@@ -19,18 +25,8 @@ struct JobStatus {
 }
 
 struct Job {
-  1: required string src,
-  2: required string dest,
-  3: required string src_path,
-  4: required string dest_path,
-  5: optional string include_pattern = "*",
-  6: optional i64 min_size = 0,
-  7: optional bool preserve = true,
-  8: optional bool force = true,
-  9: optional bool checksum = false,
-  10: optional bool files_only = false,
-  11: optional i64 part_size = 65536,
-  12: optional i64 buffer_size = 65536,
+    1: JobType type,
+    2: map<string,string> params,
 }
 
 struct Worker {

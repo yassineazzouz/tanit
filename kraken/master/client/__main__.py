@@ -26,6 +26,7 @@ Examples:
 from ... import __version__
 from .client import ClientFactory
 from ..config.config import MasterConfig
+from ...common.model.execution_type import ExecutionType
 import json
 import requests as rq
 import logging as lg
@@ -79,7 +80,10 @@ def main(argv=None):
             except Exception as e:
                 _logger.error("Error parsing job json specification.")
                 raise e
-            client.submit_job(job_spec)
+            
+            jtype = ExecutionType._NAMES_TO_VALUES[job_spec['type']]
+            params = job_spec['params']
+            client.submit_job(jtype, params)
         elif (args['--status']):
             job = client.job_status(args['--status'])
             if (job == None):

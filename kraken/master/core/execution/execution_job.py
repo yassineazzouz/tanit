@@ -1,24 +1,31 @@
 #!/usr/bin/env python
 
+import abc
 import os
 import os.path as osp
-import logging as lg
 from datetime import datetime
+from hashlib import md5
+import logging as lg
 from threading import Lock
 from .execution_state import ExecutionState
 
 from ....common.utils import glob
-from ....common.model.task import Task
+from ....common.utils.utils import str2bool
 from ....common.core.exception import KrakenError
+from ....common.model.execution_type import ExecutionType
+
 
 _logger = lg.getLogger(__name__)
 
 class TaskExecution(object):
     '''TaskExecution represent the execution flow of a task in the master'''
     
-    def __init__(self, task, job):
+    def __init__(self, tid, etype, params, job):
         self.state = ExecutionState.SUBMITTED
-        self.task = task
+        
+        self.tid = tid
+        self.etype = etype
+        self.params = params
         self.job = job
         self.worker = None
         
@@ -28,7 +35,7 @@ class TaskExecution(object):
                                                   ExecutionState._VALUES_TO_NAMES[self.state],
                                                   ExecutionState._VALUES_TO_NAMES[ExecutionState.SCHEDULED])
         self.state = ExecutionState.SCHEDULED
-        self.job.on_task_schedule(self.task.tid)
+        self.job.on_task_schedule(self.tid)
 
     def on_dispatch(self, worker = None):
         if (self.state not in [ ExecutionState.DISPATCHED, ExecutionState.SCHEDULED ]):
@@ -37,7 +44,7 @@ class TaskExecution(object):
                                                   ExecutionState._VALUES_TO_NAMES[ExecutionState.DISPATCHED])
         self.state = ExecutionState.DISPATCHED
         self.worker = worker
-        self.job.on_task_dispatch(self.task.tid)
+        self.job.on_task_dispatch(self.tid)
 
     def on_start(self):
         if (self.state not in [ ExecutionState.RUNNING, ExecutionState.DISPATCHED, ExecutionState.FAILED ]):
@@ -45,7 +52,7 @@ class TaskExecution(object):
                                                   ExecutionState._VALUES_TO_NAMES[self.state],
                                                   ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING])
         self.state = ExecutionState.RUNNING
-        self.job.on_task_start(self.task.tid)
+        self.job.on_task_start(self.tid)
 
     def on_finish(self):
         if (self.state not in [ ExecutionState.RUNNING, ExecutionState.FINISHED ]):
@@ -53,7 +60,7 @@ class TaskExecution(object):
                                                   ExecutionState._VALUES_TO_NAMES[self.state],
                                                   ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING])
         self.state = ExecutionState.FINISHED
-        self.job.on_task_finish(self.task.tid)
+        self.job.on_task_finish(self.tid)
 
     def on_fail(self):
         if (self.state not in [ ExecutionState.RUNNING, ExecutionState.FAILED ]):
@@ -61,10 +68,10 @@ class TaskExecution(object):
                                                   ExecutionState._VALUES_TO_NAMES[self.state],
                                                   ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING])
         self.state = ExecutionState.FAILED
-        self.job.on_task_fail(self.task.tid)
+        self.job.on_task_fail(self.tid)
         
     def on_reset(self):
-        self.job.on_task_reset(self.task.tid)
+        self.job.on_task_reset(self.tid)
 
     def reset(self):
         self.state = ExecutionState.SUBMITTED
@@ -74,6 +81,7 @@ class IllegalStateTransitionException(Exception):
     pass
 
 class JobExecution(object):
+    __metaclass__ = abc.ABCMeta
     '''
     JobExecution represent the execution flow of a job in the master
     The job state diagram is as follow:
@@ -85,7 +93,7 @@ class JobExecution(object):
     ---------------------------------------------------------------------|
     '''
 
-    def __init__(self, job):
+    def __init__(self, params):
         
         self.state = ExecutionState.SUBMITTED
         
@@ -104,11 +112,20 @@ class JobExecution(object):
         self.finished_tasks = 0
         self.failed_tasks = 0
 
-        self.job = job
         self.jlock = Lock()
+        
+        self.initialize(params)
 
-    def add_task(self, task):
-        self.tasks[task.tid] = TaskExecution(task, self)
+    @abc.abstractmethod
+    def initialize(self, params):
+        return
+    
+    @abc.abstractmethod
+    def setup(self):
+        return
+        
+    def add_task(self, tid, params):
+        self.tasks[tid] = TaskExecution(tid, self.etype, params, self)
 
     def get_task(self, tid):
         if tid in self.tasks:
@@ -127,7 +144,7 @@ class JobExecution(object):
             self.scheduled_tasks += 1
             # Only the first task transition the state of the job
             if (self.state == ExecutionState.SUBMITTED and self.scheduled_tasks == 1):
-                _logger.info("Job [ %s ] execution scheduled.", self.job.jid)
+                _logger.info("Job [ %s ] execution scheduled.", self.jid)
                 self.schedule_time = datetime.now()
                 self.state = ExecutionState.SCHEDULED
 
@@ -136,7 +153,7 @@ class JobExecution(object):
             self.dispatched_tasks += 1
             # Only the first task transition the state of the job
             if (self.state == ExecutionState.SCHEDULED and self.dispatched_tasks == 1):
-                _logger.info("Job [ %s ] execution dispatched.", self.job.jid)
+                _logger.info("Job [ %s ] execution dispatched.", self.jid)
                 self.dispatch_time = datetime.now()
                 self.state = ExecutionState.DISPATCHED
 
@@ -145,7 +162,7 @@ class JobExecution(object):
             self.started_tasks += 1
             # Only the first task transition the state of the job
             if (self.state == ExecutionState.DISPATCHED and self.started_tasks == 1):
-                _logger.info("Job [ %s ] execution started.", self.job.jid)
+                _logger.info("Job [ %s ] execution started.", self.jid)
                 self.start_time = datetime.now()
                 self.state = ExecutionState.RUNNING
 
@@ -154,7 +171,7 @@ class JobExecution(object):
             self.finished_tasks += 1
             # All tasks need to finish (successfully) to consider the job finished
             if (self.finished_tasks == len(self.tasks)):
-                _logger.info("Job [ %s ] execution finished.", self.job.jid)
+                _logger.info("Job [ %s ] execution finished.", self.jid)
                 self.state = ExecutionState.FINISHED
                 self.finish_time = datetime.now()
                 self.execution_time_s = (self.finish_time - self.start_time).total_seconds()
@@ -164,7 +181,7 @@ class JobExecution(object):
             self.failed_tasks += 1
             if (self.state != ExecutionState.FAILED):
                 self.state = ExecutionState.FAILED
-                _logger.info("Job [ %s ] execution failed.", self.job.jid)
+                _logger.info("Job [ %s ] execution failed.", self.jid)
 
     def on_task_reset(self, tid):
         task = self.tasks[tid]
@@ -195,19 +212,73 @@ class JobExecution(object):
             
             task.reset()
 
+class UploadJobExecution(JobExecution):
+    # not implemented yet
+    pass
+
+class MockJobExecution(JobExecution):
+
+    def initialize(self, params):
+        self.num_tasks = int(params["num_tasks"]) if "num_tasks" in params else 2
+        self.jid = "mock-job-%s" % str(datetime.now().strftime("%d%m%Y%H%M%S"))
+        
+        self.etype = ExecutionType.MOCK
+
+    def setup(self):
+        for i in range(self.num_tasks):
+            self.add_task("{}-task-{}".format(self.jid, i), {})
+    
+class CopyJobExecution(JobExecution):
+    
+    def initialize(self, params):
+        
+        if "src" in params:
+            self.src = params["src"]
+        else:
+            raise JobInitializationException("missing required copy job parameter 'src'")
+
+        if "dst" in params:
+            self.dst = params["dst"]
+        else:
+            raise JobInitializationException("missing required copy job parameter 'dst'")
+
+        if "src_path" in params:
+            self.src_path = params["src_path"]
+        else:
+            raise JobInitializationException("missing required copy job parameter 'src_path'")
+
+        if "dest_path" in params:
+            self.dest_path = params["dest_path"]
+        else:
+            raise JobInitializationException("missing required copy job parameter 'dest_path'")
+        
+        self.include_pattern = params["include_pattern"] if "include_pattern" in params else "*"
+        self.min_size = int(params["min_size"]) if "min_size" in params else 0
+        self.preserve = str2bool(params["preserve"]) if "preserve" in params else True
+        self.force = str2bool(params["force"]) if "force" in params else True
+        self.checksum = str2bool(params["checksum"]) if "checksum" in params else True
+        self.files_only = str2bool(params["files_only"]) if "files_only" in params else True
+        self.part_size = int(params["part_size"]) if "part_size" in params else 65536
+        self.buffer_size = int(params["buffer_size"]) if "buffer_size" in params else 65536
+
+        self.jid = "job-%s-%s" % (
+            md5("{}-{}-{}-{}".format(self.src, self.src_path, self.dst, self.dest_path)).hexdigest(),
+            str(datetime.now().strftime("%d%m%Y%H%M%S"))
+        )
+        
+        self.etype = ExecutionType.COPY
+
     def setup(self):
         
         from ....client.client_factory import ClientFactory
-        
-        job = self.job
 
-        src = ClientFactory.getInstance().get_client(job.src)
-        dst = ClientFactory.getInstance().get_client(job.dest)
+        src = ClientFactory.getInstance().get_client(self.src)
+        dst = ClientFactory.getInstance().get_client(self.dst)
         
-        src_path = job.src_path
-        dst_path = job.dest_path
-        chunk_size = job.part_size
-        overwrite = job.force
+        src_path = self.src_path
+        dst_path = self.dest_path
+        chunk_size = self.part_size
+        overwrite = self.force
         
         if not chunk_size:
             raise ValueError('Copy chunk size must be positive.')
@@ -295,20 +366,24 @@ class JobExecution(object):
 
             i = 1;
             for fpath in src_fpaths:
-                tid = "{}-task-{}".format(job.jid, i)
+                self.add_task(
+                    "{}-task-{}".format(self.jid, i),
+                    params = {
+                        "src" : str(self.src),
+                        "dst" : str(self.dst),
+                        "src_path" : str(fpath),
+                        "dest_path" : str(osp.join(copy_tuple['dst_path'], fpath[offset:].replace(os.sep, '/')).rstrip(os.sep)),
+                        "include_pattern" : str(self.include_pattern),
+                        "min_size" : str(self.min_size),
+                        "preserve" : str(self.preserve),
+                        "force" : str(self.force),
+                        "checksum" : str(self.checksum),
+                        "files_only" : str(self.files_only),
+                        "part_size" : str(self.part_size),
+                        "buffer_size" : str(self.buffer_size)
+                    }
+                )
                 i+=1
-                task = Task(tid,
-                  job.src,
-                  job.dest,
-                  fpath,
-                  osp.join(copy_tuple['dst_path'], fpath[offset:].replace(os.sep, '/')).rstrip(os.sep),
-                  job.include_pattern,
-                  job.min_size,
-                  job.preserve,
-                  job.force,
-                  job.checksum,
-                  job.files_only,
-                  job.part_size,
-                  job.buffer_size)
 
-                self.add_task(task)
+class JobInitializationException(Exception):
+    pass

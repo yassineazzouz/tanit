@@ -17,9 +17,9 @@ _logger = lg.getLogger(__name__)
 
 class WorkerServer(object):
     
-    def __init__(self):
+    def __init__(self, config = None):
         
-        self.config = WorkerConfig()
+        self.config = WorkerConfig(config)
         self.config.load()
         
         self.worker = Worker()

@@ -49,4 +49,4 @@ class WorkerDecommissioner(Thread):
             _logger.info("Worker [ %s ] still have %s active tasks.", worker.wid, len(worker_tasks))
             # reschedule the tasks
             for task_exec in worker_tasks:
-                self.execution_manager.task_reset(task_exec.task.tid)
+                self.execution_manager.task_reset(task_exec.tid)

@@ -6,6 +6,7 @@ from ..thrift import ttypes
 
 from ...common.model.job import JobStatus
 from ...common.model.worker import Worker
+from ...common.model.execution_type import ExecutionType
 
 # Thrift files
 from thrift.transport import TSocket
@@ -51,14 +52,9 @@ class UserServiceClient(object):
         except ttypes.JobNotFoundException:
             return None
         
-    def submit_job(self, job_spec):
+    def submit_job(self, jtype, params):
         _logger.info("Submitting new job.")
-        try:
-            job = ttypes.Job(**job_spec)
-        except Exception as e:
-            _logger.error("Error resolving job parameters.")
-            raise e
-        
+        job = ttypes.Job(jtype, params)
         jid = self.client.submit_job(job)
         _logger.info("Job submitted : %s.", jid)
         return jid

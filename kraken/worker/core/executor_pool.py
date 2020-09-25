@@ -2,7 +2,6 @@
 # encoding: utf-8
 
 import time
-from .executor import Executor
 import logging as lg
 
 _logger = lg.getLogger(__name__)
@@ -17,7 +16,7 @@ class ExecutorPool(object):
         self.stopped = True
         
         for i in range(0, concurrency):
-            self.executors.append(Executor("%s-executor-%s" % (wid,i), cqueue, factory))
+            self.executors.append(factory.create_executor("%s-executor-%s" % (wid,i)))
     
     def start(self):
         _logger.info("Starting Kraken worker executor pool [ %s ].", self.wid)

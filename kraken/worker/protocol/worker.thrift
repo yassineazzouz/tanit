@@ -1,10 +1,9 @@
 namespace py thrift
 
-enum TaskState {
-  SUBMITTED = 1,
-  RUNNING = 2,
-  FINISHED = 3,
-  FAILED = 4,
+enum TaskType {
+  COPY = 1,
+  UPLOAD = 2,
+  MOCK = 3, // for testing
 }
 
 struct WorkerStatus {
@@ -16,18 +15,8 @@ struct WorkerStatus {
 
 struct Task {
   1: required string tid,
-  2: required string src,
-  3: required string dest,
-  4: required string src_path,
-  5: required string dest_path,
-  6: optional string include_pattern = "*",
-  7: optional i64 min_size = 0,
-  8: optional bool preserve = true,
-  9: optional bool force = true,
-  10: optional bool checksum = false,
-  11: optional bool files_only = false,
-  12: optional i64 part_size = 65536,
-  13: optional i64 buffer_size = 65536,
+  2: required TaskType type,
+  3: required map<string,string> params,
 }
 
 service WorkerService{

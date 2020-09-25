@@ -507,11 +507,11 @@ class list_workers_result:
       if fid == 0:
         if ftype == TType.LIST:
           self.success = []
-          (_etype10, _size7) = iprot.readListBegin()
-          for _i11 in xrange(_size7):
-            _elem12 = Worker()
-            _elem12.read(iprot)
-            self.success.append(_elem12)
+          (_etype19, _size16) = iprot.readListBegin()
+          for _i20 in xrange(_size16):
+            _elem21 = Worker()
+            _elem21.read(iprot)
+            self.success.append(_elem21)
           iprot.readListEnd()
         else:
           iprot.skip(ftype)
@@ -528,8 +528,8 @@ class list_workers_result:
     if self.success is not None:
       oprot.writeFieldBegin('success', TType.LIST, 0)
       oprot.writeListBegin(TType.STRUCT, len(self.success))
-      for iter13 in self.success:
-        iter13.write(oprot)
+      for iter22 in self.success:
+        iter22.write(oprot)
       oprot.writeListEnd()
       oprot.writeFieldEnd()
     oprot.writeFieldStop()

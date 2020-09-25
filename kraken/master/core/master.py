@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from .execution.execution_manager import ExecutionManager
+from .worker.worker_factory import WorkerFactory
 from .worker.worker_manager import WorkerManager
 from .worker.worker_decommissioner import WorkerDecommissioner
 from ...common.model.worker import Worker
@@ -12,8 +13,10 @@ _logger = lg.getLogger(__name__)
 class Master(object):
 
     def __init__(self):
+        # workers factory
+        self.workers_factory = WorkerFactory(self)
         # workers manager
-        self.workers_manager = WorkerManager()
+        self.workers_manager = WorkerManager(self.workers_factory)
         # execution manager
         self.execution_manager = ExecutionManager(self.workers_manager)
         # decommissioner
@@ -24,10 +27,10 @@ class Master(object):
     def configure(self, config):
         pass
     
-    def submit_job(self, conf):
+    def submit_job(self, job):
         if (not self.started):
-            raise MasterStoppedException("Can not submit job [ %s ] : master server stopped.", conf.jid)
-        self.execution_manager.submit_job(conf)
+            raise MasterStoppedException("Can not submit job, master server stopped.")
+        return self.execution_manager.submit_job(job)
         
     def list_jobs(self):
         return self.execution_manager.list_jobs()

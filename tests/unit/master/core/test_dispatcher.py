@@ -4,31 +4,21 @@ import pytest
 from Queue import Queue
 
 from kraken.master.core.dispatcher import FairDispatcher
-from kraken.master.core.execution.execution_job import JobExecution
+from kraken.master.core.execution.job_factory import JobFactory
 from kraken.master.core.worker.worker_manager import WorkerManager
-from kraken.common.model.task import Task
 from kraken.common.model.job import Job
 from kraken.common.model.worker import Worker
+from kraken.common.model.execution_type import ExecutionType
 
-from .execution.mock_job import MockJobFactory
 from .worker.mock_worker import MockWorkerFactory
 from .tutils import wait_until
 
-job_factory = MockJobFactory()
-
-def mock_job(num_tasks):
-    job = Job(
-        jid = "job-1",
-        src = "src",
-        dest = "dest",
-        src_path = "/tmp/src_path",
-        dest_path = "/tmp/dest_path",
-    )
-    job.num_tasks = num_tasks
-    return job
+job_factory = JobFactory()
 
 def mock_job_exec(num_tasks):
-    job = job_factory.create_job(mock_job(num_tasks))
+    job = job_factory.create_job(
+        Job(ExecutionType.MOCK, { "num_tasks" : str(num_tasks) })
+    )
     job.setup()
     return job
 
@@ -40,7 +30,7 @@ def mock_worker(wid, cores):
 @pytest.fixture
 def simple_dispatcher():
         cqueue = Queue()
-        workers_manager = WorkerManager(MockWorkerFactory())
+        workers_manager = WorkerManager(MockWorkerFactory(None))
         workers_manager.disable_monitor()
         dispatcher = FairDispatcher( cqueue, workers_manager, None)
         

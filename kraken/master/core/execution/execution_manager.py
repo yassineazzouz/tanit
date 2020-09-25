@@ -6,8 +6,6 @@ from Queue import Queue
 from ..dispatcher import FairDispatcher
 from ..scheduler import SimpleScheduler
 from .job_factory import JobFactory
-from ..worker.worker_manager import WorkerManager
-from ..worker.worker_decommissioner import WorkerDecommissioner
 
 _logger = lg.getLogger(__name__)
 
@@ -18,11 +16,11 @@ class ExecutionManager(object):
     and ensure the execution state is properly updated and reflect the real progress.
     '''
     
-    def __init__(self, workers_manager, jobs_factory = None):
+    def __init__(self, workers_manager):
         # jobs list
         self.jobs = []
         # job factory
-        self.jobs_factory = jobs_factory if jobs_factory != None else JobFactory()
+        self.jobs_factory = JobFactory()
         # Lister queue
         lqueue = Queue()
         # Call queue
@@ -47,16 +45,17 @@ class ExecutionManager(object):
         self.dispatcher.stop()
         _logger.info("Kraken master services stopped.")
 
-    def submit_job(self, conf):       
-        _logger.info("Submitting job [ %s ] for execution.", conf.jid)
-        job = self.jobs_factory.create_job(conf)
-        job.setup()
-
-        self.jobs.append(job)
-        for task_exec in self.get_tasks(jid = conf.jid):
+    def submit_job(self, job):
+        job_exec = self.jobs_factory.create_job(job)
+        job_exec.setup()
+        
+        _logger.info("Submitting job [ %s ] for execution.", job_exec.jid)
+        self.jobs.append(job_exec)
+        for task_exec in self.get_tasks(jid = job_exec.jid):
             self.scheduler.schedule(task_exec)
             
-        _logger.info("Submitted %s tasks for execution in job [ %s ].", len(self.get_tasks(jid = conf.jid)) ,conf.jid)
+        _logger.info("Submitted %s tasks for execution in job [ %s ].", len(self.get_tasks(jid = job_exec.jid)) ,job_exec.jid)
+        return job_exec
 
     def cancel_job(self, conf):
         pass
@@ -66,7 +65,7 @@ class ExecutionManager(object):
     
     def get_job(self, jid):
         for job_exec in self.jobs:
-            if job_exec.job.jid == jid:
+            if job_exec.jid == jid:
                 return job_exec
         return None
     

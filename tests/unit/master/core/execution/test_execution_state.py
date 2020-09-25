@@ -1,28 +1,18 @@
 
 import pytest
 
+from kraken.master.core.execution.job_factory import JobFactory
 from kraken.master.core.execution.execution_state import ExecutionState
-from kraken.master.core.execution.execution_job import *
+from kraken.master.core.execution.execution_job import IllegalStateTransitionException
 from kraken.common.model.job import Job
-from .mock_job import MockJobFactory
+from kraken.common.model.execution_type import ExecutionType
 
+job_factory = JobFactory()
 
-job_factory = MockJobFactory()
-
-def mock_job(num_tasks):
-    job = Job(
-        jid = "job-1",
-        src = "src",
-        dest = "dest",
-        src_path = "/tmp/src_path",
-        dest_path = "/tmp/dest_path",
+def mock_job_exec(num_tasks):
+    job = job_factory.create_job(
+        Job(ExecutionType.MOCK, { "num_tasks" : str(num_tasks) })
     )
-    job.num_tasks = num_tasks
-    return job
-
-def mock_job_exec(num_tasks = 2): 
-    factory = MockJobFactory()
-    job = job_factory.create_job(mock_job(num_tasks))
     job.setup()
     return job
 

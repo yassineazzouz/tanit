@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from .worker_factory import WorkerFactory
 from .worker_monitor import WorkerMonitor
 from threading import RLock
 from datetime import datetime
@@ -15,8 +14,8 @@ class WorkerManager(object):
     machines are active and fetch their state.
     '''
     
-    def __init__(self, workers_factory = None):
-        self.worker_factory = workers_factory if workers_factory != None else WorkerFactory()
+    def __init__(self, workers_factory):
+        self.worker_factory = workers_factory
 
         self.live_workers = []
         self.decommissioning_workers = []
@@ -35,6 +34,9 @@ class WorkerManager(object):
     def stop(self):
         _logger.info("Stopping kraken worker manager.")
         self.monitor.stop()
+        with self.lock:
+            for wkr in self.live_workers:
+                wkr.stop()
         _logger.info("Kraken worker manager stopped.")
 
     def disable_monitor(self):

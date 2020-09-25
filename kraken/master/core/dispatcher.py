@@ -32,14 +32,14 @@ class Dispatcher(object):
                     time.sleep(2)
                 else:
                     task_exec = self.cqueue.get() if task_exec == None else task_exec
-                    _logger.debug("Dispatching next task [ %s ] for execution.", task_exec.task.tid)
+                    _logger.debug("Dispatching next task [ %s ] for execution.", task_exec.tid)
                     if (self.callback != None):
-                        self.callback(task_exec.task.tid, worker.wid)
+                        self.callback(task_exec.tid, worker.wid)
                     try:
-                        worker.submit(task_exec.task)
+                        worker.submit(task_exec)
                         task_exec = None
                     except Exception:
-                        _logger.exception("Exception submitting task [ %s ] to worker [ %s ]", task_exec.task.tid, worker.wid)
+                        _logger.exception("Exception submitting task [ %s ] to worker [ %s ]", task_exec.tid, worker.wid)
                         
             else:
                 _logger.debug("No new tasks to dispatch, sleeping for %s seconds...", 2)

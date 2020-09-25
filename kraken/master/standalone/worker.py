@@ -1,33 +1,35 @@
 #!/usr/bin/env python
 
-import time
 import multiprocessing
 
+from ..core.worker.worker import WorkerIFace
 from ...worker.core.executor_pool import ExecutorPool
 from ...worker.core.executor import Executor
+from ...worker.core.execution.task_factory import TaskFactory
 from ...common.model.worker import WorkerStatus
-from ..core.worker.worker import WorkerIFace
+from ...common.model.task import Task
 
 import logging as lg
-from Queue import Queue, Empty
+from Queue import Queue
 
 _logger = lg.getLogger(__name__)
 
 class LocalWorker(WorkerIFace):
 
     def __init__(self, master):
-        self.wid = "kraken-local-worker"
+        super(LocalWorker, self).__init__("kraken-local-worker", None, None)
         self.lqueue = Queue()
         self.stopped = False
+        self.task_factory = TaskFactory()
         self.executor = LocalExecutorPool(self.wid, master ,self.lqueue, multiprocessing.cpu_count())
 
     def submit(self, task):
+        task_exec = self.task_factory.create_task(Task(task.tid, task.etype, task.params))
         if (not self.stopped):
-            self.lqueue.put(task)
+            self.lqueue.put(task_exec)
         else:
-            raise WorkerStoppedException("Can not submit task [ %s ] to [ %s ] : worker stopped.", task.tid, self.wid)
-    
-    
+            raise WorkerStoppedException("Can not submit task [ %s ] to [ %s ] : worker stopped.", task_exec.tid, self.wid)
+
     def status(self):
         return WorkerStatus(
             self.wid,
@@ -76,23 +78,5 @@ class LocalExecutor(Executor):
         self.master = master
 
     def run(self):
-        while True:
-            self.idle = True
-            try:
-                task = self.cqueue.get(timeout=0.5)
-                self.idle = False
-                self.master.task_start(str(task.tid))
-                self.current_task = task
-                self._run(task)
-                self.master.task_success(str(task.tid))
-                self.cqueue.task_done()
-            except Empty:
-                if (self.stopped):
-                    break
-                time.sleep(0.5)
-            except Exception as e:
-                _logger.error("Error executing task [%s]", str(task.tid))
-                _logger.error(e, exc_info=True)
-                self.master.task_failure(str(task.tid))
-                self.cqueue.task_done()     
+        self._run()
         
