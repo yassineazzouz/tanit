@@ -34,7 +34,7 @@ class UserServiceHandler(object):
         for job_exec in self.master.list_jobs():
             status.append( 
                 ttypes.JobStatus(
-                    job_exec.job.jid,
+                    job_exec.jid,
                     ttypes.JobState._NAMES_TO_VALUES[ExecutionState._VALUES_TO_NAMES[job_exec.state]],
                     job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "-" if (job_exec.start_time == None) else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -49,7 +49,7 @@ class UserServiceHandler(object):
         if (job_exec == None):
             raise ttypes.JobNotFoundException("No such job [ %s ]" % jid)
         return  ttypes.JobStatus(
-                    job_exec.job.jid,
+                    job_exec.jid,
                     ttypes.JobState._NAMES_TO_VALUES[ExecutionState._VALUES_TO_NAMES[job_exec.state]],
                     job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "-" if (job_exec.start_time == None) else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),

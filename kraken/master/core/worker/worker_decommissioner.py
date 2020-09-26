@@ -33,10 +33,8 @@ class WorkerDecommissioner(Thread):
             except:
                 break
             # check how many tasks are still alive
-            for task in worker_tasks:
-                if (task.state in [ExecutionState.FINISHED, ExecutionState.FAILED]):
-                    worker_tasks.pop(task)
-            
+            worker_tasks = [ task for task in worker_tasks
+                               if task.state not in [ExecutionState.FINISHED, ExecutionState.FAILED]]
             if (len(worker_tasks) == 0):
                 break
             else:

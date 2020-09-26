@@ -25,6 +25,10 @@ class WorkerServer(object):
         self.worker = Worker()
         self.worker.configure(self.config)
         
+        self.stopped = False
+    
+    def stop(self):
+        self.stopped = True
 
     def _run(self):
         # Create Service handler
@@ -43,6 +47,8 @@ class WorkerServer(object):
               
     def start(self):
         
+        self.stopped = False
+        
         _logger.info("Stating Kraken worker server.")
         self.daemon = Thread(target=self._run, args=())
         self.daemon.setDaemon(True)
@@ -60,6 +66,10 @@ class WorkerServer(object):
             while self.daemon.is_alive():
                 # Try to join the child thread back to parent for 0.5 seconds
                 self.daemon.join(0.5)
+                
+                if(self.stopped):
+                    _logger.info("Kraken worker server stopped, exiting.")
+                    break
         except (KeyboardInterrupt, SystemExit):
             _logger.info("Received KeyboardInterrupt Signal.")
         except Exception as e:

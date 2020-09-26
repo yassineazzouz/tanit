@@ -11,6 +11,6 @@ class WorkerFactory(object):
         
     def create_worker(self, worker):
         if (worker.address != None and worker.port != None):
-            return RemoteThriftWorker(worker.wid,worker.address, worker.port)
+            return RemoteThriftWorker(worker.wid, worker.address, worker.port)
         else:
-            return LocalWorker(self.master)
+            return LocalWorker(worker.wid, self.master)

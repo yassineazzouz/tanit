@@ -16,8 +16,8 @@ _logger = lg.getLogger(__name__)
 
 class LocalWorker(WorkerIFace):
 
-    def __init__(self, master):
-        super(LocalWorker, self).__init__("kraken-local-worker", None, None)
+    def __init__(self, wid, master):
+        super(LocalWorker, self).__init__(wid, None, None)
         self.lqueue = Queue()
         self.stopped = False
         self.task_factory = TaskFactory()

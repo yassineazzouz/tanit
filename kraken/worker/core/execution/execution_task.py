@@ -37,7 +37,7 @@ class MockTaskExecution(TaskExecution):
     def initialize(self, params):
         return
 
-    def setup(self):
+    def run(self):
         time.sleep(2.0)
         return
 
