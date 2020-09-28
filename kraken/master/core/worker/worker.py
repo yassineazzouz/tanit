@@ -8,6 +8,7 @@ from ....worker.client.client import WorkerClient
 
 _logger = lg.getLogger(__name__)
 
+
 class WorkerIFace(object):
     __metaclass__ = abc.ABCMeta
 
@@ -16,22 +17,23 @@ class WorkerIFace(object):
         self.address = address
         self.port = port
         self.last_hear_beat = datetime.now()
-        
+
         self.stopped = True
-    
+
     def start(self):
         self.stopped = False
-      
+
     def stop(self):
         self.stopped = True
 
     @abc.abstractmethod
     def submit(self, task):
         pass
-    
+
     @abc.abstractmethod
     def status(self):
         pass
+
 
 class RemoteThriftWorker(WorkerIFace):
 
@@ -51,10 +53,12 @@ class RemoteThriftWorker(WorkerIFace):
         if (not self.stopped):
             self.client.submit(task_exec.tid, task_exec.etype, task_exec.params)
         else:
-            raise WorkerStoppedException("Can not submit task [ %s ] to [ %s ] : worker stopped.", task_exec.tid, self.wid)
+            raise WorkerStoppedException("Can not submit task [ %s ] to [ %s ] : worker stopped.", task_exec.tid,
+                                         self.wid)
 
     def status(self):
         return self.client.worker_status()
+
 
 class WorkerStoppedException(Exception):
     """Raised when trying to submit a task to a stopped worker"""

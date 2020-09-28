@@ -132,3 +132,6 @@ dmypy.json
 .settings/
 .project
 .pydevproject
+
+# PyCharm
+.idea/

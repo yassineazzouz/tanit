@@ -22,10 +22,11 @@ Examples:
   kraken-client --submit "{ \"src\":\"prod\", \"dest\": \"dr\", \"src_path\": \"/data/important_dataset\", \"dest_path\": \"/data/important_dataset\", \"preserve\": False }"
 
 """
-
 from ... import __version__
-from .client import ClientFactory
+from .client import ThriftClientFactory
+from .client import ClientType
 from ..config.config import MasterConfig
+from ...common.model.job import Job
 from ...common.model.execution_type import ExecutionType
 import json
 import requests as rq
@@ -65,7 +66,7 @@ def main(argv=None):
     config = MasterConfig()
     
     if (args['job']):
-        client = ClientFactory(config.client_service_host, config.client_service_port).create_client('user-service')
+        client = ThriftClientFactory(config.client_service_host, config.client_service_port).create_client(ClientType.USER_SERVICE)
         client.start()
         if (args['--list']):
             for job in client.list_jobs():
@@ -83,7 +84,7 @@ def main(argv=None):
             
             jtype = ExecutionType._NAMES_TO_VALUES[job_spec['type']]
             params = job_spec['params']
-            client.submit_job(jtype, params)
+            client.submit_job(Job(jtype, params))
         elif (args['--status']):
             job = client.job_status(args['--status'])
             if (job == None):
@@ -95,7 +96,7 @@ def main(argv=None):
         
         client.stop()
     elif (args['worker']):
-        client = ClientFactory(config.worker_service_host, config.worker_service_port).create_client('worker-service')
+        client = ThriftClientFactory(config.worker_service_host, config.worker_service_port).create_client(ClientType.WORKER_SERVICE)
         client.start()
         if (args['--list']):
             for worker in client.list_workers():

@@ -83,7 +83,7 @@ class CopyTaskExecution(TaskExecution):
       
       checksum = self.checksum
       overwrite = self.force
-      preserve = False
+      preserve = self.preserve
       buffer_size = self.buffer_size
       chunk_size = self.part_size
       

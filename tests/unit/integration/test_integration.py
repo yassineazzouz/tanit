@@ -4,6 +4,7 @@ import time
 import os
 from threading import Thread
 from kraken.common.model.execution_type import ExecutionType
+from kraken.common.model.job import Job
 from kraken.worker.server.server import WorkerServer
 from ..master.server.test_server import master_server, user_client
 from ..resources import conf
@@ -33,7 +34,7 @@ class TestIntegration():
         assert len(user_client.list_jobs()) >= 0
 
     def test_submit_job(self, worker_server, user_client):
-        jid = user_client.submit_job(ExecutionType.MOCK, {"num_tasks" : "10" })
+        jid = user_client.submit_job(Job(ExecutionType.MOCK, {"num_tasks" : "10" }))
         # wait for the job to finish
         assert wait_until( lambda i: user_client.job_status(i).state == "FINISHED", 20, 0.5, jid)
 

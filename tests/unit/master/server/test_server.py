@@ -5,8 +5,10 @@ import os
 from threading import Thread, RLock
 from kraken.master.config.config import MasterConfig
 from kraken.master.server.server import MasterServer
-from kraken.master.client.client import ClientFactory
+from kraken.master.client.client import ThriftClientFactory
+from kraken.master.client.client import ClientType
 from kraken.common.model.execution_type import ExecutionType
+from kraken.common.model.job import Job
 from ...resources import conf
 from ..core.tutils import wait_until
 
@@ -17,8 +19,8 @@ glock = RLock()
 @pytest.fixture
 def user_client():
         config = MasterConfig(path = config_dir)
-        factory = ClientFactory(config.client_service_host, config.client_service_port)
-        client = factory.create_client('user-service')
+        factory = ThriftClientFactory(config.client_service_host, config.client_service_port)
+        client = factory.create_client(ClientType.USER_SERVICE)
 
         client.start()
         yield client
@@ -27,8 +29,8 @@ def user_client():
 @pytest.fixture  
 def worker_client():
         config = MasterConfig(path = config_dir)
-        factory = ClientFactory(config.worker_service_host, config.worker_service_port)
-        client = factory.create_client('worker-service')
+        factory = ThriftClientFactory(config.worker_service_host, config.worker_service_port)
+        client = factory.create_client(ClientType.WORKER_SERVICE)
 
         client.start()
         yield client
@@ -61,7 +63,7 @@ class TestServer():
         assert len(worker_client.list_workers()) == 1
 
     def test_submit_job(self, user_client):
-        jid = user_client.submit_job(ExecutionType.MOCK, {"num_tasks" : "10" })
+        jid = user_client.submit_job(Job(ExecutionType.MOCK, {"num_tasks" : "10" }))
         # wait for the job to finish
         assert wait_until( lambda i: user_client.job_status(i).state == "FINISHED", 20, 0.5, jid)
 

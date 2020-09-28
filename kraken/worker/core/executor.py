@@ -6,10 +6,13 @@ import Queue
 import logging as lg
 from threading import Thread
 
+from ...master.client.client import ClientType
+
 _logger = lg.getLogger(__name__)
 
+
 class Executor(Thread):
-    
+
     def __init__(self, eid, cqueue, factory):
         super(Executor, self).__init__()
         self.cqueue = cqueue
@@ -22,19 +25,19 @@ class Executor(Thread):
         synchronizing the client calls with locks will came with performance penalty
         the best approach seems to be, using a separe thrift client (connection) per thread.
         '''
-        self.master = factory.create_client('worker-service')
-        
+        self.master = factory.create_client(ClientType.WORKER_SERVICE)
+
         self.current_task = None
-        
+
     def stop(self):
         self.stopped = True
-    
+
     def run(self):
         # start the client
         self.master.start()
         self._run()
         self.master.stop()
-    
+
     def _run(self):
         while True:
             self.idle = True
@@ -43,9 +46,9 @@ class Executor(Thread):
                 self.idle = False
                 self.master.task_start(str(task_exec.tid))
                 self.current_task = task_exec
-                
+
                 task_exec.run()
-                
+
                 self.master.task_success(str(task_exec.tid))
                 self.cqueue.task_done()
             except Queue.Empty:
