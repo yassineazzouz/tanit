@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 from ..core.master import Master
 from ...common.model.worker import Worker

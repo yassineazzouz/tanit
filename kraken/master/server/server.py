@@ -18,6 +18,7 @@ import logging as lg
 
 _logger = lg.getLogger(__name__)
 
+
 class MasterWorkerServer(Thread):
     
     def __init__(self, master):
@@ -44,7 +45,8 @@ class MasterWorkerServer(Thread):
         
         # Start Kraken server
         server.serve()
-        
+
+
 class MasterClientServer(Thread):
     
     def __init__(self, master):

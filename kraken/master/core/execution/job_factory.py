@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# encoding: utf-8
 
 from .execution_job import CopyJobExecution, UploadJobExecution, MockJobExecution
 from ....common.model.execution_type import ExecutionType

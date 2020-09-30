@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 from ...common.model.worker import Worker
 from ...common.model.job import Job

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 from ..core.executor_pool import ExecutorPool
 from ..core.executor_factory import ExecutorFactory
@@ -6,11 +5,11 @@ from ..core.execution.task_factory import TaskFactory
 from ...common.model.worker import WorkerStatus
 from ...master.client.client import ThriftClientFactory, ClientType
 
+from six.moves.queue import Queue
 from threading import Thread
 import time
 
 import logging as lg
-from Queue import Queue
 
 _logger = lg.getLogger(__name__)
 

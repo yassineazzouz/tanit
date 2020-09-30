@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import abc
+import six
 from ..thrift import MasterUserService, MasterWorkerService
 from ..thrift import ttypes
 
@@ -22,8 +23,8 @@ WORKER_SERVICE_CLIENT_NAME = 'worker-service'
 USER_SERVICE_CLIENT_NAME = 'user-service'
 
 
+@six.add_metaclass(abc.ABCMeta)
 class UserServiceClientIFace(object):
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def start(self):
@@ -117,8 +118,8 @@ class LocalUserServiceClient(UserServiceClientIFace):
         return
 
 
+@six.add_metaclass(abc.ABCMeta)
 class WorkerServiceClientIFace(object):
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def start(self):

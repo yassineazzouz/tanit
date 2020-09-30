@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-
 import abc
+import six
 import os
 import os.path as osp
 from datetime import datetime
@@ -17,8 +16,9 @@ from ....common.model.execution_type import ExecutionType
 
 _logger = lg.getLogger(__name__)
 
+
 class TaskExecution(object):
-    '''TaskExecution represent the execution flow of a task in the master'''
+    """TaskExecution represent the execution flow of a task in the master"""
     
     def __init__(self, tid, etype, params, job):
         self.state = ExecutionState.SUBMITTED
@@ -30,7 +30,7 @@ class TaskExecution(object):
         self.worker = None
         
     def on_schedule(self):
-        if (self.state not in [ ExecutionState.SUBMITTED, ExecutionState.SCHEDULED ]):
+        if self.state not in [ ExecutionState.SUBMITTED, ExecutionState.SCHEDULED ]:
             raise IllegalStateTransitionException("Can not transition from state %s to state %s",
                                                   ExecutionState._VALUES_TO_NAMES[self.state],
                                                   ExecutionState._VALUES_TO_NAMES[ExecutionState.SCHEDULED])
@@ -38,7 +38,7 @@ class TaskExecution(object):
         self.job.on_task_schedule(self.tid)
 
     def on_dispatch(self, worker = None):
-        if (self.state not in [ ExecutionState.DISPATCHED, ExecutionState.SCHEDULED ]):
+        if self.state not in [ ExecutionState.DISPATCHED, ExecutionState.SCHEDULED ]:
             raise IllegalStateTransitionException("Can not transition from state %s to state %s",
                                                   ExecutionState._VALUES_TO_NAMES[self.state],
                                                   ExecutionState._VALUES_TO_NAMES[ExecutionState.DISPATCHED])
@@ -47,7 +47,7 @@ class TaskExecution(object):
         self.job.on_task_dispatch(self.tid)
 
     def on_start(self):
-        if (self.state not in [ ExecutionState.RUNNING, ExecutionState.DISPATCHED, ExecutionState.FAILED ]):
+        if self.state not in [ ExecutionState.RUNNING, ExecutionState.DISPATCHED, ExecutionState.FAILED ]:
             raise IllegalStateTransitionException("Can not transition from state %s to state %s",
                                                   ExecutionState._VALUES_TO_NAMES[self.state],
                                                   ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING])
@@ -55,7 +55,7 @@ class TaskExecution(object):
         self.job.on_task_start(self.tid)
 
     def on_finish(self):
-        if (self.state not in [ ExecutionState.RUNNING, ExecutionState.FINISHED ]):
+        if self.state not in [ ExecutionState.RUNNING, ExecutionState.FINISHED ]:
             raise IllegalStateTransitionException("Can not transition from state %s to state %s",
                                                   ExecutionState._VALUES_TO_NAMES[self.state],
                                                   ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING])
@@ -63,7 +63,7 @@ class TaskExecution(object):
         self.job.on_task_finish(self.tid)
 
     def on_fail(self):
-        if (self.state not in [ ExecutionState.RUNNING, ExecutionState.FAILED ]):
+        if self.state not in [ ExecutionState.RUNNING, ExecutionState.FAILED ]:
             raise IllegalStateTransitionException("Can not transition from state %s to state %s",
                                                   ExecutionState._VALUES_TO_NAMES[self.state],
                                                   ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING])
@@ -77,12 +77,14 @@ class TaskExecution(object):
         self.state = ExecutionState.SUBMITTED
         self.worker = None
 
+
 class IllegalStateTransitionException(Exception):
     pass
 
+
+@six.add_metaclass(abc.ABCMeta)
 class JobExecution(object):
-    __metaclass__ = abc.ABCMeta
-    '''
+    """
     JobExecution represent the execution flow of a job in the master
     The job state diagram is as follow:
     ----------------------------------------------------------------------
@@ -91,7 +93,7 @@ class JobExecution(object):
     |                                                |                   |
     |                                              FAILED                |
     ---------------------------------------------------------------------|
-    '''
+    """
 
     def __init__(self, params):
         
@@ -134,7 +136,7 @@ class JobExecution(object):
             return None
 
     def get_tasks(self):
-        return self.tasks.values()
+        return list(self.tasks.values())
 
     def get_state(self):
         return self.state
@@ -174,7 +176,7 @@ class JobExecution(object):
                 _logger.info("Job [ %s ] execution finished.", self.jid)
                 self.state = ExecutionState.FINISHED
                 self.finish_time = datetime.now()
-                self.execution_time_s = (self.finish_time - self.start_time).total_seconds()
+                self.execution_time_s = int((self.finish_time - self.start_time).total_seconds())
 
     def on_task_fail(self, tid):
         with self.jlock:
@@ -212,9 +214,11 @@ class JobExecution(object):
             
             task.reset()
 
+
 class UploadJobExecution(JobExecution):
     # not implemented yet
     pass
+
 
 class MockJobExecution(JobExecution):
 
@@ -227,7 +231,8 @@ class MockJobExecution(JobExecution):
     def setup(self):
         for i in range(self.num_tasks):
             self.add_task("{}-task-{}".format(self.jid, i), {})
-    
+
+
 class CopyJobExecution(JobExecution):
     
     def initialize(self, params):
@@ -262,7 +267,7 @@ class CopyJobExecution(JobExecution):
         self.buffer_size = int(params["buffer_size"]) if "buffer_size" in params else 65536
 
         self.jid = "job-%s-%s" % (
-            md5("{}-{}-{}-{}".format(self.src, self.src_path, self.dst, self.dest_path)).hexdigest(),
+            md5("{}-{}-{}-{}".format(self.src, self.src_path, self.dst, self.dest_path).encode('utf-8')).hexdigest(),
             str(datetime.now().strftime("%d%m%Y%H%M%S"))
         )
         

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 from .worker_monitor import WorkerMonitor
 from threading import RLock

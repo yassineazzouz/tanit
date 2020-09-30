@@ -1,7 +1,7 @@
 
 import pytest
 
-from Queue import Queue
+from six.moves.queue import Queue
 
 from kraken.master.core.dispatcher import FairDispatcher
 from kraken.master.core.execution.job_factory import JobFactory

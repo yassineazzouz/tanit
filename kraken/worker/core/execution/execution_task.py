@@ -1,5 +1,6 @@
 
 import abc
+import six
 import time
 import logging as lg
 import os.path as osp
@@ -11,9 +12,10 @@ from ....common.utils.utils import str2bool
 
 _logger = lg.getLogger(__name__)
 
+
+@six.add_metaclass(abc.ABCMeta)
 class TaskExecution(object):
-    __metaclass__ = abc.ABCMeta
-    
+
     def __init__(self, tid, params):
         self.tid = tid
         self.params = params
@@ -28,9 +30,11 @@ class TaskExecution(object):
     def run(self):
         return
 
+
 class UploadTaskExecution(TaskExecution):
     # not implemented yet
     pass
+
 
 class MockTaskExecution(TaskExecution):
 
@@ -41,10 +45,11 @@ class MockTaskExecution(TaskExecution):
         time.sleep(2.0)
         return
 
+
 class CopyTaskExecution(TaskExecution):
-    
+
     def initialize(self, params):
-        
+
         if "src" in params:
             self.src = params["src"]
         else:
@@ -64,7 +69,7 @@ class CopyTaskExecution(TaskExecution):
             self.dest_path = params["dest_path"]
         else:
             raise TaskInitializationException("missing required copy job parameter 'dest_path'")
-        
+
         self.include_pattern = params["include_pattern"] if "include_pattern" in params else "*"
         self.min_size = int(params["min_size"]) if "min_size" in params else 0
         self.preserve = str2bool(params["preserve"]) if "preserve" in params else True
@@ -73,20 +78,19 @@ class CopyTaskExecution(TaskExecution):
         self.files_only = str2bool(params["files_only"]) if "files_only" in params else True
         self.part_size = int(params["part_size"]) if "part_size" in params else 65536
         self.buffer_size = int(params["buffer_size"]) if "buffer_size" in params else 65536
-        
 
     def run(self):
 
       # Can cache the clients in the engine
       src = ClientFactory.getInstance().get_client(self.src)
       dst = ClientFactory.getInstance().get_client(self.dst)
-      
+
       checksum = self.checksum
       overwrite = self.force
       preserve = self.preserve
       buffer_size = self.buffer_size
       chunk_size = self.part_size
-      
+
       _src_path = self.src_path
       _dst_path = self.dest_path
       _tmp_path = ""
@@ -151,7 +155,7 @@ class CopyTaskExecution(TaskExecution):
                 if preserve:
                   curr_src_path=osp.realpath( osp.join( _src_path,osp.relpath(curpath,_tmp_path)) )
                   _preserve(curr_src_path,curpath)
-      
+
         _logger.info('Copying %r to %r.', _src_path, _tmp_path)
 
         kwargs = {}
@@ -171,7 +175,7 @@ class CopyTaskExecution(TaskExecution):
           _logger.info(
             'Copy of %r to %r complete.', _src_path, _dst_path
           )
-      
+
         if preserve:
           _preserve(_src_path,_dst_path)
 
@@ -179,7 +183,7 @@ class CopyTaskExecution(TaskExecution):
       else:
         _logger.info('Skipping copy %r to %r.', _src_path, _tmp_path)
         return { 'status': 'skipped', 'src_path': _src_path, 'dest_path' : _dst_path }
-    
+
 
 class TaskInitializationException(Exception):
     pass

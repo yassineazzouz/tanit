@@ -1,23 +1,21 @@
-#!/usr/bin/env python
-
-from ConfigParser import ConfigParser
 import os
 import os.path as osp
 import logging as lg
+from six.moves.configparser import ConfigParser
 
 _logger = lg.getLogger(__name__)
 
-class Config(object):
 
-    config_file = "kraken.conf" 
+class Config(object):
+    config_file = "kraken.conf"
     default_conf_dir = osp.expanduser('/etc/kraken/conf')
-        
+
     def __init__(self, path=None):
         self.config = ConfigParser()
-        
+
         self.conf_dir = path or os.getenv('KRAKEN_CONF_DIR', self.default_conf_dir)
         self.conf_file = osp.join(self.conf_dir, self.config_file)
-        
+
         if osp.exists(self.conf_file):
             try:
                 self.config.read(self.conf_file)
@@ -33,6 +31,7 @@ class Config(object):
             _logger.info('Instantiated configuration from %s.', self.conf_file)
         else:
             raise KrakenConfigurationException('Invalid configuration file %s.', self.conf_file)
-    
+
+
 class KrakenConfigurationException(Exception):
     pass

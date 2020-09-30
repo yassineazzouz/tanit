@@ -1,7 +1,7 @@
 
 import pytest
 
-from Queue import Queue
+from six.moves.queue import Queue
 
 from kraken.master.core.execution.job_factory import JobFactory
 from kraken.master.core.scheduler import SimpleScheduler

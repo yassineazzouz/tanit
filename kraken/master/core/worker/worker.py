@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-# encoding: utf-8
-
 import abc
+import six
 import logging as lg
 from datetime import datetime
 from ....worker.client.client import WorkerClient
@@ -9,8 +7,8 @@ from ....worker.client.client import WorkerClient
 _logger = lg.getLogger(__name__)
 
 
+@six.add_metaclass(abc.ABCMeta)
 class WorkerIFace(object):
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, wid, address, port):
         self.wid = wid

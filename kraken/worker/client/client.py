@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# encoding: utf-8
 
 from ..thrift import WorkerService
 from ..thrift.ttypes import Task

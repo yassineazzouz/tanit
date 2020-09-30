@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import multiprocessing
 
 from ..core.worker.worker import WorkerIFace
@@ -12,7 +10,8 @@ from ...common.model.worker import WorkerStatus
 from ...common.model.task import Task
 
 import logging as lg
-from Queue import Queue
+
+from six.moves.queue import Queue
 
 _logger = lg.getLogger(__name__)
 

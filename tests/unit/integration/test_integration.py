@@ -12,6 +12,7 @@ from ..master.core.tutils import wait_until
 
 config_dir = os.path.dirname(os.path.abspath(conf.__file__))
 
+
 @pytest.fixture(scope="class")
 def worker_server():
     server = WorkerServer(config = config_dir)
@@ -26,6 +27,7 @@ def worker_server():
         
     server.stop()
     server_daemon.join()
+
 
 @pytest.mark.usefixtures("master_server", "worker_server")
 class TestIntegration():

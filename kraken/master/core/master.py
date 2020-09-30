@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 from .execution.execution_manager import ExecutionManager
 from .worker.worker_factory import WorkerFactory

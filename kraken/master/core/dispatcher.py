@@ -1,22 +1,23 @@
-#!/usr/bin/env python
-
 import abc
+import six
 import time
 from threading import Thread
 
 import logging as lg
+
 _logger = lg.getLogger(__name__)
 
+
+@six.add_metaclass(abc.ABCMeta)
 class Dispatcher(object):
-    __metaclass__ = abc.ABCMeta
-    '''
+    """
     The Dispatcher distribute scheduled tasks between workers.
     Initially tasks are queued when submitted to the dispatcher
     then the dispatch thread continuously poll tasks and select
     the appropriate worker for execution.
-    '''
-    
-    def __init__(self, cqueue, workers_manager, callback = None):
+    """
+
+    def __init__(self, cqueue, workers_manager, callback=None):
         self.workers_manager = workers_manager
         self.callback = callback
         self.cqueue = cqueue
@@ -39,16 +40,17 @@ class Dispatcher(object):
                         worker.submit(task_exec)
                         task_exec = None
                     except Exception:
-                        _logger.exception("Exception submitting task [ %s ] to worker [ %s ]", task_exec.tid, worker.wid)
-                        
+                        _logger.exception("Exception submitting task [ %s ] to worker [ %s ]", task_exec.tid,
+                                          worker.wid)
+
             else:
                 _logger.debug("No new tasks to dispatch, sleeping for %s seconds...", 2)
                 time.sleep(2)
-    
+
             if (self.stopped and self.cqueue.empty()):
                 _logger.debug("No new tasks to dispatch, terminating dispatcher thread.")
                 return
-    
+
     @abc.abstractmethod
     def next_worker(self):
         return
@@ -65,16 +67,16 @@ class Dispatcher(object):
         self.stopped = True
         self.daemon.join()
         _logger.info("kraken dispatcher Stopped.")
-        
-    
+
+
 class FairDispatcher(Dispatcher):
-        
+
     def next_worker(self):
         live_workers = self.workers_manager.list_live_workers()
-        
-        if(len(live_workers) == 0):
+
+        if (len(live_workers) == 0):
             return None
-        
+
         best_status = None
         best_worker = None
 

@@ -1,19 +1,10 @@
-import sys
 import os
 import re
 import fnmatch
-
 from ..core.exception import KrakenError
 
-try:
-    _unicode = unicode
-except NameError:
-    # If Python is built without Unicode support, the unicode type
-    # will not exist. Fake one.
-    class _unicode(object):
-        pass
-
 __all__ = ["glob", "iglob"]
+
 
 def glob(client, pathname):
     """Return a list of paths matching a pathname pattern.
@@ -22,7 +13,8 @@ def glob(client, pathname):
     dot are special cases that are not matched by '*' and '?'
     patterns.
     """
-    return list(iglob(client,pathname))
+    return list(iglob(client, pathname))
+
 
 def iglob(client, pathname):
     """Return an iterator which yields the paths matching a pathname pattern.
@@ -34,13 +26,13 @@ def iglob(client, pathname):
     dirname, basename = os.path.split(pathname)
     if not has_magic(pathname):
         if basename:
-            status = client.status(pathname,strict=False)
+            status = client.status(pathname, strict=False)
             if status is not None:
                 yield pathname
         else:
             # Patterns ending with a slash should match only directories
-            status = client.status(pathname,strict=False)
-            if status is not None and status['type']=='DIRECTORY':
+            status = client.status(pathname, strict=False)
+            if status is not None and status['type'] == 'DIRECTORY':
                 yield pathname
         return
     if not dirname:
@@ -51,7 +43,7 @@ def iglob(client, pathname):
     # drive or UNC path.  Prevent an infinite recursion if a drive or UNC path
     # contains magic characters (i.e. r'\\?\C:').
     if dirname != pathname and has_magic(dirname):
-        dirs = iglob(client,dirname)
+        dirs = iglob(client, dirname)
     else:
         dirs = [dirname]
     if has_magic(basename):
@@ -59,8 +51,9 @@ def iglob(client, pathname):
     else:
         glob_in_dir = glob0
     for dirname in dirs:
-        for name in glob_in_dir(client,dirname, basename):
+        for name in glob_in_dir(client, dirname, basename):
             yield os.path.join(dirname, name)
+
 
 # These 2 helper functions non-recursively glob inside a literal directory.
 # They return a list of basenames. `glob1` accepts a pattern while `glob0`
@@ -68,27 +61,30 @@ def iglob(client, pathname):
 
 def glob1(client, dirname, pattern):
     if not dirname:
-        dirname = os.curdir
-    if isinstance(pattern, _unicode) and not isinstance(dirname, unicode):
-        dirname = unicode(dirname, sys.getfilesystemencoding() or
-                                   sys.getdefaultencoding())
+        if isinstance(pattern, bytes):
+            dirname = bytes(os.curdir, 'ASCII')
+        else:
+            dirname = os.curdir
     try:
         names = client.list(dirname)
     except KrakenError:
         return []
-    if pattern[0] != '.':
-        names = filter(lambda x: x[0] != '.', names)
+
+    if not _ishidden(pattern):
+        names = [x for x in names if not _ishidden(x)]
+
     return fnmatch.filter(names, pattern)
+
 
 def glob0(client, dirname, basename):
     if basename == '':
         # `os.path.split()` returns an empty basename for paths ending with a
         # directory separator.  'q*x/' should match only directories.
-        status = client.status(dirname,strict=False)
-        if status is not None and status['type']=='DIRECTORY':
+        status = client.status(dirname, strict=False)
+        if status is not None and status['type'] == 'DIRECTORY':
             return [basename]
     else:
-        status = client.status(os.path.join(dirname, basename),strict=False)
+        status = client.status(os.path.join(dirname, basename), strict=False)
         if status is not None:
             return [basename]
     return []
@@ -96,5 +92,10 @@ def glob0(client, dirname, basename):
 
 magic_check = re.compile('[*?[]')
 
+
 def has_magic(s):
     return magic_check.search(s) is not None
+
+
+def _ishidden(path):
+    return path[0] in ('.', b'.'[0])

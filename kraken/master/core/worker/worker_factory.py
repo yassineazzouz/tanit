@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# encoding: utf-8
 
 from .worker import RemoteThriftWorker
 from ...standalone.worker import LocalWorker

@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# encoding: utf-8
-
 """kraken-client: A simple thrift client for kraken service.
 
 Usage:
@@ -35,6 +32,7 @@ from docopt import docopt
 
 _logger = lg.getLogger(__name__)
 
+
 def configure_logging():
     # capture warnings issued by the warnings module  
     try:
@@ -51,29 +49,30 @@ def configure_logging():
     lg.getLogger('requests').setLevel(lg.ERROR)
 
     # Configure stream logging if applicable
-    stream_handler = lg.StreamHandler() 
+    stream_handler = lg.StreamHandler()
     stream_handler.setLevel(lg.INFO)
 
     fmt = '%(levelname)s\t%(message)s'
     stream_handler.setFormatter(lg.Formatter(fmt))
     logger.addHandler(stream_handler)
-    
+
+
 def main(argv=None):
-    
     args = docopt(__doc__, argv=argv, version=__version__)
-    
+
     configure_logging()
     config = MasterConfig()
-    
-    if (args['job']):
-        client = ThriftClientFactory(config.client_service_host, config.client_service_port).create_client(ClientType.USER_SERVICE)
+
+    if args['job']:
+        client = ThriftClientFactory(config.client_service_host, config.client_service_port).create_client(
+            ClientType.USER_SERVICE)
         client.start()
-        if (args['--list']):
+        if args['--list']:
             for job in client.list_jobs():
                 print(str(job))
-        elif (args['--submit']):
+        elif args['--submit']:
             try:
-                if (args['--submit'].startswith('@')):
+                if args['--submit'].startswith('@'):
                     with open(args['--submit'][1:], "r") as json_spec_file:
                         job_spec = json.load(json_spec_file)
                 else:
@@ -81,29 +80,32 @@ def main(argv=None):
             except Exception as e:
                 _logger.error("Error parsing job json specification.")
                 raise e
-            
+
             jtype = ExecutionType._NAMES_TO_VALUES[job_spec['type']]
             params = job_spec['params']
             client.submit_job(Job(jtype, params))
-        elif (args['--status']):
+        elif args['--status']:
             job = client.job_status(args['--status'])
-            if (job == None):
+            if job is None:
                 _logger.info("No such job %s", args['--status'])
             else:
                 print(str(job))
         else:
             _logger.error("Nothing to do !")
-        
+
         client.stop()
-    elif (args['worker']):
-        client = ThriftClientFactory(config.worker_service_host, config.worker_service_port).create_client(ClientType.WORKER_SERVICE)
+    elif args['worker']:
+        client = ThriftClientFactory(config.worker_service_host, config.worker_service_port).create_client(
+            ClientType.WORKER_SERVICE)
         client.start()
-        if (args['--list']):
+        if args['--list']:
             for worker in client.list_workers():
                 print(str(worker))
         else:
             _logger.error("Nothing to do !")
-            
+
         client.stop()
+
+
 if __name__ == '__main__':
     main()
