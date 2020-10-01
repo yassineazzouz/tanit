@@ -1,4 +1,3 @@
-
 from .execution.execution_manager import ExecutionManager
 from .worker.worker_factory import WorkerFactory
 from .worker.worker_manager import WorkerManager
@@ -13,10 +12,12 @@ _logger = lg.getLogger(__name__)
 class Master(object):
     """
     The master object represent the service interface of the master server.
+
     Its role is to implement the master API in a technology independent way,
     so the service layer is completely dissociated from the service layer
     and the RPC technology used.
     """
+
     def __init__(self):
         # workers factory
         self.workers_factory = WorkerFactory(self)
@@ -25,7 +26,9 @@ class Master(object):
         # execution manager
         self.execution_manager = ExecutionManager(self.workers_manager)
         # decommissioner
-        self.decommissioner = WorkerDecommissioner(self.execution_manager, self.workers_manager)
+        self.decommissioner = WorkerDecommissioner(
+            self.execution_manager, self.workers_manager
+        )
 
         self.started = False
 
@@ -34,7 +37,9 @@ class Master(object):
 
     def submit_job(self, job):
         if not self.started:
-            raise MasterStoppedException("Can not submit job, master server stopped.")
+            raise MasterStoppedException(
+                "Can not submit job, master server stopped."
+            )
         return self.execution_manager.submit_job(job)
 
     def list_jobs(self):
@@ -61,7 +66,10 @@ class Master(object):
 
     def register_worker(self, worker):
         if not self.started:
-            raise MasterStoppedException("Can not register worker [ %s ] : master server stopped.", worker.wid)
+            raise MasterStoppedException(
+                "Can not register worker [ %s ] : master server stopped.",
+                worker.wid
+            )
 
         _logger.info("Registering new Worker [ %s ].", worker.wid)
         self.workers_manager.register_worker(worker)
@@ -73,7 +81,10 @@ class Master(object):
 
     def unregister_worker(self, worker):
         if not self.started:
-            raise MasterStoppedException("Can not register worker [ %s ] : master server stopped.", worker.wid)
+            raise MasterStoppedException(
+                "Can not register worker [ %s ] : master server stopped.",
+                worker.wid
+            )
 
         # This will prevent any future tasks from being sent to the worker
         self.workers_manager.decommission_worker(worker.wid)
@@ -97,5 +108,6 @@ class Master(object):
 
 
 class MasterStoppedException(Exception):
-    """Raised when trying to submit a task to a stopped master"""
+    """Raised when trying to submit a task to a stopped master."""
+
     pass

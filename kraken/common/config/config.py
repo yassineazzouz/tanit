@@ -13,7 +13,8 @@ class Config(object):
     def __init__(self, path=None):
         self.config = ConfigParser()
 
-        self.conf_dir = path or os.getenv('KRAKEN_CONF_DIR', self.default_conf_dir)
+        self.conf_dir = path \
+            or os.getenv('KRAKEN_CONF_DIR', self.default_conf_dir)
         self.conf_file = osp.join(self.conf_dir, self.config_file)
 
         if osp.exists(self.conf_file):
@@ -22,15 +23,25 @@ class Config(object):
                 try:
                     self.load()
                 except KrakenConfigurationException as e:
-                    _logger.error("Error loading configuration from file %s.", self.conf_file)
+                    _logger.error(
+                        "Error loading configuration from file %s.",
+                        self.conf_file
+                    )
                     raise e
 
             except Exception as e:
-                raise KrakenConfigurationException('Exception while loading configuration file %s.', self.conf_file, e)
+                raise KrakenConfigurationException(
+                    'Exception while loading configuration file %s.',
+                    self.conf_file, e
+                )
 
-            _logger.info('Instantiated configuration from %s.', self.conf_file)
+            _logger.info(
+                'Instantiated configuration from %s.', self.conf_file
+            )
         else:
-            raise KrakenConfigurationException('Invalid configuration file %s.', self.conf_file)
+            raise KrakenConfigurationException(
+                'Invalid configuration file %s.', self.conf_file
+            )
 
 
 class KrakenConfigurationException(Exception):

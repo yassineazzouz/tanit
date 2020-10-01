@@ -22,20 +22,14 @@ Examples:
 from ... import __version__
 from .server import MasterServer
 
-import requests as rq
 import logging as lg
 
 from docopt import docopt
 
+
 def configure_logging():
-    # capture warnings issued by the warnings module  
-    try:
-        # This is not available in python 2.6
-        lg.captureWarnings(True)
-    except:
-        # disable annoying url3lib warnings
-        rq.packages.urllib3.disable_warnings()
-        pass
+    # capture warnings issued by the warnings module
+    lg.captureWarnings(True)
 
     logger = lg.getLogger()
     logger.setLevel(lg.DEBUG)
@@ -43,21 +37,22 @@ def configure_logging():
     lg.getLogger('requests').setLevel(lg.ERROR)
 
     # Configure stream logging if applicable
-    stream_handler = lg.StreamHandler() 
+    stream_handler = lg.StreamHandler()
     stream_handler.setLevel(lg.INFO)
 
     fmt = '%(asctime)s\t%(name)-16s\t%(levelname)-5s\t%(message)s'
     stream_handler.setFormatter(lg.Formatter(fmt))
     logger.addHandler(stream_handler)
-    
+
+
 def main(argv=None):
-    
     args = docopt(__doc__, argv=argv, version=__version__)
-    
+
     configure_logging()
-    
-    server = MasterServer( standalone = True if args['--standalone'] else False)
+
+    server = MasterServer(standalone=True if args['--standalone'] else False)
     server.start()
+
 
 if __name__ == '__main__':
     main()

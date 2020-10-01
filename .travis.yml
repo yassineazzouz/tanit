@@ -15,6 +15,11 @@ matrix:
     - python: 3.7
     - python: 3.8
 
+    - python: 3.8
+      name: Linting code style
+      env:
+        TOXENV: lint
+
 install:
   - pip install tox codecov
 

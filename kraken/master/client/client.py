@@ -8,7 +8,6 @@ from ..thrift import ttypes
 
 from ...common.model.job import JobStatus
 from ...common.model.worker import Worker
-from ...common.model.execution_type import ExecutionType
 
 # Thrift files
 from thrift.transport import TSocket
@@ -32,10 +31,6 @@ class UserServiceClientIFace(object):
 
     @abc.abstractmethod
     def list_jobs(self):
-        pass
-
-    @abc.abstractmethod
-    def job_status(self, jid):
         pass
 
     @abc.abstractmethod
@@ -73,15 +68,22 @@ class ThriftUserServiceClient(UserServiceClientIFace):
         jobs = []
         for job in self.client.list_jobs():
             jobs.append(
-                JobStatus(job.id, ttypes.JobState._VALUES_TO_NAMES[job.state], job.submission_time, job.start_time,
-                          job.finish_time, job.execution_time))
+                JobStatus(
+                    job.id, ttypes.JobState._VALUES_TO_NAMES[job.state],
+                    job.submission_time, job.start_time,
+                    job.finish_time, job.execution_time
+                )
+            )
         return jobs
 
     def job_status(self, jid):
         try:
             st = self.client.job_status(jid)
-            return JobStatus(st.id, ttypes.JobState._VALUES_TO_NAMES[st.state], st.submission_time, st.start_time,
-                             st.finish_time, st.execution_time)
+            return JobStatus(
+                st.id, ttypes.JobState._VALUES_TO_NAMES[st.state],
+                st.submission_time, st.start_time,
+                st.finish_time, st.execution_time
+            )
         except ttypes.JobNotFoundException:
             return None
 
@@ -160,8 +162,9 @@ class WorkerServiceClientIFace(object):
 
 class ThriftWorkerServiceClient(WorkerServiceClientIFace):
     """
-    Used by thrift remote worker clients accessing the master worker services interface
-    from a remote client using Thrift.
+    Worker service Thrift client.
+
+    Used mainly by the master to to communicate with workers.
     """
 
     def __init__(self, master_host, master_port):
@@ -190,7 +193,9 @@ class ThriftWorkerServiceClient(WorkerServiceClientIFace):
         return self.client.register_worker(ttypes.Worker(wid, address, port))
 
     def unregister_worker(self, wid, address, port):
-        return self.client.unregister_worker(ttypes.Worker(wid, address, port))
+        return self.client.unregister_worker(
+            ttypes.Worker(wid, address, port)
+        )
 
     def register_heartbeat(self, wid, address, port):
         self.client.register_heartbeat(ttypes.Worker(wid, address, port))
@@ -209,9 +214,7 @@ class ThriftWorkerServiceClient(WorkerServiceClientIFace):
 
 
 class LocalWorkerServiceClient(WorkerServiceClientIFace):
-    """
-    Used by local clients accessing the master worker services directly.
-    """
+    """Used by local clients accessing the master worker services directly."""
 
     def __init__(self, master):
         self.master = master
@@ -273,7 +276,10 @@ class LocalClientFactory(object):
         elif client_type == ClientType.USER_SERVICE:
             return LocalUserServiceClient(self.master)
         else:
-            raise NoSuchClientException("No such client [ %s ]", ClientType._VALUES_TO_NAMES[client_type])
+            raise NoSuchClientException(
+                "No such client [ %s ]",
+                ClientType._VALUES_TO_NAMES[client_type]
+            )
 
 
 class ThriftClientFactory(object):
@@ -289,7 +295,10 @@ class ThriftClientFactory(object):
         elif client_type == ClientType.USER_SERVICE:
             return ThriftUserServiceClient(self.host, self.port)
         else:
-            raise NoSuchClientException("No such client [ %s ]", ClientType._VALUES_TO_NAMES[client_type])
+            raise NoSuchClientException(
+                "No such client [ %s ]",
+                ClientType._VALUES_TO_NAMES[client_type]
+            )
 
 
 class NoSuchClientException(Exception):

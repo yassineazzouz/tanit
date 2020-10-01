@@ -1,4 +1,5 @@
-"""kraken-client: A simple thrift client for kraken service.
+"""
+kraken-client: A simple thrift client for kraken service.
 
 Usage:
   kraken-client job [-v...] [--submit job-spec] [--status jid] [--list]
@@ -16,7 +17,13 @@ Options:
   --list                        List all jobs.
 
 Examples:
-  kraken-client --submit "{ \"src\":\"prod\", \"dest\": \"dr\", \"src_path\": \"/data/important_dataset\", \"dest_path\": \"/data/important_dataset\", \"preserve\": False }"
+  kraken-client --submit "{
+        "src": "prod",
+        "dest": "dr",
+        "src_path":
+        "/data/important_dataset",
+        "dest_path": "/data/important_dataset",
+        "preserve": "False" }"
 
 """
 from ... import __version__
@@ -26,7 +33,6 @@ from ..config.config import MasterConfig
 from ...common.model.job import Job
 from ...common.model.execution_type import ExecutionType
 import json
-import requests as rq
 import logging as lg
 from docopt import docopt
 
@@ -34,14 +40,8 @@ _logger = lg.getLogger(__name__)
 
 
 def configure_logging():
-    # capture warnings issued by the warnings module  
-    try:
-        # This is not available in python 2.6
-        lg.captureWarnings(True)
-    except:
-        # disable annoying url3lib warnings
-        rq.packages.urllib3.disable_warnings()
-        pass
+    # capture warnings issued by the warnings module
+    lg.captureWarnings(True)
 
     logger = lg.getLogger()
     logger.setLevel(lg.DEBUG)
@@ -64,8 +64,9 @@ def main(argv=None):
     config = MasterConfig()
 
     if args['job']:
-        client = ThriftClientFactory(config.client_service_host, config.client_service_port).create_client(
-            ClientType.USER_SERVICE)
+        client = ThriftClientFactory(
+            config.client_service_host, config.client_service_port
+        ).create_client(ClientType.USER_SERVICE)
         client.start()
         if args['--list']:
             for job in client.list_jobs():
@@ -73,7 +74,7 @@ def main(argv=None):
         elif args['--submit']:
             try:
                 if args['--submit'].startswith('@'):
-                    with open(args['--submit'][1:], "r") as json_spec_file:
+                    with open(args['--submit'][1:], "r") as json_spec_file: # NOQA
                         job_spec = json.load(json_spec_file)
                 else:
                     job_spec = json.loads(args['--submit'])
@@ -95,8 +96,9 @@ def main(argv=None):
 
         client.stop()
     elif args['worker']:
-        client = ThriftClientFactory(config.worker_service_host, config.worker_service_port).create_client(
-            ClientType.WORKER_SERVICE)
+        client = ThriftClientFactory(
+            config.worker_service_host, config.worker_service_port
+        ).create_client(ClientType.WORKER_SERVICE)
         client.start()
         if args['--list']:
             for worker in client.list_workers():

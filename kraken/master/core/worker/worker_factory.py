@@ -1,4 +1,3 @@
-
 from .worker import RemoteThriftWorker
 from ...standalone.worker import LocalWorker
 

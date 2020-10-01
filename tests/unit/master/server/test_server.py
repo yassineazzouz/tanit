@@ -1,4 +1,3 @@
-
 import pytest
 import time
 import os
@@ -16,45 +15,52 @@ config_dir = os.path.dirname(os.path.abspath(conf.__file__))
 
 glock = RLock()
 
+
 @pytest.fixture
 def user_client():
-        config = MasterConfig(path = config_dir)
-        factory = ThriftClientFactory(config.client_service_host, config.client_service_port)
-        client = factory.create_client(ClientType.USER_SERVICE)
+    config = MasterConfig(path=config_dir)
+    factory = ThriftClientFactory(
+        config.client_service_host, config.client_service_port
+    )
+    client = factory.create_client(ClientType.USER_SERVICE)
 
-        client.start()
-        yield client
-        client.stop()
+    client.start()
+    yield client
+    client.stop()
 
-@pytest.fixture  
+
+@pytest.fixture
 def worker_client():
-        config = MasterConfig(path = config_dir)
-        factory = ThriftClientFactory(config.worker_service_host, config.worker_service_port)
-        client = factory.create_client(ClientType.WORKER_SERVICE)
+    config = MasterConfig(path=config_dir)
+    factory = ThriftClientFactory(
+        config.worker_service_host, config.worker_service_port
+    )
+    client = factory.create_client(ClientType.WORKER_SERVICE)
 
-        client.start()
-        yield client
-        client.stop()
+    client.start()
+    yield client
+    client.stop()
+
 
 @pytest.fixture(scope="session")
 def master_server():
-          
-    server = MasterServer(config = config_dir)
+    server = MasterServer(config=config_dir)
     server_daemon = Thread(target=server.start, args=())
     server_daemon.setDaemon(True)
     server_daemon.start()
-    
-    #wait for the server to start
+
+    # wait for the server to start
     time.sleep(2.0)
-        
+
     yield
 
     server.stop()
     server_daemon.join()
 
+
 @pytest.mark.usefixtures("master_server")
 class TestServer():
-    
+
     def test_server_up(self, master_server, user_client):
         assert len(user_client.list_jobs()) >= 0
 
@@ -63,9 +69,13 @@ class TestServer():
         assert len(worker_client.list_workers()) == 1
 
     def test_submit_job(self, user_client):
-        jid = user_client.submit_job(Job(ExecutionType.MOCK, {"num_tasks" : "10" }))
+        jid = user_client.submit_job(
+            Job(ExecutionType.MOCK, {"num_tasks": "10"})
+        )
         # wait for the job to finish
-        assert wait_until( lambda i: user_client.job_status(i).state == "FINISHED", 20, 0.5, jid)
+        assert wait_until(
+            lambda i: user_client.job_status(i).state == "FINISHED", 20, 0.5, jid  # NOQA
+        )
 
     def test_list_jobs(self, user_client):
         assert len(user_client.list_jobs()) >= 1

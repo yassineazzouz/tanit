@@ -1,45 +1,53 @@
-
 import pytest
 
 from kraken.master.core.master import Master
-from kraken.master.core.execution.execution_manager import ExecutionManager
-from kraken.master.core.worker.worker_manager import WorkerManager
-from kraken.master.core.worker.worker_decommissioner import WorkerDecommissioner
-from kraken.common.model.execution_type import ExecutionType
+from kraken.master.core.execution.execution_manager \
+    import ExecutionManager
+from kraken.master.core.worker.worker_manager \
+    import WorkerManager
+from kraken.master.core.worker.worker_decommissioner \
+    import WorkerDecommissioner
+from kraken.common.model.execution_type \
+    import ExecutionType
 from kraken.common.model.job import Job
 from kraken.common.model.worker import Worker
 
 from .worker.mock_worker import MockWorkerFactory
 
+
 class MockMaster(Master):
 
     def __init__(self):
-
         # workers manager
         self.workers_manager = WorkerManager(MockWorkerFactory(None))
         self.workers_manager.disable_monitor()
         # execution manager
         self.execution_manager = ExecutionManager(self.workers_manager)
         # decommissioner
-        self.decommissioner = WorkerDecommissioner(self.execution_manager, self.workers_manager)
-        
+        self.decommissioner =\
+            WorkerDecommissioner(self.execution_manager, self.workers_manager)
+
         self.started = False
 
+
 def mock_job(num_tasks):
-    return Job(ExecutionType.MOCK, { "num_tasks" : str(num_tasks) })
+    return Job(ExecutionType.MOCK, {"num_tasks": str(num_tasks)})
+
 
 def mock_worker(wid, cores):
-        worker = Worker(wid, None, None)
-        worker.cores = cores # hack
-        return worker
+    worker = Worker(wid, None, None)
+    worker.cores = cores  # hack
+    return worker
+
 
 @pytest.fixture
-def master(): 
-        master = MockMaster()
-        master.start()
-        yield master
-        master.stop()
-    
+def master():
+    master = MockMaster()
+    master.start()
+    yield master
+    master.stop()
+
+
 class TestMaster:
 
     def test_submit_job(self, master):

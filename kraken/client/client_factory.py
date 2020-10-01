@@ -1,4 +1,3 @@
-
 import logging as lg
 from pywhdfs.config import WebHDFSConfig
 from threading import Lock
@@ -7,30 +6,28 @@ _logger = lg.getLogger(__name__)
 
 _glock = Lock()
 
+
 class ClientFactory(object):
-    
     __instance = None
-    
-    @staticmethod 
+
+    @staticmethod
     def getInstance():
         with _glock:
             """ Static access method. """
-            if ClientFactory.__instance == None:
+            if ClientFactory.__instance is None:
                 ClientFactory()
         return ClientFactory.__instance
-    
+
     def __init__(self):
-        """ Virtually private constructor. """
-        if ClientFactory.__instance != None:
+        if ClientFactory.__instance is not None:
             raise Exception("Only one instance of Client Factory is allowed!")
         else:
             ClientFactory.__instance = self
             self._configure()
-    
+
     def _configure(self):
         self.config = WebHDFSConfig(None)
         self.clients = {}
-
 
     def get_client(self, name):
         with _glock:
@@ -42,4 +39,3 @@ class ClientFactory(object):
                 client.list("/")
                 self.clients[name] = client
         return client
-

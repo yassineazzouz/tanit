@@ -1,8 +1,7 @@
-
 import time
 import logging as lg
 from threading import Thread
-from six.moves.queue import Queue, Empty
+from six.moves.queue import Empty
 from ...master.client.client import ClientType
 
 _logger = lg.getLogger(__name__)
@@ -17,11 +16,13 @@ class Executor(Thread):
         self.stopped = False
         self.idle = True
 
-        '''
-        Apparently Thrift clients are not thread safe, so can not use without synchronization
+        """
+        Apparently Thrift clients are not thread safe,
+        so can not use without synchronization.
         synchronizing the client calls with locks will came with performance penalty
-        the best approach seems to be, using a separate thrift client (connection) per thread.
-        '''
+        the best approach seems to be, using a separate thrift client
+        (connection) per thread.
+        """
         self.master = factory.create_client(ClientType.WORKER_SERVICE)
 
         self.current_task = None

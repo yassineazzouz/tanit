@@ -7,7 +7,9 @@ __all__ = ["glob", "iglob"]
 
 
 def glob(client, pathname):
-    """Return a list of paths matching a pathname pattern.
+    """
+    Return a list of paths matching a pathname pattern.
+
     The pattern may contain simple shell-style wildcards a la
     fnmatch. However, unlike fnmatch, filenames starting with a
     dot are special cases that are not matched by '*' and '?'
@@ -17,7 +19,9 @@ def glob(client, pathname):
 
 
 def iglob(client, pathname):
-    """Return an iterator which yields the paths matching a pathname pattern.
+    """
+    Return an iterator which yields the paths matching a pathname pattern.
+
     The pattern may contain simple shell-style wildcards a la
     fnmatch. However, unlike fnmatch, filenames starting with a
     dot are special cases that are not matched by '*' and '?'

@@ -1,4 +1,3 @@
-
 from ..core.executor_pool import ExecutorPool
 from ..core.executor_factory import ExecutorFactory
 from ..core.execution.task_factory import TaskFactory
@@ -26,13 +25,20 @@ class Worker(object):
 
         self.wid = "kraken-worker-%s-%s" % (self.address, self.port)
 
-        client_factory = ThriftClientFactory(config.master_host, config.master_port)
+        client_factory = ThriftClientFactory(
+            config.master_host, config.master_port
+        )
         self.master = client_factory.create_client(ClientType.WORKER_SERVICE)
 
         self.executor = ExecutorPool(self.wid,
-                                     ExecutorFactory(client_factory, self.lqueue, config.executor_threads),
+                                     ExecutorFactory(
+                                         client_factory,
+                                         self.lqueue,
+                                         config.executor_threads
+                                     ),
                                      self.lqueue,
-                                     config.executor_threads)
+                                     config.executor_threads
+                                     )
 
         self.task_factory = TaskFactory()
 
@@ -44,8 +50,10 @@ class Worker(object):
         if (not self.stopped):
             self.lqueue.put(task_exec)
         else:
-            raise WorkerStoppedException("Can not submit task [ %s ] to [ %s ] : worker stopped.", task_exec.tid,
-                                         self.wid)
+            raise WorkerStoppedException(
+                "Can not submit task [ %s ] to [ %s ] : worker stopped.",
+                task_exec.tid, self.wid
+            )
 
     def get_stats(self):
         return WorkerStatus(
@@ -60,7 +68,9 @@ class Worker(object):
         try:
             self.master.start()
         except Exception as e:
-            _logger.error("Could not connect to master on [%s:%s]", self.address, self.port)
+            _logger.error(
+                "Could not connect to master on [%s:%s]", self.address, self.port
+            )
             raise e
 
         self.executor.start()
@@ -68,7 +78,7 @@ class Worker(object):
         # register the worker
         try:
             self.master.register_worker(self.wid, self.address, self.port)
-        except:
+        except Exception:
             _logger.error("Could not register worker to the master server. exiting")
             self.stop()
             raise
@@ -82,7 +92,7 @@ class Worker(object):
         # unregister the worker
         try:
             self.master.unregister_worker(self.wid, self.address, self.port)
-        except:
+        except Exception:
             _logger.error("Could not unregister worker from master, exiting.")
 
         self.reporter.stop()
@@ -110,13 +120,18 @@ class WorkerHearbeatReporter(Thread):
         _logger.info("Started kraken worker hearbeat reporter.")
         while (not self.stopped):
             try:
-                self.client.register_heartbeat(self.worker.wid, self.worker.address, self.worker.port)
-            except:
-                _logger.exception("Could not send heartbeat to master, is the server running !")
+                self.client.register_heartbeat(
+                    self.worker.wid, self.worker.address, self.worker.port
+                )
+            except Exception:
+                _logger.exception(
+                    "Could not send heartbeat to master, is the server running !"
+                )
             time.sleep(self.heartbeat_interval)
         _logger.info("Kraken worker hearbeat reporter stopped.")
 
 
 class WorkerStoppedException(Exception):
-    """Raised when trying to submit a task to a stopped worker"""
+    """Raised when trying to submit a task to a stopped worker."""
+
     pass

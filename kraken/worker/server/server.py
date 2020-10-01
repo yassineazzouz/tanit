@@ -15,18 +15,19 @@ import logging as lg
 
 _logger = lg.getLogger(__name__)
 
+
 class WorkerServer(object):
-    
-    def __init__(self, config = None):
-        
+
+    def __init__(self, config=None):
+
         self.config = WorkerConfig(config)
         self.config.load()
-        
+
         self.worker = Worker()
         self.worker.configure(self.config)
-        
+
         self.stopped = False
-    
+
     def stop(self):
         self.stopped = True
 
@@ -41,33 +42,36 @@ class WorkerServer(object):
             TBinaryProtocol.TBinaryProtocolFactory(),
             daemon=True
         )
-        
+
         # Start Kraken server
         server.serve()
-              
+
     def start(self):
-        
+
         self.stopped = False
-        
+
         _logger.info("Stating Kraken worker server.")
         self.daemon = Thread(target=self._run, args=())
         self.daemon.setDaemon(True)
-        self.daemon.start()     
-        _logger.info("Kraken worker server started, listening  at %s:%s", self.config.bind_address, self.config.bind_port)
-        
+        self.daemon.start()
+        _logger.info(
+            "Kraken worker server started, listening  at %s:%s",
+            self.config.bind_address, self.config.bind_port
+        )
+
         # Start worker services
         try:
             self.worker.start()
-        except Exception as e:
+        except Exception:
             _logger.exception("Failed to start Kraken worker services.")
             exit(1)
-        
+
         try:
             while self.daemon.is_alive():
                 # Try to join the child thread back to parent for 0.5 seconds
                 self.daemon.join(0.5)
-                
-                if(self.stopped):
+
+                if (self.stopped):
                     _logger.info("Kraken worker server stopped, exiting.")
                     break
         except (KeyboardInterrupt, SystemExit):
@@ -77,4 +81,4 @@ class WorkerServer(object):
         finally:
             _logger.info("Stopping Kraken worker server.")
             self.worker.stop()
-            _logger.info("Kraken worker server stopped.") 
+            _logger.info("Kraken worker server stopped.")

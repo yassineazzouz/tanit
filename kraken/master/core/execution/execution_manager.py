@@ -11,8 +11,10 @@ _logger = lg.getLogger(__name__)
 class ExecutionManager(object):
     """
     The ExecutionManager monitor the state of execution of jobs and tasks.
-    It interacts with the different components involved in the execution pipeline
-    and ensure the execution state is properly updated and reflect the real progress.
+
+    It interacts with the different components involved in
+    the execution pipeline and ensure the execution state is properly updated
+    and reflect the real progress.
     """
 
     def __init__(self, workers_manager):
@@ -27,7 +29,9 @@ class ExecutionManager(object):
         # scheduler
         self.scheduler = SimpleScheduler(lqueue, cqueue, self.task_schedule)
         # dispatcher
-        self.dispatcher = FairDispatcher(cqueue, workers_manager, self.task_dispatch)
+        self.dispatcher = FairDispatcher(
+            cqueue, workers_manager, self.task_dispatch
+        )
 
     def configure(self, config):
         pass
@@ -53,8 +57,10 @@ class ExecutionManager(object):
         for task_exec in self.get_tasks(jid=job_exec.jid):
             self.scheduler.schedule(task_exec)
 
-        _logger.info("Submitted %s tasks for execution in job [ %s ].", len(self.get_tasks(jid=job_exec.jid)),
-                     job_exec.jid)
+        _logger.info(
+            "Submitted %s tasks for execution in job [ %s ].",
+            len(self.get_tasks(jid=job_exec.jid)), job_exec.jid
+        )
         return job_exec
 
     def cancel_job(self, conf):
@@ -71,9 +77,9 @@ class ExecutionManager(object):
 
     def get_tasks(self, jid=None, states=[], worker=None):
         target_jobs = []
-        if jid != None:
+        if jid is not None:
             job = self.get_job(jid)
-            if (job != None):
+            if job is not None:
                 target_jobs.append(job)
             else:
                 return []
@@ -87,8 +93,8 @@ class ExecutionManager(object):
                 if len(states) != 0:
                     if task.state not in states:
                         valid = False
-                if worker != None:
-                    if (task.worker != worker):
+                if worker is not None:
+                    if task.worker != worker:
                         valid = False
                 if valid:
                     target_tasks.append(task)
@@ -97,48 +103,48 @@ class ExecutionManager(object):
     def get_task(self, tid):
         for job_exec in self.jobs:
             task = job_exec.get_task(tid)
-            if (task != None):
+            if task is not None:
                 return task
         return None
 
     def task_schedule(self, tid):
         task = self.get_task(tid)
-        if (task != None):
+        if task is not None:
             task.on_schedule()
         else:
             raise NoSuchTaskException("No such task [ %s ]", tid)
 
     def task_dispatch(self, tid, worker=None):
         task = self.get_task(tid)
-        if (task != None):
+        if task is not None:
             task.on_dispatch(worker)
         else:
             raise NoSuchTaskException("No such task [ %s ]", tid)
 
     def task_start(self, tid):
         task = self.get_task(tid)
-        if (task != None):
+        if task is not None:
             task.on_start()
         else:
             raise NoSuchTaskException("No such task [ %s ]", tid)
 
     def task_finish(self, tid):
         task = self.get_task(tid)
-        if (task != None):
+        if task is not None:
             task.on_finish()
         else:
             raise NoSuchTaskException("No such task [ %s ]", tid)
 
     def task_failure(self, tid):
         task = self.get_task(tid)
-        if (task != None):
+        if task is not None:
             task.on_fail()
         else:
             raise NoSuchTaskException("No such task [ %s ]", tid)
 
     def task_reset(self, tid):
         task = self.get_task(tid)
-        if (task != None):
+        if task is not None:
             task.on_reset()
             self.scheduler.schedule(task)
         else:

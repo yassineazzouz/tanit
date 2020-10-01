@@ -26,18 +26,26 @@ class LocalWorker(WorkerIFace):
 
         client_factory = LocalClientFactory(master)
 
-        self.executor = ExecutorPool(self.wid,
-                                     ExecutorFactory(client_factory, self.lqueue, multiprocessing.cpu_count()),
-                                     self.lqueue,
-                                     multiprocessing.cpu_count())
+        self.executor = ExecutorPool(
+            self.wid,
+            ExecutorFactory(
+                client_factory, self.lqueue, multiprocessing.cpu_count()
+            ),
+            self.lqueue,
+            multiprocessing.cpu_count()
+        )
 
     def submit(self, task):
-        task_exec = self.task_factory.create_task(Task(task.tid, task.etype, task.params))
+        task_exec = self.task_factory.create_task(
+            Task(task.tid, task.etype, task.params)
+        )
         if not self.stopped:
             self.lqueue.put(task_exec)
         else:
-            raise WorkerStoppedException("Can not submit task [ %s ] to [ %s ] : worker stopped.", task_exec.tid,
-                                         self.wid)
+            raise WorkerStoppedException(
+                "Can not submit task [ %s ] to [ %s ] : worker stopped.",
+                task_exec.tid, self.wid
+            )
 
     def status(self):
         return WorkerStatus(
@@ -60,5 +68,6 @@ class LocalWorker(WorkerIFace):
 
 
 class WorkerStoppedException(Exception):
-    """Raised when trying to submit a task to a stopped worker"""
+    """Raised when trying to submit a task to a stopped worker."""
+
     pass
