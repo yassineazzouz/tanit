@@ -1,13 +1,13 @@
+import logging as lg
 import time
 from threading import Thread
+
 from ..execution.execution_state import ExecutionState
-import logging as lg
 
 _logger = lg.getLogger(__name__)
 
 
 class WorkerDecommissioner(Thread):
-
     def __init__(self, execution_manager, workers_manager):
         super(WorkerDecommissioner, self).__init__()
         self.execution_manager = execution_manager
@@ -34,10 +34,11 @@ class WorkerDecommissioner(Thread):
             except Exception:
                 break
             # check how many tasks are still alive
-            worker_tasks = [task for task in worker_tasks
-                            if task.state not in [
-                                ExecutionState.FINISHED, ExecutionState.FAILED]
-                            ]
+            worker_tasks = [
+                task
+                for task in worker_tasks
+                if task.state not in [ExecutionState.FINISHED, ExecutionState.FAILED]
+            ]
             if len(worker_tasks) == 0:
                 break
             else:
@@ -45,13 +46,12 @@ class WorkerDecommissioner(Thread):
 
         # check if all tasks actually
         if len(worker_tasks) == 0:
-            _logger.info(
-                "Worker [ %s ] have no more active tasks.", worker.wid
-            )
+            _logger.info("Worker [ %s ] have no more active tasks.", worker.wid)
         else:
             _logger.info(
                 "Worker [ %s ] still have %s active tasks.",
-                worker.wid, len(worker_tasks)
+                worker.wid,
+                len(worker_tasks),
             )
             # reschedule the tasks
             for task_exec in worker_tasks:

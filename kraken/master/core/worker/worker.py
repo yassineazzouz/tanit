@@ -1,7 +1,9 @@
 import abc
-import six
 import logging as lg
 from datetime import datetime
+
+import six
+
 from ....worker.client.client import WorkerClient
 
 _logger = lg.getLogger(__name__)
@@ -9,7 +11,6 @@ _logger = lg.getLogger(__name__)
 
 @six.add_metaclass(abc.ABCMeta)
 class WorkerIFace(object):
-
     def __init__(self, wid, address, port):
         self.wid = wid
         self.address = address
@@ -34,7 +35,6 @@ class WorkerIFace(object):
 
 
 class RemoteThriftWorker(WorkerIFace):
-
     def __init__(self, wid, address, port):
         super(RemoteThriftWorker, self).__init__(wid, address, port)
         self.client = WorkerClient(address, port)
@@ -49,13 +49,12 @@ class RemoteThriftWorker(WorkerIFace):
 
     def submit(self, task_exec):
         if not self.stopped:
-            self.client.submit(
-                task_exec.tid, task_exec.etype, task_exec.params
-            )
+            self.client.submit(task_exec.tid, task_exec.etype, task_exec.params)
         else:
             raise WorkerStoppedException(
                 "Can not submit task [ %s ] to [ %s ] : worker stopped.",
-                task_exec.tid, self.wid
+                task_exec.tid,
+                self.wid,
             )
 
     def status(self):

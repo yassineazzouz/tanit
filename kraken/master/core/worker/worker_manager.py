@@ -1,8 +1,8 @@
-from .worker_monitor import WorkerMonitor
-from threading import RLock
-from datetime import datetime
-
 import logging as lg
+from datetime import datetime
+from threading import RLock
+
+from .worker_monitor import WorkerMonitor
 
 _logger = lg.getLogger(__name__)
 
@@ -61,42 +61,46 @@ class WorkerManager(object):
         with self.lock:
             for wkr in self.live_workers:
                 if wkr.wid == worker.wid:
-                    _logger.error(
-                        "Worker [ %s ] is already registered.", worker.wid
-                    )
+                    _logger.error("Worker [ %s ] is already registered.", worker.wid)
                     raise AlreadyRegisteredWorkerException(
                         "Worker [ %s ] is already registered.", worker.wid
                     )
-                elif (wkr.address == worker.address
-                      and wkr.port == worker.port
-                      and wkr.address is not None
-                      and worker.port is not None):
+                elif (
+                    wkr.address == worker.address
+                    and wkr.port == worker.port
+                    and wkr.address is not None
+                    and worker.port is not None
+                ):
                     _logger.error(
-                        "Worker running on address [ %s ] and port [ %s ] " +
-                        "is already registered.",
-                        worker.address, worker.port
+                        "Worker running on address [ %s ] and port [ %s ] "
+                        + "is already registered.",
+                        worker.address,
+                        worker.port,
                     )
                     raise AlreadyRegisteredWorkerException(
-                        "Worker running on address [ %s ] and port [ %s ] " +
-                        "is already registered.",
-                        worker.address, worker.port)
+                        "Worker running on address [ %s ] and port [ %s ] "
+                        + "is already registered.",
+                        worker.address,
+                        worker.port,
+                    )
                 elif wkr.address == worker.address:
                     _logger.warn(
                         "Another Worker [ %s ] is already running on [ %s ].",
-                        worker.wid, worker.address
+                        worker.wid,
+                        worker.address,
                     )
 
             for wkr in self.decommissioning_workers:
                 if wkr.wid == worker.wid:
                     _logger.error(
-                        "Worker [ %s ] is in decommissioning state, " +
-                        "it can not be registered.",
-                        worker.wid
+                        "Worker [ %s ] is in decommissioning state, "
+                        + "it can not be registered.",
+                        worker.wid,
                     )
                     raise AlreadyRegisteredWorkerException(
-                        "Worker [ %s ] is in decommissioning state, " +
-                        "it can not be registered.",
-                        worker.wid
+                        "Worker [ %s ] is in decommissioning state, "
+                        + "it can not be registered.",
+                        worker.wid,
                     )
 
             remote_worker = self.worker_factory.create_worker(worker)
@@ -109,9 +113,7 @@ class WorkerManager(object):
             if remote_worker is not None:
                 remote_worker.last_hear_beat = datetime.now()
             else:
-                raise NoSuchWorkerException(
-                    "No such worker [ %s ]", worker.wid
-                )
+                raise NoSuchWorkerException("No such worker [ %s ]", worker.wid)
 
     def decommission_worker(self, wid):
         _logger.info("Decommisionning Worker [ %s ]", wid)
@@ -128,7 +130,7 @@ class WorkerManager(object):
         _logger.info("Deleting Worker [ %s ]", wid)
         with self.lock:
             for wkr in self.decommissioning_workers:
-                if (wkr.wid == wid):
+                if wkr.wid == wid:
                     wkr.stop()
                     self.decommissioning_workers.remove(wkr)
                     self.dead_workers.append(wkr)

@@ -1,23 +1,20 @@
+import logging as lg
 import multiprocessing
 
-from ..core.worker.worker import WorkerIFace
+from six.moves.queue import Queue
 
-from ..client.client import LocalClientFactory
-from ...worker.core.executor_pool import ExecutorPool
+from ...common.model.task import Task
+from ...common.model.worker import WorkerStatus
 from ...worker.core.execution.task_factory import TaskFactory
 from ...worker.core.executor_factory import ExecutorFactory
-from ...common.model.worker import WorkerStatus
-from ...common.model.task import Task
-
-import logging as lg
-
-from six.moves.queue import Queue
+from ...worker.core.executor_pool import ExecutorPool
+from ..client.client import LocalClientFactory
+from ..core.worker.worker import WorkerIFace
 
 _logger = lg.getLogger(__name__)
 
 
 class LocalWorker(WorkerIFace):
-
     def __init__(self, wid, master):
         super(LocalWorker, self).__init__(wid, None, None)
         self.lqueue = Queue()
@@ -28,11 +25,9 @@ class LocalWorker(WorkerIFace):
 
         self.executor = ExecutorPool(
             self.wid,
-            ExecutorFactory(
-                client_factory, self.lqueue, multiprocessing.cpu_count()
-            ),
+            ExecutorFactory(client_factory, self.lqueue, multiprocessing.cpu_count()),
             self.lqueue,
-            multiprocessing.cpu_count()
+            multiprocessing.cpu_count(),
         )
 
     def submit(self, task):
@@ -44,7 +39,8 @@ class LocalWorker(WorkerIFace):
         else:
             raise WorkerStoppedException(
                 "Can not submit task [ %s ] to [ %s ] : worker stopped.",
-                task_exec.tid, self.wid
+                task_exec.tid,
+                self.wid,
             )
 
     def status(self):
@@ -52,7 +48,8 @@ class LocalWorker(WorkerIFace):
             self.wid,
             self.executor.num_running(),
             self.executor.num_pending(),
-            self.executor.num_available())
+            self.executor.num_available(),
+        )
 
     def start(self):
         _logger.info("Starting kraken worker [%s].", self.wid)

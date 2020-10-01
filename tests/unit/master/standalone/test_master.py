@@ -12,6 +12,5 @@ def master():
 
 
 class TestStandaloneMaster:
-
     def test_master_setup(self, master):
-        assert (len(master.list_workers()) == 1)
+        assert len(master.list_workers()) == 1

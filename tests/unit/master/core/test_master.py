@@ -1,22 +1,17 @@
 import pytest
 
-from kraken.master.core.master import Master
-from kraken.master.core.execution.execution_manager \
-    import ExecutionManager
-from kraken.master.core.worker.worker_manager \
-    import WorkerManager
-from kraken.master.core.worker.worker_decommissioner \
-    import WorkerDecommissioner
-from kraken.common.model.execution_type \
-    import ExecutionType
+from kraken.common.model.execution_type import ExecutionType
 from kraken.common.model.job import Job
 from kraken.common.model.worker import Worker
+from kraken.master.core.execution.execution_manager import ExecutionManager
+from kraken.master.core.master import Master
+from kraken.master.core.worker.worker_decommissioner import WorkerDecommissioner
+from kraken.master.core.worker.worker_manager import WorkerManager
 
 from .worker.mock_worker import MockWorkerFactory
 
 
 class MockMaster(Master):
-
     def __init__(self):
         # workers manager
         self.workers_manager = WorkerManager(MockWorkerFactory(None))
@@ -24,8 +19,9 @@ class MockMaster(Master):
         # execution manager
         self.execution_manager = ExecutionManager(self.workers_manager)
         # decommissioner
-        self.decommissioner =\
-            WorkerDecommissioner(self.execution_manager, self.workers_manager)
+        self.decommissioner = WorkerDecommissioner(
+            self.execution_manager, self.workers_manager
+        )
 
         self.started = False
 
@@ -49,7 +45,6 @@ def master():
 
 
 class TestMaster:
-
     def test_submit_job(self, master):
         master.submit_job(mock_job(2))
         master.register_worker(mock_worker("worker 1", 10))

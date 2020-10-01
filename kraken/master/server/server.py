@@ -1,26 +1,26 @@
 #!/usr/bin/env python
 
+import logging as lg
 import time
-
-from .handler import UserServiceHandler, WorkerServiceHandler
-from ..core.master import Master
-from ..standalone.master import StandaloneMaster
-from ..thrift import MasterUserService, MasterWorkerService
-from ..config.config import MasterConfig
-from thrift.transport import TSocket
-from thrift.transport import TTransport
-from thrift.protocol import TBinaryProtocol
-from thrift.server import TServer
-
 from threading import Thread
 
-import logging as lg
+from thrift.protocol import TBinaryProtocol
+from thrift.server import TServer
+from thrift.transport import TSocket
+from thrift.transport import TTransport
+
+from ..config.config import MasterConfig
+from ..core.master import Master
+from ..standalone.master import StandaloneMaster
+from ..thrift import MasterUserService
+from ..thrift import MasterWorkerService
+from .handler import UserServiceHandler
+from .handler import WorkerServiceHandler
 
 _logger = lg.getLogger(__name__)
 
 
 class MasterWorkerServer(Thread):
-
     def __init__(self, master):
         super(MasterWorkerServer, self).__init__()
         self.master = master
@@ -39,7 +39,7 @@ class MasterWorkerServer(Thread):
             TSocket.TServerSocket(self.listen_address, self.listen_port),
             TTransport.TBufferedTransportFactory(),
             TBinaryProtocol.TBinaryProtocolFactory(),
-            daemon=True
+            daemon=True,
         )
 
         # Start Kraken server
@@ -47,7 +47,6 @@ class MasterWorkerServer(Thread):
 
 
 class MasterClientServer(Thread):
-
     def __init__(self, master):
         super(MasterClientServer, self).__init__()
         self.master = master
@@ -66,7 +65,7 @@ class MasterClientServer(Thread):
             TSocket.TServerSocket(self.listen_address, self.listen_port),
             TTransport.TBufferedTransportFactory(),
             TBinaryProtocol.TBinaryProtocolFactory(),
-            daemon=True
+            daemon=True,
         )
 
         # Start Kraken server
@@ -74,7 +73,6 @@ class MasterClientServer(Thread):
 
 
 class MasterServer(object):
-
     def __init__(self, config=None, standalone=False):
 
         self.config = MasterConfig(config)
@@ -101,10 +99,11 @@ class MasterServer(object):
         self.mcserver.start()
         _logger.info(
             "Kraken master client server started, listening  at %s:%s",
-            self.mcserver.listen_address, self.mcserver.listen_port
+            self.mcserver.listen_address,
+            self.mcserver.listen_port,
         )
 
-        if (not self.standalone):
+        if not self.standalone:
             _logger.info("Stating Kraken master worker server.")
             self.mwserver = MasterWorkerServer(self.master)
             self.mwserver.configure(self.config)
@@ -112,18 +111,20 @@ class MasterServer(object):
             self.mwserver.start()
             _logger.info(
                 "Kraken master worker server started, listening  at %s:%s",
-                self.mwserver.listen_address, self.mwserver.listen_port)
+                self.mwserver.listen_address,
+                self.mwserver.listen_port,
+            )
 
         try:
             while True:
                 if not self.mcserver.is_alive():
                     _logger.error(
-                      "Unexpected Kraken master client server exit, stopping."
+                        "Unexpected Kraken master client server exit, stopping."
                     )
                     break
                 if not self.standalone and not self.mwserver.is_alive():
                     _logger.error(
-                      "Unexpected Kraken worker client server exit, stopping."
+                        "Unexpected Kraken worker client server exit, stopping."
                     )
                     break
                 if self.stopped:

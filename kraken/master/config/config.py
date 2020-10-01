@@ -1,6 +1,7 @@
 import logging as lg
 
-from ...common.config.config import Config, KrakenConfigurationException
+from ...common.config.config import Config
+from ...common.config.config import KrakenConfigurationException
 
 _logger = lg.getLogger(__name__)
 
@@ -20,9 +21,7 @@ class MasterConfig(Config):
             self.bind_address = MasterConfig.default_bind_address
 
         if self.config.has_option("master", "worker-service_address"):
-            worker_service_address = self.config.get(
-                "master", "worker-service_address"
-            )
+            worker_service_address = self.config.get("master", "worker-service_address")
         else:
             raise KrakenConfigurationException(
                 "Missing master rpc worker service address from configuration"
@@ -37,9 +36,7 @@ class MasterConfig(Config):
         self.worker_service_port = int(worker_service_address.split(":")[1])
 
         if self.config.has_option("master", "client-service_address"):
-            client_service_address = self.config.get(
-                "master", "client-service_address"
-            )
+            client_service_address = self.config.get("master", "client-service_address")
         else:
             raise KrakenConfigurationException(
                 "Missing master rpc client service address from configuration"
@@ -54,8 +51,6 @@ class MasterConfig(Config):
         self.client_service_port = int(client_service_address.split(":")[1])
 
         if self.config.has_option("worker", "thrift_threads"):
-            self.thrift_threads = self.config.getint(
-                "worker", "thrift_threads"
-            )
+            self.thrift_threads = self.config.getint("worker", "thrift_threads")
         else:
             self.thrift_threads = MasterConfig.default_thrift_threads

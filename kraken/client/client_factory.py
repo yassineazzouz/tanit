@@ -1,6 +1,7 @@
 import logging as lg
-from pywhdfs.config import WebHDFSConfig
 from threading import Lock
+
+from pywhdfs.config import WebHDFSConfig
 
 _logger = lg.getLogger(__name__)
 

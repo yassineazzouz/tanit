@@ -1,15 +1,15 @@
-from ..thrift import WorkerService
-from ..thrift.ttypes import Task
-from ...common.model.worker import WorkerStatus
+from thrift.protocol import TBinaryProtocol
 
 # Thrift files
 from thrift.transport import TSocket
 from thrift.transport import TTransport
-from thrift.protocol import TBinaryProtocol
+
+from ...common.model.worker import WorkerStatus
+from ..thrift import WorkerService
+from ..thrift.ttypes import Task
 
 
 class WorkerClient(object):
-
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -31,10 +31,8 @@ class WorkerClient(object):
     def worker_status(self):
         status = self.client.worker_status()
         return WorkerStatus(
-            status.wid,
-            status.running,
-            status.pending,
-            status.available)
+            status.wid, status.running, status.pending, status.available
+        )
 
     def stop(self):
         self.transport.close()

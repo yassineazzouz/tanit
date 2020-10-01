@@ -1,9 +1,9 @@
 import abc
-import six
+import logging as lg
 import time
 from threading import Thread
 
-import logging as lg
+import six
 
 _logger = lg.getLogger(__name__)
 
@@ -27,19 +27,15 @@ class Dispatcher(object):
     def _run(self):
         task_exec = None
         while True:
-            if (not self.cqueue.empty()):
+            if not self.cqueue.empty():
                 worker = self.next_worker()
                 if worker is None:
-                    _logger.warn(
-                        "Failed to dispatch tasks : no workers found !"
-                    )
+                    _logger.warn("Failed to dispatch tasks : no workers found !")
                     time.sleep(2)
                 else:
-                    task_exec = self.cqueue.get()\
-                        if task_exec is None else task_exec
+                    task_exec = self.cqueue.get() if task_exec is None else task_exec
                     _logger.debug(
-                        "Dispatching next task [ %s ] for execution.",
-                        task_exec.tid
+                        "Dispatching next task [ %s ] for execution.", task_exec.tid
                     )
                     if self.callback is not None:
                         self.callback(task_exec.tid, worker.wid)
@@ -49,12 +45,12 @@ class Dispatcher(object):
                     except Exception:
                         _logger.exception(
                             "Exception submitting task [ %s ] to worker [ %s ]",  # NOQA
-                            task_exec.tid, worker.wid)
+                            task_exec.tid,
+                            worker.wid,
+                        )
 
             else:
-                _logger.debug(
-                    "No new tasks to dispatch, sleeping for %s seconds...", 2
-                )
+                _logger.debug("No new tasks to dispatch, sleeping for %s seconds...", 2)
                 time.sleep(2)
 
             if self.stopped and self.cqueue.empty():
@@ -82,7 +78,6 @@ class Dispatcher(object):
 
 
 class FairDispatcher(Dispatcher):
-
     def next_worker(self):
         live_workers = self.workers_manager.list_live_workers()
 

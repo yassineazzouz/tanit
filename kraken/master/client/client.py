@@ -2,29 +2,30 @@
 # encoding: utf-8
 
 import abc
-import six
-from ..thrift import MasterUserService, MasterWorkerService
-from ..thrift import ttypes
+import logging as lg
 
-from ...common.model.job import JobStatus
-from ...common.model.worker import Worker
+from thrift.protocol import TBinaryProtocol
 
 # Thrift files
 from thrift.transport import TSocket
 from thrift.transport import TTransport
-from thrift.protocol import TBinaryProtocol
 
-import logging as lg
+import six
+
+from ...common.model.job import JobStatus
+from ...common.model.worker import Worker
+from ..thrift import MasterUserService
+from ..thrift import MasterWorkerService
+from ..thrift import ttypes
 
 _logger = lg.getLogger(__name__)
 
-WORKER_SERVICE_CLIENT_NAME = 'worker-service'
-USER_SERVICE_CLIENT_NAME = 'user-service'
+WORKER_SERVICE_CLIENT_NAME = "worker-service"
+USER_SERVICE_CLIENT_NAME = "user-service"
 
 
 @six.add_metaclass(abc.ABCMeta)
 class UserServiceClientIFace(object):
-
     @abc.abstractmethod
     def start(self):
         pass
@@ -47,7 +48,6 @@ class UserServiceClientIFace(object):
 
 
 class ThriftUserServiceClient(UserServiceClientIFace):
-
     def __init__(self, master_host, master_port):
         self.master_host = master_host
         self.master_port = master_port
@@ -69,9 +69,12 @@ class ThriftUserServiceClient(UserServiceClientIFace):
         for job in self.client.list_jobs():
             jobs.append(
                 JobStatus(
-                    job.id, ttypes.JobState._VALUES_TO_NAMES[job.state],
-                    job.submission_time, job.start_time,
-                    job.finish_time, job.execution_time
+                    job.id,
+                    ttypes.JobState._VALUES_TO_NAMES[job.state],
+                    job.submission_time,
+                    job.start_time,
+                    job.finish_time,
+                    job.execution_time,
                 )
             )
         return jobs
@@ -80,9 +83,12 @@ class ThriftUserServiceClient(UserServiceClientIFace):
         try:
             st = self.client.job_status(jid)
             return JobStatus(
-                st.id, ttypes.JobState._VALUES_TO_NAMES[st.state],
-                st.submission_time, st.start_time,
-                st.finish_time, st.execution_time
+                st.id,
+                ttypes.JobState._VALUES_TO_NAMES[st.state],
+                st.submission_time,
+                st.start_time,
+                st.finish_time,
+                st.execution_time,
             )
         except ttypes.JobNotFoundException:
             return None
@@ -122,7 +128,6 @@ class LocalUserServiceClient(UserServiceClientIFace):
 
 @six.add_metaclass(abc.ABCMeta)
 class WorkerServiceClientIFace(object):
-
     @abc.abstractmethod
     def start(self):
         pass
@@ -193,9 +198,7 @@ class ThriftWorkerServiceClient(WorkerServiceClientIFace):
         return self.client.register_worker(ttypes.Worker(wid, address, port))
 
     def unregister_worker(self, wid, address, port):
-        return self.client.unregister_worker(
-            ttypes.Worker(wid, address, port)
-        )
+        return self.client.unregister_worker(ttypes.Worker(wid, address, port))
 
     def register_heartbeat(self, wid, address, port):
         self.client.register_heartbeat(ttypes.Worker(wid, address, port))
@@ -265,7 +268,6 @@ class ClientType:
 
 
 class LocalClientFactory(object):
-
     def __init__(self, master):
         self.master = master
 
@@ -277,13 +279,11 @@ class LocalClientFactory(object):
             return LocalUserServiceClient(self.master)
         else:
             raise NoSuchClientException(
-                "No such client [ %s ]",
-                ClientType._VALUES_TO_NAMES[client_type]
+                "No such client [ %s ]", ClientType._VALUES_TO_NAMES[client_type]
             )
 
 
 class ThriftClientFactory(object):
-
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -296,8 +296,7 @@ class ThriftClientFactory(object):
             return ThriftUserServiceClient(self.host, self.port)
         else:
             raise NoSuchClientException(
-                "No such client [ %s ]",
-                ClientType._VALUES_TO_NAMES[client_type]
+                "No such client [ %s ]", ClientType._VALUES_TO_NAMES[client_type]
             )
 
 

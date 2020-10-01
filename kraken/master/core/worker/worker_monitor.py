@@ -1,7 +1,6 @@
-from threading import Thread
-from datetime import datetime
-
 import logging as lg
+from datetime import datetime
+from threading import Thread
 
 _logger = lg.getLogger(__name__)
 
@@ -26,9 +25,10 @@ class WorkerMonitor(Thread):
                     # only remote workers are monitored
                     if worker.address is not None and worker.port is not None:
                         elapsed_time = datetime.now() - worker.last_hear_beat
-                        if elapsed_time.total_seconds() \
-                                > self.heartbeat_check_interval:
+                        if elapsed_time.total_seconds() > self.heartbeat_check_interval:
                             _logger.warning(
                                 "Missing worker heartbeat from [ %s ] after %s seconds",  # NOQA
-                                worker.wid, self.heartbeat_check_interval)
+                                worker.wid,
+                                self.heartbeat_check_interval,
+                            )
                             self.worker_manager.decommission_worker(worker.wid)

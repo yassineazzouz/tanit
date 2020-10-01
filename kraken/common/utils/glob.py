@@ -1,6 +1,7 @@
+import fnmatch
 import os
 import re
-import fnmatch
+
 from ..core.exception import KrakenError
 
 __all__ = ["glob", "iglob"]
@@ -36,7 +37,7 @@ def iglob(client, pathname):
         else:
             # Patterns ending with a slash should match only directories
             status = client.status(pathname, strict=False)
-            if status is not None and status['type'] == 'DIRECTORY':
+            if status is not None and status["type"] == "DIRECTORY":
                 yield pathname
         return
     if not dirname:
@@ -63,10 +64,11 @@ def iglob(client, pathname):
 # They return a list of basenames. `glob1` accepts a pattern while `glob0`
 # takes a literal basename (so it only has to check for its existence).
 
+
 def glob1(client, dirname, pattern):
     if not dirname:
         if isinstance(pattern, bytes):
-            dirname = bytes(os.curdir, 'ASCII')
+            dirname = bytes(os.curdir, "ASCII")
         else:
             dirname = os.curdir
     try:
@@ -81,11 +83,11 @@ def glob1(client, dirname, pattern):
 
 
 def glob0(client, dirname, basename):
-    if basename == '':
+    if basename == "":
         # `os.path.split()` returns an empty basename for paths ending with a
         # directory separator.  'q*x/' should match only directories.
         status = client.status(dirname, strict=False)
-        if status is not None and status['type'] == 'DIRECTORY':
+        if status is not None and status["type"] == "DIRECTORY":
             return [basename]
     else:
         status = client.status(os.path.join(dirname, basename), strict=False)
@@ -94,7 +96,7 @@ def glob0(client, dirname, basename):
     return []
 
 
-magic_check = re.compile('[*?[]')
+magic_check = re.compile("[*?[]")
 
 
 def has_magic(s):
@@ -102,4 +104,4 @@ def has_magic(s):
 
 
 def _ishidden(path):
-    return path[0] in ('.', b'.'[0])
+    return path[0] in (".", b"."[0])

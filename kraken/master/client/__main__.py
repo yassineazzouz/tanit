@@ -26,15 +26,17 @@ Examples:
         "preserve": "False" }"
 
 """
-from ... import __version__
-from .client import ThriftClientFactory
-from .client import ClientType
-from ..config.config import MasterConfig
-from ...common.model.job import Job
-from ...common.model.execution_type import ExecutionType
 import json
 import logging as lg
+
 from docopt import docopt
+
+from ... import __version__
+from ...common.model.execution_type import ExecutionType
+from ...common.model.job import Job
+from ..config.config import MasterConfig
+from .client import ClientType
+from .client import ThriftClientFactory
 
 _logger = lg.getLogger(__name__)
 
@@ -45,14 +47,14 @@ def configure_logging():
 
     logger = lg.getLogger()
     logger.setLevel(lg.DEBUG)
-    lg.getLogger('requests_kerberos.kerberos_').setLevel(lg.CRITICAL)
-    lg.getLogger('requests').setLevel(lg.ERROR)
+    lg.getLogger("requests_kerberos.kerberos_").setLevel(lg.CRITICAL)
+    lg.getLogger("requests").setLevel(lg.ERROR)
 
     # Configure stream logging if applicable
     stream_handler = lg.StreamHandler()
     stream_handler.setLevel(lg.INFO)
 
-    fmt = '%(levelname)s\t%(message)s'
+    fmt = "%(levelname)s\t%(message)s"
     stream_handler.setFormatter(lg.Formatter(fmt))
     logger.addHandler(stream_handler)
 
@@ -63,44 +65,44 @@ def main(argv=None):
     configure_logging()
     config = MasterConfig()
 
-    if args['job']:
+    if args["job"]:
         client = ThriftClientFactory(
             config.client_service_host, config.client_service_port
         ).create_client(ClientType.USER_SERVICE)
         client.start()
-        if args['--list']:
+        if args["--list"]:
             for job in client.list_jobs():
                 print(str(job))
-        elif args['--submit']:
+        elif args["--submit"]:
             try:
-                if args['--submit'].startswith('@'):
-                    with open(args['--submit'][1:], "r") as json_spec_file: # NOQA
+                if args["--submit"].startswith("@"):
+                    with open(args["--submit"][1:], "r") as json_spec_file:  # NOQA
                         job_spec = json.load(json_spec_file)
                 else:
-                    job_spec = json.loads(args['--submit'])
+                    job_spec = json.loads(args["--submit"])
             except Exception as e:
                 _logger.error("Error parsing job json specification.")
                 raise e
 
-            jtype = ExecutionType._NAMES_TO_VALUES[job_spec['type']]
-            params = job_spec['params']
+            jtype = ExecutionType._NAMES_TO_VALUES[job_spec["type"]]
+            params = job_spec["params"]
             client.submit_job(Job(jtype, params))
-        elif args['--status']:
-            job = client.job_status(args['--status'])
+        elif args["--status"]:
+            job = client.job_status(args["--status"])
             if job is None:
-                _logger.info("No such job %s", args['--status'])
+                _logger.info("No such job %s", args["--status"])
             else:
                 print(str(job))
         else:
             _logger.error("Nothing to do !")
 
         client.stop()
-    elif args['worker']:
+    elif args["worker"]:
         client = ThriftClientFactory(
             config.worker_service_host, config.worker_service_port
         ).create_client(ClientType.WORKER_SERVICE)
         client.start()
-        if args['--list']:
+        if args["--list"]:
             for worker in client.list_workers():
                 print(str(worker))
         else:
@@ -109,5 +111,5 @@ def main(argv=None):
         client.stop()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

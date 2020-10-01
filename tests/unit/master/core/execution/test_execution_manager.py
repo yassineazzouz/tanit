@@ -1,14 +1,14 @@
 import pytest
 
-from kraken.master.core.execution.execution_manager import ExecutionManager
-from kraken.master.core.execution.execution_state import ExecutionState
-from kraken.master.core.worker.worker_manager import WorkerManager
 from kraken.common.model.execution_type import ExecutionType
 from kraken.common.model.job import Job
 from kraken.common.model.worker import Worker
+from kraken.master.core.execution.execution_manager import ExecutionManager
+from kraken.master.core.execution.execution_state import ExecutionState
+from kraken.master.core.worker.worker_manager import WorkerManager
 
+from ....utils.tutils import wait_until
 from ..worker.mock_worker import MockWorkerFactory
-from ..tutils import wait_until
 
 
 def mock_job(num_tasks):
@@ -38,7 +38,6 @@ def _verify_state(obj, state):
 
 
 class TestExecutionManager:
-
     def test_job_submit(self, execution_manager):
         execution_manager.submit_job(mock_job(2))
         assert True
@@ -48,25 +47,23 @@ class TestExecutionManager:
 
         # verify the job is in running state
         assert wait_until(
-            _verify_state, 10, 0.5,
+            _verify_state,
+            10,
+            0.5,
             execution_manager.get_job(job_exec.jid),
-            ExecutionState.DISPATCHED
+            ExecutionState.DISPATCHED,
         )
         for task in execution_manager.get_job(job_exec.jid).get_tasks():
-            assert wait_until(
-                _verify_state, 10, 0.5, task, ExecutionState.DISPATCHED
-            )
+            assert wait_until(_verify_state, 10, 0.5, task, ExecutionState.DISPATCHED)
             execution_manager.task_start(task.tid)
 
-        assert execution_manager.get_job(job_exec.jid).state \
-               == ExecutionState.RUNNING
+        assert execution_manager.get_job(job_exec.jid).state == ExecutionState.RUNNING
 
         for task in execution_manager.get_job(job_exec.jid).get_tasks():
             assert task.state == ExecutionState.RUNNING
             execution_manager.task_finish(task.tid)
 
-        assert execution_manager.get_job(job_exec.jid).state \
-               == ExecutionState.FINISHED
+        assert execution_manager.get_job(job_exec.jid).state == ExecutionState.FINISHED
 
         for task in execution_manager.get_job(job_exec.jid).get_tasks():
             assert task.state == ExecutionState.FINISHED
@@ -76,18 +73,18 @@ class TestExecutionManager:
 
         # verify the job is in running state
         assert wait_until(
-            _verify_state, 10, 0.5,
-            execution_manager.get_job(job_exec.jid), ExecutionState.DISPATCHED
+            _verify_state,
+            10,
+            0.5,
+            execution_manager.get_job(job_exec.jid),
+            ExecutionState.DISPATCHED,
         )
 
         for task in execution_manager.get_job(job_exec.jid).get_tasks():
-            assert wait_until(
-                _verify_state, 10, 0.5, task, ExecutionState.DISPATCHED
-            )
+            assert wait_until(_verify_state, 10, 0.5, task, ExecutionState.DISPATCHED)
             execution_manager.task_start(task.tid)
 
-        assert execution_manager.get_job(job_exec.jid).state \
-               == ExecutionState.RUNNING
+        assert execution_manager.get_job(job_exec.jid).state == ExecutionState.RUNNING
         for task in execution_manager.get_job(job_exec.jid).get_tasks():
             assert task.state == ExecutionState.RUNNING
 
@@ -97,8 +94,7 @@ class TestExecutionManager:
         for task in execution_manager.get_job(job_exec.jid).get_tasks()[1:]:
             execution_manager.task_finish(task.tid)
 
-        assert execution_manager.get_job(job_exec.jid).state \
-               == ExecutionState.FAILED
+        assert execution_manager.get_job(job_exec.jid).state == ExecutionState.FAILED
         return job_exec
 
     def test_task_reset(self, execution_manager):
@@ -109,40 +105,39 @@ class TestExecutionManager:
 
         # reset the failed task
         execution_manager.task_reset(task.tid)
-        assert execution_manager.get_job(job_exec.jid).state \
-               == ExecutionState.RUNNING
+        assert execution_manager.get_job(job_exec.jid).state == ExecutionState.RUNNING
 
         # wait for the task to be dispatched
-        assert wait_until(
-            _verify_state, 10, 0.5, task, ExecutionState.DISPATCHED
-        )
+        assert wait_until(_verify_state, 10, 0.5, task, ExecutionState.DISPATCHED)
 
         execution_manager.task_start(task.tid)
         assert task.state == ExecutionState.RUNNING
-        assert execution_manager.get_job(job_exec.jid).state \
-               == ExecutionState.RUNNING
+        assert execution_manager.get_job(job_exec.jid).state == ExecutionState.RUNNING
 
         execution_manager.task_finish(task.tid)
         assert task.state == ExecutionState.FINISHED
-        assert execution_manager.get_job(job_exec.jid).state \
-               == ExecutionState.FINISHED
+        assert execution_manager.get_job(job_exec.jid).state == ExecutionState.FINISHED
 
     def test_task_lookup(self, execution_manager):
         job_exec = execution_manager.submit_job(mock_job(2))
 
         # verify the job is in running state
         assert wait_until(
-            _verify_state, 10, 0.5,
-            execution_manager.get_job(job_exec.jid), ExecutionState.DISPATCHED
+            _verify_state,
+            10,
+            0.5,
+            execution_manager.get_job(job_exec.jid),
+            ExecutionState.DISPATCHED,
         )
         for task in execution_manager.get_job(job_exec.jid).get_tasks():
-            assert wait_until(
-                _verify_state, 10, 0.5, task, ExecutionState.DISPATCHED
-            )
+            assert wait_until(_verify_state, 10, 0.5, task, ExecutionState.DISPATCHED)
             execution_manager.task_start(task.tid)
 
-        assert len(
-            execution_manager.get_tasks(
-                jid=job_exec.jid, states=[ExecutionState.RUNNING]
+        assert (
+            len(
+                execution_manager.get_tasks(
+                    jid=job_exec.jid, states=[ExecutionState.RUNNING]
+                )
             )
-        ) == 2
+            == 2
+        )

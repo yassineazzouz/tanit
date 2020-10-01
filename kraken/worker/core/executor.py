@@ -1,14 +1,15 @@
-import time
 import logging as lg
+import time
 from threading import Thread
+
 from six.moves.queue import Empty
+
 from ...master.client.client import ClientType
 
 _logger = lg.getLogger(__name__)
 
 
 class Executor(Thread):
-
     def __init__(self, eid, cqueue, factory):
         super(Executor, self).__init__()
         self.cqueue = cqueue

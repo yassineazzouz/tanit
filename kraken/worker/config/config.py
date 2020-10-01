@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
+import logging as lg
 import multiprocessing
 import socket
-import logging as lg
 
-from ...common.config.config import Config, KrakenConfigurationException
+from ...common.config.config import Config
+from ...common.config.config import KrakenConfigurationException
 
 _logger = lg.getLogger(__name__)
 

@@ -1,13 +1,14 @@
 import logging as lg
-from ...common.model.task import Task
+
 from ...common.model.execution_type import ExecutionType
-from ..thrift.ttypes import WorkerStatus, TaskType
+from ...common.model.task import Task
+from ..thrift.ttypes import TaskType
+from ..thrift.ttypes import WorkerStatus
 
 _logger = lg.getLogger(__name__)
 
 
 class WorkerServiceHandler(object):
-
     def __init__(self, worker):
         self.worker = worker
 
@@ -28,7 +29,5 @@ class WorkerServiceHandler(object):
     def worker_status(self):
         status = self.worker.get_stats()
         return WorkerStatus(
-            status.wid,
-            status.running,
-            status.pending,
-            status.available)
+            status.wid, status.running, status.pending, status.available
+        )

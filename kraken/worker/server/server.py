@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 
-from .handler import WorkerServiceHandler
-from .worker import Worker
-from ..thrift import WorkerService
-from ..config.config import WorkerConfig
-from thrift.transport import TSocket
-from thrift.transport import TTransport
-from thrift.protocol import TBinaryProtocol
-from thrift.server import TServer
-
+import logging as lg
 from threading import Thread
 
-import logging as lg
+from thrift.protocol import TBinaryProtocol
+from thrift.server import TServer
+from thrift.transport import TSocket
+from thrift.transport import TTransport
+
+from ..config.config import WorkerConfig
+from ..thrift import WorkerService
+from .handler import WorkerServiceHandler
+from .worker import Worker
 
 _logger = lg.getLogger(__name__)
 
 
 class WorkerServer(object):
-
     def __init__(self, config=None):
 
         self.config = WorkerConfig(config)
@@ -40,7 +39,7 @@ class WorkerServer(object):
             TSocket.TServerSocket(self.config.bind_address, self.config.bind_port),
             TTransport.TBufferedTransportFactory(),
             TBinaryProtocol.TBinaryProtocolFactory(),
-            daemon=True
+            daemon=True,
         )
 
         # Start Kraken server
@@ -56,7 +55,8 @@ class WorkerServer(object):
         self.daemon.start()
         _logger.info(
             "Kraken worker server started, listening  at %s:%s",
-            self.config.bind_address, self.config.bind_port
+            self.config.bind_address,
+            self.config.bind_port,
         )
 
         # Start worker services
@@ -71,7 +71,7 @@ class WorkerServer(object):
                 # Try to join the child thread back to parent for 0.5 seconds
                 self.daemon.join(0.5)
 
-                if (self.stopped):
+                if self.stopped:
                     _logger.info("Kraken worker server stopped, exiting.")
                     break
         except (KeyboardInterrupt, SystemExit):

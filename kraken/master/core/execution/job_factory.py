@@ -1,9 +1,10 @@
-from .execution_job import CopyJobExecution, UploadJobExecution, MockJobExecution
 from ....common.model.execution_type import ExecutionType
+from .execution_job import CopyJobExecution
+from .execution_job import MockJobExecution
+from .execution_job import UploadJobExecution
 
 
 class JobFactory(object):
-
     def create_job(self, job):
         if job.etype == ExecutionType.COPY:
             return CopyJobExecution(job.params)

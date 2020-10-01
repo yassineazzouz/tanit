@@ -2,7 +2,6 @@ from .executor import Executor
 
 
 class ExecutorFactory(object):
-
     def __init__(self, client_factory, cqueue, concurrency):
         self.client_factory = client_factory
         self.cqueue = cqueue

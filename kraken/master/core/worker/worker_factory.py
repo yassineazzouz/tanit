@@ -1,9 +1,8 @@
-from .worker import RemoteThriftWorker
 from ...standalone.worker import LocalWorker
+from .worker import RemoteThriftWorker
 
 
 class WorkerFactory(object):
-
     def __init__(self, master):
         self.master = master
 

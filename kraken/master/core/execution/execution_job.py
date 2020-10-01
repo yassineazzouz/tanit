@@ -1,17 +1,18 @@
 import abc
-import six
+import logging as lg
 import os
 import os.path as osp
 from datetime import datetime
 from hashlib import md5
-import logging as lg
 from threading import Lock
-from .execution_state import ExecutionState
 
-from ....common.utils import glob
-from ....common.utils.utils import str2bool
+import six
+
 from ....common.core.exception import KrakenError
 from ....common.model.execution_type import ExecutionType
+from ....common.utils import glob
+from ....common.utils.utils import str2bool
+from .execution_state import ExecutionState
 
 _logger = lg.getLogger(__name__)
 
@@ -29,57 +30,56 @@ class TaskExecution(object):
         self.worker = None
 
     def on_schedule(self):
-        if self.state not in \
-                [ExecutionState.SUBMITTED, ExecutionState.SCHEDULED]:
+        if self.state not in [ExecutionState.SUBMITTED, ExecutionState.SCHEDULED]:
             raise IllegalStateTransitionException(
                 "Can not transition from state %s to state %s",
                 ExecutionState._VALUES_TO_NAMES[self.state],
-                ExecutionState._VALUES_TO_NAMES[ExecutionState.SCHEDULED]
+                ExecutionState._VALUES_TO_NAMES[ExecutionState.SCHEDULED],
             )
         self.state = ExecutionState.SCHEDULED
         self.job.on_task_schedule(self.tid)
 
     def on_dispatch(self, worker=None):
-        if self.state not in \
-                [ExecutionState.DISPATCHED, ExecutionState.SCHEDULED]:
+        if self.state not in [ExecutionState.DISPATCHED, ExecutionState.SCHEDULED]:
             raise IllegalStateTransitionException(
                 "Can not transition from state %s to state %s",
                 ExecutionState._VALUES_TO_NAMES[self.state],
-                ExecutionState._VALUES_TO_NAMES[ExecutionState.DISPATCHED]
+                ExecutionState._VALUES_TO_NAMES[ExecutionState.DISPATCHED],
             )
         self.state = ExecutionState.DISPATCHED
         self.worker = worker
         self.job.on_task_dispatch(self.tid)
 
     def on_start(self):
-        if self.state not in \
-                [ExecutionState.RUNNING, ExecutionState.DISPATCHED, ExecutionState.FAILED]:  # NOQA
+        if self.state not in [
+            ExecutionState.RUNNING,
+            ExecutionState.DISPATCHED,
+            ExecutionState.FAILED,
+        ]:  # NOQA
             raise IllegalStateTransitionException(
                 "Can not transition from state %s to state %s",
                 ExecutionState._VALUES_TO_NAMES[self.state],
-                ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING]
+                ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING],
             )
         self.state = ExecutionState.RUNNING
         self.job.on_task_start(self.tid)
 
     def on_finish(self):
-        if self.state not in \
-                [ExecutionState.RUNNING, ExecutionState.FINISHED]:
+        if self.state not in [ExecutionState.RUNNING, ExecutionState.FINISHED]:
             raise IllegalStateTransitionException(
                 "Can not transition from state %s to state %s",
                 ExecutionState._VALUES_TO_NAMES[self.state],
-                ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING]
+                ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING],
             )
         self.state = ExecutionState.FINISHED
         self.job.on_task_finish(self.tid)
 
     def on_fail(self):
-        if self.state not in \
-                [ExecutionState.RUNNING, ExecutionState.FAILED]:
+        if self.state not in [ExecutionState.RUNNING, ExecutionState.FAILED]:
             raise IllegalStateTransitionException(
                 "Can not transition from state %s to state %s",
                 ExecutionState._VALUES_TO_NAMES[self.state],
-                ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING]
+                ExecutionState._VALUES_TO_NAMES[ExecutionState.RUNNING],
             )
         self.state = ExecutionState.FAILED
         self.job.on_task_fail(self.tid)
@@ -160,8 +160,7 @@ class JobExecution(object):
         with self.jlock:
             self.scheduled_tasks += 1
             # Only the first task transition the state of the job
-            if self.state == ExecutionState.SUBMITTED \
-                    and self.scheduled_tasks == 1:
+            if self.state == ExecutionState.SUBMITTED and self.scheduled_tasks == 1:
                 _logger.info("Job [ %s ] execution scheduled.", self.jid)
                 self.schedule_time = datetime.now()
                 self.state = ExecutionState.SCHEDULED
@@ -170,8 +169,7 @@ class JobExecution(object):
         with self.jlock:
             self.dispatched_tasks += 1
             # Only the first task transition the state of the job
-            if self.state == ExecutionState.SCHEDULED \
-                    and self.dispatched_tasks == 1:
+            if self.state == ExecutionState.SCHEDULED and self.dispatched_tasks == 1:
                 _logger.info("Job [ %s ] execution dispatched.", self.jid)
                 self.dispatch_time = datetime.now()
                 self.state = ExecutionState.DISPATCHED
@@ -180,8 +178,7 @@ class JobExecution(object):
         with self.jlock:
             self.started_tasks += 1
             # Only the first task transition the state of the job
-            if self.state == ExecutionState.DISPATCHED \
-                    and self.started_tasks == 1:
+            if self.state == ExecutionState.DISPATCHED and self.started_tasks == 1:
                 _logger.info("Job [ %s ] execution started.", self.jid)
                 self.start_time = datetime.now()
                 self.state = ExecutionState.RUNNING
@@ -229,8 +226,7 @@ class JobExecution(object):
                 self.scheduled_tasks -= 1
                 self.dispatched_tasks -= 1
                 self.started_tasks -= 1
-                if self.state == ExecutionState.FAILED \
-                        and self.failed_tasks == 1:
+                if self.state == ExecutionState.FAILED and self.failed_tasks == 1:
                     self.state = ExecutionState.RUNNING
                 self.failed_tasks -= 1
 
@@ -243,14 +239,9 @@ class UploadJobExecution(JobExecution):
 
 
 class MockJobExecution(JobExecution):
-
     def initialize(self, params):
-        self.num_tasks = int(params["num_tasks"]) \
-            if "num_tasks" in params \
-            else 2
-        self.jid = "mock-job-%s" % (
-            str(datetime.now().strftime("%d%m%Y%H%M%S"))
-        )
+        self.num_tasks = int(params["num_tasks"]) if "num_tasks" in params else 2
+        self.jid = "mock-job-%s" % (str(datetime.now().strftime("%d%m%Y%H%M%S")))
 
         self.etype = ExecutionType.MOCK
 
@@ -260,7 +251,6 @@ class MockJobExecution(JobExecution):
 
 
 class CopyJobExecution(JobExecution):
-
     def initialize(self, params):
 
         if "src" in params:
@@ -291,28 +281,28 @@ class CopyJobExecution(JobExecution):
                 "missing required copy job parameter 'dest_path'"
             )
 
-        self.include_pattern = params["include_pattern"] \
-            if "include_pattern" in params else "*"
-        self.min_size = int(params["min_size"]) \
-            if "min_size" in params else 0
-        self.preserve = str2bool(params["preserve"]) \
-            if "preserve" in params else True
-        self.force = str2bool(params["force"]) \
-            if "force" in params else True
-        self.checksum = str2bool(params["checksum"]) \
-            if "checksum" in params else True
-        self.files_only = str2bool(params["files_only"]) \
-            if "files_only" in params else True
-        self.part_size = int(params["part_size"]) \
-            if "part_size" in params else 65536
-        self.buffer_size = int(params["buffer_size"]) \
-            if "buffer_size" in params else 65536
+        self.include_pattern = (
+            params["include_pattern"] if "include_pattern" in params else "*"
+        )
+        self.min_size = int(params["min_size"]) if "min_size" in params else 0
+        self.preserve = str2bool(params["preserve"]) if "preserve" in params else True
+        self.force = str2bool(params["force"]) if "force" in params else True
+        self.checksum = str2bool(params["checksum"]) if "checksum" in params else True
+        self.files_only = (
+            str2bool(params["files_only"]) if "files_only" in params else True
+        )
+        self.part_size = int(params["part_size"]) if "part_size" in params else 65536
+        self.buffer_size = (
+            int(params["buffer_size"]) if "buffer_size" in params else 65536
+        )
 
         self.jid = "job-%s-%s" % (
-            md5("{}-{}-{}-{}".format(
-                self.src, self.src_path, self.dst, self.dest_path
-            ).encode('utf-8')).hexdigest(),
-            str(datetime.now().strftime("%d%m%Y%H%M%S"))
+            md5(
+                "{}-{}-{}-{}".format(
+                    self.src, self.src_path, self.dst, self.dest_path
+                ).encode("utf-8")
+            ).hexdigest(),
+            str(datetime.now().strftime("%d%m%Y%H%M%S")),
         )
 
         self.etype = ExecutionType.COPY
@@ -330,7 +320,7 @@ class CopyJobExecution(JobExecution):
         overwrite = self.force
 
         if not chunk_size:
-            raise ValueError('Copy chunk size must be positive.')
+            raise ValueError("Copy chunk size must be positive.")
 
         # Normalise src and dst paths
         src_path = src.resolvepath(src_path)
@@ -342,8 +332,8 @@ class CopyJobExecution(JobExecution):
         # need to develop a proper pattern based access function
         if len(copies) == 0:
             raise KrakenError(
-                'Cloud not resolve source path %s, either it does not exist or can not access it.'  # NOQA
-                , src_path
+                "Cloud not resolve source path %s, either it does not exist or can not access it.",  # NOQA
+                src_path,
             )
 
         tuples = []
@@ -355,28 +345,26 @@ class CopyJobExecution(JobExecution):
                 status = dst.status(dst_path, strict=True)
                 # statuses = [status for _, status in dst.list(dst_base_path)]
             except KrakenError as err:
-                if 'File does not exist' in str(err):
+                if "File does not exist" in str(err):
                     # Remote path doesn't exist.
                     # check if parent exist
                     if dst.status(osp.dirname(dst_path), strict=False) is None:
                         raise KrakenError(
-                            'Parent directory of %r does not exist.', dst_path
+                            "Parent directory of %r does not exist.", dst_path
                         )
                     else:
                         # Remote path does not exist, and parent exist
                         # so we want the source to be renamed as destination
                         # so do not add the basename
                         dst_base_path = dst_path
-                        copy_tuple = dict(
-                            {'src_path': copy, 'dst_path': dst_base_path}
-                        )
+                        copy_tuple = dict({"src_path": copy, "dst_path": dst_base_path})
             else:
                 # Remote path exists.
-                if status['type'] == 'FILE':
+                if status["type"] == "FILE":
                     # Remote path exists and is a normal file.
                     if not overwrite:
                         raise KrakenError(
-                            'Destination path %r already exists.', dst_path
+                            "Destination path %r already exists.", dst_path
                         )
                     # the file is going to be deleted and the destination
                     # is going to be created with the same name
@@ -395,13 +383,10 @@ class CopyJobExecution(JobExecution):
                         dst_base_path = osp.join(dst_path, osp.basename(copy))
                         if not overwrite:
                             raise KrakenError(
-                                'Destination path %r already exists.',
-                                dst_base_path
+                                "Destination path %r already exists.", dst_base_path
                             )
 
-                copy_tuple = dict(
-                    {'src_path': copy, 'dst_path': dst_base_path}
-                )
+                copy_tuple = dict({"src_path": copy, "dst_path": dst_base_path})
             finally:
                 tuples.append(copy_tuple)
 
@@ -410,21 +395,22 @@ class CopyJobExecution(JobExecution):
         # ex : /home/user/test/*/*.py may result in duplicate files
         for i in range(0, len(tuples)):
             for x in range(i + 1, len(tuples)):
-                if tuples[i]['dst_path'] == tuples[x]['dst_path']:
+                if tuples[i]["dst_path"] == tuples[x]["dst_path"]:
                     raise KrakenError(
-                        "Conflicting files %r and %r : can't copy both files to %r" % (  # NOQA
-                            tuples[i]['src_path'],
-                            tuples[x]['src_path'],
-                            tuples[i]['dst_path']
+                        "Conflicting files %r and %r : can't copy both files to %r"
+                        % (  # NOQA
+                            tuples[i]["src_path"],
+                            tuples[x]["src_path"],
+                            tuples[i]["dst_path"],
                         )
                     )
 
         for copy_tuple in tuples:
             # Then we figure out which files we need to copy, and where.
-            src_paths = list(src.walk(copy_tuple['src_path']))
+            src_paths = list(src.walk(copy_tuple["src_path"]))
             if not src_paths:
                 # This is a single file.
-                src_fpaths = [copy_tuple['src_path']]
+                src_fpaths = [copy_tuple["src_path"]]
             else:
                 src_fpaths = [
                     osp.join(dpath, fname)
@@ -432,7 +418,7 @@ class CopyJobExecution(JobExecution):
                     for fname in fnames
                 ]
 
-            offset = len(copy_tuple['src_path'].rstrip(os.sep)) + len(os.sep)
+            offset = len(copy_tuple["src_path"].rstrip(os.sep)) + len(os.sep)
 
             i = 1
             for fpath in src_fpaths:
@@ -444,9 +430,10 @@ class CopyJobExecution(JobExecution):
                         "src_path": str(fpath),
                         "dest_path": str(
                             osp.join(
-                                copy_tuple['dst_path'],
-                                fpath[offset:].replace(os.sep, '/')
-                            ).rstrip(os.sep)),
+                                copy_tuple["dst_path"],
+                                fpath[offset:].replace(os.sep, "/"),
+                            ).rstrip(os.sep)
+                        ),
                         "include_pattern": str(self.include_pattern),
                         "min_size": str(self.min_size),
                         "preserve": str(self.preserve),
@@ -454,8 +441,8 @@ class CopyJobExecution(JobExecution):
                         "checksum": str(self.checksum),
                         "files_only": str(self.files_only),
                         "part_size": str(self.part_size),
-                        "buffer_size": str(self.buffer_size)
-                    }
+                        "buffer_size": str(self.buffer_size),
+                    },
                 )
                 i += 1
 

@@ -1,16 +1,15 @@
-from ...common.model.worker import Worker
-from ...common.model.job import Job
+import logging as lg
+
 from ...common.model.execution_type import ExecutionType
+from ...common.model.job import Job
+from ...common.model.worker import Worker
 from ..core.execution.execution_state import ExecutionState
 from ..thrift import ttypes
-
-import logging as lg
 
 _logger = lg.getLogger(__name__)
 
 
 class UserServiceHandler(object):
-
     def __init__(self, master):
         self.master = master
 
@@ -38,11 +37,13 @@ class UserServiceHandler(object):
                         ExecutionState._VALUES_TO_NAMES[job_exec.state]
                     ],
                     job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "-" if job_exec.start_time is None
+                    "-"
+                    if job_exec.start_time is None
                     else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "-" if job_exec.finish_time is None
+                    "-"
+                    if job_exec.finish_time is None
                     else job_exec.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
-                    job_exec.execution_time_s
+                    job_exec.execution_time_s,
                 )
             )
         return status
@@ -57,16 +58,17 @@ class UserServiceHandler(object):
                 ExecutionState._VALUES_TO_NAMES[job_exec.state]
             ],
             job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "-" if job_exec.start_time is None
+            "-"
+            if job_exec.start_time is None
             else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "-" if job_exec.finish_time is None
+            "-"
+            if job_exec.finish_time is None
             else job_exec.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
-            job_exec.execution_time_s
+            job_exec.execution_time_s,
         )
 
 
 class WorkerServiceHandler(object):
-
     def __init__(self, master):
         self.master = master
 

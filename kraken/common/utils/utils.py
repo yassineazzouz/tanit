@@ -1,5 +1,5 @@
-from threading import Thread
 from functools import wraps
+from threading import Thread
 
 
 def run_async(func):
@@ -9,7 +9,7 @@ def run_async(func):
             target=func,
             args=args,
             kwargs=kwargs,
-            name='Thread_{}'.format(func.__name__)
+            name="Thread_{}".format(func.__name__),
         )
         func_hl.start()
         return func_hl
@@ -18,14 +18,12 @@ def run_async(func):
 
 
 def str2bool(s):
-    if s.lower() == 'true':
+    if s.lower() == "true":
         return True
-    elif s.lower() == 'false':
+    elif s.lower() == "false":
         return False
     else:
-        raise BooleanConversionException(
-            "can not convert %s to boolean" % s
-        )
+        raise BooleanConversionException("can not convert %s to boolean" % s)
 
 
 class BooleanConversionException(Exception):

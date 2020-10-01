@@ -1,9 +1,10 @@
 import logging as lg
+
+from six.moves.queue import Queue
+
 from ..dispatcher import FairDispatcher
 from ..scheduler import SimpleScheduler
 from .job_factory import JobFactory
-
-from six.moves.queue import Queue
 
 _logger = lg.getLogger(__name__)
 
@@ -29,9 +30,7 @@ class ExecutionManager(object):
         # scheduler
         self.scheduler = SimpleScheduler(lqueue, cqueue, self.task_schedule)
         # dispatcher
-        self.dispatcher = FairDispatcher(
-            cqueue, workers_manager, self.task_dispatch
-        )
+        self.dispatcher = FairDispatcher(cqueue, workers_manager, self.task_dispatch)
 
     def configure(self, config):
         pass
@@ -59,7 +58,8 @@ class ExecutionManager(object):
 
         _logger.info(
             "Submitted %s tasks for execution in job [ %s ].",
-            len(self.get_tasks(jid=job_exec.jid)), job_exec.jid
+            len(self.get_tasks(jid=job_exec.jid)),
+            job_exec.jid,
         )
         return job_exec
 

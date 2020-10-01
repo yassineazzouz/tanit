@@ -1,6 +1,6 @@
-from kraken.master.core.worker.worker_factory import WorkerFactory
-from kraken.master.core.worker.worker import WorkerIFace
 from kraken.common.model.worker import WorkerStatus
+from kraken.master.core.worker.worker import WorkerIFace
+from kraken.master.core.worker.worker_factory import WorkerFactory
 
 
 class MockWorker(WorkerIFace):
@@ -23,10 +23,8 @@ class MockWorker(WorkerIFace):
         return WorkerStatus(
             self.wid,
             len(self.tasks),
-            0 if len(self.tasks) < self.cores
-            else len(self.tasks) - self.cores,
-            0 if self.cores < len(self.tasks)
-            else self.cores - len(self.tasks)
+            0 if len(self.tasks) < self.cores else len(self.tasks) - self.cores,
+            0 if self.cores < len(self.tasks) else self.cores - len(self.tasks),
         )
 
 

@@ -1,10 +1,10 @@
+import logging as lg
+
+from ...common.model.worker import Worker
 from .execution.execution_manager import ExecutionManager
+from .worker.worker_decommissioner import WorkerDecommissioner
 from .worker.worker_factory import WorkerFactory
 from .worker.worker_manager import WorkerManager
-from .worker.worker_decommissioner import WorkerDecommissioner
-from ...common.model.worker import Worker
-
-import logging as lg
 
 _logger = lg.getLogger(__name__)
 
@@ -37,9 +37,7 @@ class Master(object):
 
     def submit_job(self, job):
         if not self.started:
-            raise MasterStoppedException(
-                "Can not submit job, master server stopped."
-            )
+            raise MasterStoppedException("Can not submit job, master server stopped.")
         return self.execution_manager.submit_job(job)
 
     def list_jobs(self):
@@ -67,8 +65,7 @@ class Master(object):
     def register_worker(self, worker):
         if not self.started:
             raise MasterStoppedException(
-                "Can not register worker [ %s ] : master server stopped.",
-                worker.wid
+                "Can not register worker [ %s ] : master server stopped.", worker.wid
             )
 
         _logger.info("Registering new Worker [ %s ].", worker.wid)
@@ -82,8 +79,7 @@ class Master(object):
     def unregister_worker(self, worker):
         if not self.started:
             raise MasterStoppedException(
-                "Can not register worker [ %s ] : master server stopped.",
-                worker.wid
+                "Can not register worker [ %s ] : master server stopped.", worker.wid
             )
 
         # This will prevent any future tasks from being sent to the worker

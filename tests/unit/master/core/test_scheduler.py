@@ -1,21 +1,18 @@
 import pytest
-
 from six.moves.queue import Queue
 
+from kraken.common.model.execution_type import ExecutionType
+from kraken.common.model.job import Job
 from kraken.master.core.execution.job_factory import JobFactory
 from kraken.master.core.scheduler import SimpleScheduler
-from kraken.common.model.job import Job
-from kraken.common.model.execution_type import ExecutionType
 
-from .tutils import wait_until
+from ...utils.tutils import wait_until
 
 job_factory = JobFactory()
 
 
 def mock_job_exec(num_tasks):
-    job = job_factory.create_job(
-        Job(ExecutionType.MOCK, {"num_tasks": str(num_tasks)})
-    )
+    job = job_factory.create_job(Job(ExecutionType.MOCK, {"num_tasks": str(num_tasks)}))
     job.setup()
     return job
 
@@ -35,18 +32,13 @@ def simple_scheduler():
 
 
 class TestSimpleScheduler:
-
     def test_schedule(self, simple_scheduler):
 
         for task in mock_job_exec(2).get_tasks():
             simple_scheduler.lqueue.put(task)
 
-        assert wait_until(
-            _verify_queue_size, 10, 0.5, simple_scheduler.lqueue, 0
-        )
-        assert wait_until(
-            _verify_queue_size, 10, 0.5, simple_scheduler.cqueue, 2
-        )
+        assert wait_until(_verify_queue_size, 10, 0.5, simple_scheduler.lqueue, 0)
+        assert wait_until(_verify_queue_size, 10, 0.5, simple_scheduler.cqueue, 2)
 
     def test_scheduler_stop(self, simple_scheduler):
         simple_scheduler.stop()
@@ -54,15 +46,10 @@ class TestSimpleScheduler:
         for task in mock_job_exec(2).get_tasks():
             simple_scheduler.lqueue.put(task)
 
-        assert wait_until(
-            _verify_queue_size, 10, 0.5, simple_scheduler.lqueue, 2
-        )
-        assert wait_until(
-            _verify_queue_size, 10, 0.5, simple_scheduler.cqueue, 0
-        )
+        assert wait_until(_verify_queue_size, 10, 0.5, simple_scheduler.lqueue, 2)
+        assert wait_until(_verify_queue_size, 10, 0.5, simple_scheduler.cqueue, 0)
 
     def test_scheduler_callback(self, simple_scheduler):
-
         def callback(tid):
             callback_received.append(tid)
 
@@ -72,6 +59,4 @@ class TestSimpleScheduler:
         for task in mock_job_exec(2).get_tasks():
             simple_scheduler.lqueue.put(task)
 
-        assert wait_until(
-            lambda l, size: len(l) == size, 10, 0.5, callback_received, 2
-        )
+        assert wait_until(lambda l, size: len(l) == size, 10, 0.5, callback_received, 2)

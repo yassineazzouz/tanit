@@ -1,9 +1,10 @@
-from .execution_task import CopyTaskExecution, MockTaskExecution, UploadTaskExecution
 from ....common.model.execution_type import ExecutionType
+from .execution_task import CopyTaskExecution
+from .execution_task import MockTaskExecution
+from .execution_task import UploadTaskExecution
 
 
 class TaskFactory(object):
-
     def create_task(self, task):
         if task.etype == ExecutionType.COPY:
             return CopyTaskExecution(task.tid, task.params)

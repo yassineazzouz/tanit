@@ -1,8 +1,5 @@
 class Worker(object):
-    def __init__(self,
-                 wid,
-                 address,
-                 port):
+    def __init__(self, wid, address, port):
         self.wid = wid
         self.address = address
         self.port = port
@@ -26,15 +23,12 @@ class Worker(object):
         return "Worker { id: %s, address: %s, port: %s}" % (
             self.wid,
             self.address,
-            self.port)
+            self.port,
+        )
 
 
 class WorkerStatus(object):
-    def __init__(self,
-                 wid,
-                 running,
-                 pending,
-                 available):
+    def __init__(self, wid, running, pending, available):
         self.wid = wid
         self.running = running
         self.pending = pending

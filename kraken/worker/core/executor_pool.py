@@ -1,11 +1,10 @@
-import time
 import logging as lg
+import time
 
 _logger = lg.getLogger(__name__)
 
 
 class ExecutorPool(object):
-
     def __init__(self, wid, factory, cqueue, concurrency):
         self.cqueue = cqueue
         self.concurrency = concurrency
@@ -14,9 +13,7 @@ class ExecutorPool(object):
         self.stopped = True
 
         for i in range(0, concurrency):
-            self.executors.append(
-                factory.create_executor("%s-executor-%s" % (wid, i))
-            )
+            self.executors.append(factory.create_executor("%s-executor-%s" % (wid, i)))
 
     def start(self):
         _logger.info("Starting Kraken worker executor pool [ %s ].", self.wid)
@@ -26,9 +23,10 @@ class ExecutorPool(object):
             executor.start()
             _logger.info("Executor [ %s ] started", executor.eid)
         _logger.info(
-            "Kraken worker executor pool [ %s ] started, " +
-            "using %s concurrent executors",
-            self.wid, self.concurrency
+            "Kraken worker executor pool [ %s ] started, "
+            + "using %s concurrent executors",
+            self.wid,
+            self.concurrency,
         )
 
     def stop(self):
@@ -55,7 +53,7 @@ class ExecutorPool(object):
         #    return self.concurrency
         idl = 0
         for executor in self.executors:
-            if (executor.isIdle()):
+            if executor.isIdle():
                 idl += 1
         return idl
 
@@ -63,11 +61,14 @@ class ExecutorPool(object):
         while not self.stopped:
             _logger.info(
                 "worker starts { running : %s, pending : %s, available: %s}",
-                self.num_running(), self.num_pending(), self.num_available())
+                self.num_running(),
+                self.num_pending(),
+                self.num_available(),
+            )
             if self.executors[0].current_task is not None:
                 _logger.info(
                     "task %s , %s",
                     self.executors[0].current_task.src_path,
-                    self.executors[0].current_task.dest_path
+                    self.executors[0].current_task.dest_path,
                 )
             time.sleep(2)

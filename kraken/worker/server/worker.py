@@ -1,20 +1,20 @@
-from ..core.executor_pool import ExecutorPool
-from ..core.executor_factory import ExecutorFactory
-from ..core.execution.task_factory import TaskFactory
-from ...common.model.worker import WorkerStatus
-from ...master.client.client import ThriftClientFactory, ClientType
+import logging as lg
+import time
+from threading import Thread
 
 from six.moves.queue import Queue
-from threading import Thread
-import time
 
-import logging as lg
+from ...common.model.worker import WorkerStatus
+from ...master.client.client import ClientType
+from ...master.client.client import ThriftClientFactory
+from ..core.execution.task_factory import TaskFactory
+from ..core.executor_factory import ExecutorFactory
+from ..core.executor_pool import ExecutorPool
 
 _logger = lg.getLogger(__name__)
 
 
 class Worker(object):
-
     def __init__(self):
         self.lqueue = Queue()
         self.stopped = False
@@ -25,20 +25,15 @@ class Worker(object):
 
         self.wid = "kraken-worker-%s-%s" % (self.address, self.port)
 
-        client_factory = ThriftClientFactory(
-            config.master_host, config.master_port
-        )
+        client_factory = ThriftClientFactory(config.master_host, config.master_port)
         self.master = client_factory.create_client(ClientType.WORKER_SERVICE)
 
-        self.executor = ExecutorPool(self.wid,
-                                     ExecutorFactory(
-                                         client_factory,
-                                         self.lqueue,
-                                         config.executor_threads
-                                     ),
-                                     self.lqueue,
-                                     config.executor_threads
-                                     )
+        self.executor = ExecutorPool(
+            self.wid,
+            ExecutorFactory(client_factory, self.lqueue, config.executor_threads),
+            self.lqueue,
+            config.executor_threads,
+        )
 
         self.task_factory = TaskFactory()
 
@@ -47,12 +42,13 @@ class Worker(object):
 
     def submit(self, task):
         task_exec = self.task_factory.create_task(task)
-        if (not self.stopped):
+        if not self.stopped:
             self.lqueue.put(task_exec)
         else:
             raise WorkerStoppedException(
                 "Can not submit task [ %s ] to [ %s ] : worker stopped.",
-                task_exec.tid, self.wid
+                task_exec.tid,
+                self.wid,
             )
 
     def get_stats(self):
@@ -60,7 +56,8 @@ class Worker(object):
             self.wid,
             self.executor.num_running(),
             self.executor.num_pending(),
-            self.executor.num_available())
+            self.executor.num_available(),
+        )
 
     def start(self):
         _logger.info("Starting kraken worker [%s].", self.wid)
@@ -76,12 +73,28 @@ class Worker(object):
         self.executor.start()
 
         # register the worker
-        try:
-            self.master.register_worker(self.wid, self.address, self.port)
-        except Exception:
-            _logger.error("Could not register worker to the master server. exiting")
+        retries = 1
+        last_error = None
+        while retries < 30:
+            try:
+                self.master.register_worker(self.wid, self.address, self.port)
+                break
+            except Exception as e:
+                _logger.error(
+                    "Could not register worker to the master server. "
+                    + "retrying in 5 seconds ..."
+                )
+                last_error = e
+            retries += 1
+            time.sleep(5.0)
+
+        if retries == 30:
+            _logger.error(
+                "Could not register worker to the master server after 30 retries. "
+                + "exiting ..."
+            )
             self.stop()
-            raise
+            raise last_error
 
         self.reporter.start()
 
@@ -118,7 +131,7 @@ class WorkerHearbeatReporter(Thread):
 
     def run(self):
         _logger.info("Started kraken worker hearbeat reporter.")
-        while (not self.stopped):
+        while not self.stopped:
             try:
                 self.client.register_heartbeat(
                     self.worker.wid, self.worker.address, self.worker.port
