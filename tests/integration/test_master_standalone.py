@@ -3,11 +3,11 @@ import pytest
 from kraken.common.model.execution_type import ExecutionType
 from kraken.common.model.job import Job
 
-from ..utils.tutils import wait_until
+from ..unit.utils.tutils import wait_until
 
 
 @pytest.mark.usefixtures("master_server")
-class TestMasterService:
+class TestMasterStandalone:
     def test_server_up(self, user_client):
         assert len(user_client.list_jobs()) >= 0
 

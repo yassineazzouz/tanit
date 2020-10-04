@@ -37,10 +37,13 @@ class UploadTaskExecution(TaskExecution):
 
 class MockTaskExecution(TaskExecution):
     def initialize(self, params):
-        return
+        self.fail = str2bool(params["fail"]) if "fail" in params else False
+        self.sleep = float(params["sleep"]) if "sleep" in params else 2.0
 
     def run(self):
-        time.sleep(2.0)
+        time.sleep(self.sleep)
+        if self.fail:
+            raise TaskFailedException("Task forced failure.")
         return
 
 
@@ -229,4 +232,8 @@ class CopyTaskExecution(TaskExecution):
 
 
 class TaskInitializationException(Exception):
+    pass
+
+
+class TaskFailedException(Exception):
     pass

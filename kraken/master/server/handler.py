@@ -79,16 +79,13 @@ class WorkerServiceHandler(object):
         return workers
 
     def register_heartbeat(self, worker):
-        wker = Worker(worker.wid, worker.address, worker.port)
-        self.master.register_heartbeat(wker)
+        self.master.register_heartbeat(Worker(worker.wid, worker.address, worker.port))
 
     def register_worker(self, worker):
-        wker = Worker(worker.wid, worker.address, worker.port)
-        self.master.register_worker(wker)
+        self.master.register_worker(Worker(worker.wid, worker.address, worker.port))
 
     def unregister_worker(self, worker):
-        wker = Worker(worker.wid, worker.address, worker.port)
-        self.master.unregister_worker(wker)
+        self.master.unregister_worker(Worker(worker.wid, worker.address, worker.port))
 
     def task_start(self, tid):
         self.master.task_start(tid)

@@ -241,13 +241,30 @@ class UploadJobExecution(JobExecution):
 class MockJobExecution(JobExecution):
     def initialize(self, params):
         self.num_tasks = int(params["num_tasks"]) if "num_tasks" in params else 2
+        self.num_failures = (
+            int(params["num_failures"]) if "num_failures" in params else 0
+        )
+        if self.num_failures > self.num_tasks:
+            self.num_failures = self.num_tasks
+
+        self.sleep = float(params["sleep"]) if "sleep" in params else 2.0
+
         self.jid = "mock-job-%s" % (str(datetime.now().strftime("%d%m%Y%H%M%S")))
 
         self.etype = ExecutionType.MOCK
 
     def setup(self):
-        for i in range(self.num_tasks):
-            self.add_task("{}-task-{}".format(self.jid, i), {})
+        for i in range(self.num_failures):
+            self.add_task(
+                "{}-task-{}".format(self.jid, i),
+                {"fail": "True", "sleep": str(self.sleep)},
+            )
+
+        for i in range(self.num_tasks - self.num_failures):
+            self.add_task(
+                "{}-task-{}".format(self.jid, i + self.num_failures),
+                {"fail": "False", "sleep": str(self.sleep)},
+            )
 
 
 class CopyJobExecution(JobExecution):
