@@ -3,6 +3,8 @@ import pytest
 from kraken.common.model.execution_type import ExecutionType
 from kraken.common.model.job import Job
 
+from thrift.Thrift import TApplicationException
+
 from ..unit.utils.tutils import wait_until
 
 
@@ -20,6 +22,13 @@ class TestServiceIntegration:
         assert wait_until(
             lambda i: user_client.job_status(i).state == "FINISHED", 20, 0.5, jid
         )
+
+    def test_submit_job_failure(self, user_client):
+        with pytest.raises(TApplicationException):
+            user_client.submit_job(Job(ExecutionType.MOCK, {"num_tasks": "not_an_int"}))
+
+    def test_inexistent_job(self, user_client):
+        assert user_client.job_status("some_inexistent_job") is None
 
     def test_job_failure(self, user_client):
         jid = user_client.submit_job(

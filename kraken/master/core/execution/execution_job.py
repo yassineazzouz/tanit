@@ -240,14 +240,19 @@ class UploadJobExecution(JobExecution):
 
 class MockJobExecution(JobExecution):
     def initialize(self, params):
-        self.num_tasks = int(params["num_tasks"]) if "num_tasks" in params else 2
-        self.num_failures = (
-            int(params["num_failures"]) if "num_failures" in params else 0
-        )
+        try:
+            self.num_tasks = int(params["num_tasks"]) if "num_tasks" in params else 2
+            self.num_failures = (
+                int(params["num_failures"]) if "num_failures" in params else 0
+            )
+            self.sleep = float(params["sleep"]) if "sleep" in params else 2.0
+        except Exception as e:
+            raise JobInitializationException(
+                "Failed to parse job parameters.", e
+            )
+
         if self.num_failures > self.num_tasks:
             self.num_failures = self.num_tasks
-
-        self.sleep = float(params["sleep"]) if "sleep" in params else 2.0
 
         self.jid = "mock-job-%s" % (str(datetime.now().strftime("%d%m%Y%H%M%S")))
 
