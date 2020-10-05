@@ -28,23 +28,23 @@ USER_SERVICE_CLIENT_NAME = "user-service"
 class UserServiceClientIFace(object):
     @abc.abstractmethod
     def start(self):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def list_jobs(self):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def job_status(self, jid):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def submit_job(self, job):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def stop(self):
-        pass
+        raise NotImplementedError
 
 
 class ThriftUserServiceClient(UserServiceClientIFace):
@@ -130,39 +130,39 @@ class LocalUserServiceClient(UserServiceClientIFace):
 class WorkerServiceClientIFace(object):
     @abc.abstractmethod
     def start(self):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def list_workers(self):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def register_worker(self, wid, address, port):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def unregister_worker(self, wid, address, port):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def register_heartbeat(self, wid, address, port):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def task_start(self, tid):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def task_success(self, tid):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def task_failure(self, tid):
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def stop(self):
-        pass
+        raise NotImplementedError
 
 
 class ThriftWorkerServiceClient(WorkerServiceClientIFace):

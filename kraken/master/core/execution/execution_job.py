@@ -234,8 +234,11 @@ class JobExecution(object):
 
 
 class UploadJobExecution(JobExecution):
-    # not implemented yet
-    pass
+    def initialize(self, params):
+        raise NotImplementedError
+
+    def setup(self):
+        raise NotImplementedError
 
 
 class MockJobExecution(JobExecution):
