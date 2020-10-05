@@ -247,9 +247,7 @@ class MockJobExecution(JobExecution):
             )
             self.sleep = float(params["sleep"]) if "sleep" in params else 2.0
         except Exception as e:
-            raise JobInitializationException(
-                "Failed to parse job parameters.", e
-            )
+            raise JobInitializationException("Failed to parse job parameters.", e)
 
         if self.num_failures > self.num_tasks:
             self.num_failures = self.num_tasks

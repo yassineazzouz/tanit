@@ -39,7 +39,9 @@ class TestExecutionManager:
         assert True
 
     def test_task_finish(self, execution_manager):
-        job_exec = execution_manager.submit_job(Job(ExecutionType.MOCK, {"num_tasks": "2"}))
+        job_exec = execution_manager.submit_job(
+            Job(ExecutionType.MOCK, {"num_tasks": "2"})
+        )
 
         # verify the job is in running state
         assert wait_until(
@@ -65,7 +67,9 @@ class TestExecutionManager:
             assert task.state == ExecutionState.FINISHED
 
     def test_task_fail(self, execution_manager):
-        job_exec = execution_manager.submit_job(Job(ExecutionType.MOCK, {"num_tasks": "2"}))
+        job_exec = execution_manager.submit_job(
+            Job(ExecutionType.MOCK, {"num_tasks": "2"})
+        )
 
         # verify the job is in running state
         assert wait_until(
@@ -115,7 +119,9 @@ class TestExecutionManager:
         assert execution_manager.get_job(job_exec.jid).state == ExecutionState.FINISHED
 
     def test_task_lookup(self, execution_manager):
-        job_exec = execution_manager.submit_job(Job(ExecutionType.MOCK, {"num_tasks": "2"}))
+        job_exec = execution_manager.submit_job(
+            Job(ExecutionType.MOCK, {"num_tasks": "2"})
+        )
 
         # verify the job is in running state
         assert wait_until(

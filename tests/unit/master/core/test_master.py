@@ -23,7 +23,10 @@ class TestMaster:
         master.register_worker(Worker("worker 1", None, None))
         job = master.submit_job(Job(ExecutionType.MOCK, {"num_tasks": "2"}))
         assert wait_until(
-            lambda i: master.get_job(i).state == ExecutionState.FINISHED, 20, 0.5, job.jid
+            lambda i: master.get_job(i).state == ExecutionState.FINISHED,
+            20,
+            0.5,
+            job.jid,
         )
 
     def test_submit_bad_job_params(self, master):
