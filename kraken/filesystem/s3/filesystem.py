@@ -45,7 +45,7 @@ class S3FileSystem(IFileSystem):
         else:
             if rpath == self.bucket_name:
                 # this is equivalent to root '/'
-                info = {'Key': self.bucket_name, 'Size': 0, 'StorageClass': 'DIRECTORY'}
+                info = {"Key": self.bucket_name, "Size": 0, "StorageClass": "DIRECTORY"}
             else:
                 try:
                     info = self.s3.info(rpath)
@@ -55,8 +55,12 @@ class S3FileSystem(IFileSystem):
                     info = self.s3.info(rpath)
             return {
                 "fileId": info["Key"],
-                "length": info["Size"] if str(info["StorageClass"]).upper() == "STANDARD" else 0,
-                "type": "FILE" if str(info["StorageClass"]).upper() == "STANDARD" else "DIRECTORY",
+                "length": info["Size"]
+                if str(info["StorageClass"]).upper() == "STANDARD"
+                else 0,
+                "type": "FILE"
+                if str(info["StorageClass"]).upper() == "STANDARD"
+                else "DIRECTORY",
                 "modificationTime": int(
                     self.s3.info("kraken-test/test/dummy.txt")[
                         "LastModified"
