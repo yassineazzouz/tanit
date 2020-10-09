@@ -28,7 +28,7 @@ class S3FileSystem(IFileSystem):
             if path.startswith("/"):
                 rpath = self.bucket_name + path
             else:
-                rpath = os.path.join(self.bucket_name, path)
+                rpath = self.bucket_name + "/" + path
         else:
             rpath = path
         return os.path.normpath(rpath)
@@ -43,18 +43,27 @@ class S3FileSystem(IFileSystem):
             else:
                 raise FileSystemError("%r does not exist.", rpath)
         else:
-            info = self.s3.info(rpath)
+            if rpath == self.bucket_name:
+                # this is equivalent to root '/'
+                info = {'Key': self.bucket_name, 'Size': 0, 'StorageClass': 'DIRECTORY'}
+            else:
+                try:
+                    info = self.s3.info(rpath)
+                except s3fs.FileNotFoundError:
+                    # ugly workaround
+                    self.s3.ls(os.path.dirname(rpath), refresh=True)
+                    info = self.s3.info(rpath)
             return {
                 "fileId": info["Key"],
-                "length": info["size"] if str(info["type"]).upper() == "FILE" else 0,
-                "type": str(info["type"]).upper(),
+                "length": info["Size"] if str(info["StorageClass"]).upper() == "STANDARD" else 0,
+                "type": "FILE" if str(info["StorageClass"]).upper() == "STANDARD" else "DIRECTORY",
                 "modificationTime": int(
                     self.s3.info("kraken-test/test/dummy.txt")[
                         "LastModified"
                     ].timestamp()
                     * 1000
                 )
-                if info["type"] == "file"
+                if info["StorageClass"] == "STANDARD"
                 else None,
             }
 
@@ -62,8 +71,6 @@ class S3FileSystem(IFileSystem):
         _logger.debug("Listing %r.", path)
         rpath = self.resolvepath(path)
         if not glob:
-            if not self.s3.isdir(rpath):
-                raise FileSystemError("%r is not a directory.", rpath)
             files = list(
                 filter(
                     None, [os.path.basename(f) for f in self.s3.ls(rpath, refresh=True)]
@@ -113,7 +120,7 @@ class S3FileSystem(IFileSystem):
         if not self.s3.exists(rpath):
             raise FileSystemError("%r does not exist.", rpath)
         else:
-            self.s3.delete(rpath, recursive=recursive)
+            self.s3.rm(rpath, recursive=recursive)
 
     def rename(self, src_path, dst_path):
         rsrc_path = self.resolvepath(src_path)
@@ -137,9 +144,7 @@ class S3FileSystem(IFileSystem):
     def mkdir(self, path, permission=None):
         rpath = self.resolvepath(path)
         if not self.s3.exists(rpath):
-            self.s3.makedirs(rpath, True)
-            if permission is not None:
-                self.s3.chmod(rpath, permission)
+            self.s3.mkdir(rpath, permission)
 
     @contextmanager
     def read(
@@ -150,7 +155,7 @@ class S3FileSystem(IFileSystem):
         encoding=None,
         chunk_size=None,
         delimiter=None,
-        **kwargs,
+        **kwargs
     ):
 
         if delimiter:
@@ -192,7 +197,7 @@ class S3FileSystem(IFileSystem):
         buffer_size=1024,
         append=False,
         encoding=None,
-        **kwargs,
+        **kwargs
     ):
 
         rpath = self.resolvepath(path)

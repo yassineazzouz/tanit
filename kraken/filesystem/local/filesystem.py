@@ -153,7 +153,7 @@ class LocalFileSystem(IFileSystem):
         encoding=None,
         chunk_size=None,
         delimiter=None,
-        **kwargs,
+        **kwargs
     ):
 
         if delimiter:
@@ -190,7 +190,7 @@ class LocalFileSystem(IFileSystem):
         buffer_size=1024,
         append=False,
         encoding=None,
-        **kwargs,
+        **kwargs
     ):
         class FileWriter:
             def __init__(

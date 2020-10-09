@@ -177,7 +177,7 @@ class IFileSystem:
         encoding=None,
         chunk_size=None,
         delimiter=None,
-        **kwargs,
+        **kwargs
     ):
         """Read a file from FileSystem.
 
@@ -216,6 +216,7 @@ class IFileSystem:
         buffer_size=None,
         append=False,
         encoding=None,
+        **kwargs
     ):
         """Create a file.
 

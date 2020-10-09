@@ -57,7 +57,7 @@ class HDFSFileSystem(IFileSystem):
         encoding=None,
         chunk_size=None,
         delimiter=None,
-        **kwargs,
+        **kwargs
     ):
         with self.client.read(
             path,
@@ -66,7 +66,7 @@ class HDFSFileSystem(IFileSystem):
             encoding=encoding,
             chunk_size=chunk_size,
             delimiter=delimiter,
-            **kwargs,
+            **kwargs
         ) as reader:
             yield reader
 
@@ -79,7 +79,7 @@ class HDFSFileSystem(IFileSystem):
         buffer_size=None,
         append=False,
         encoding=None,
-        **kwargs,
+        **kwargs
     ):
         return self.client.write(
             path,
@@ -89,7 +89,7 @@ class HDFSFileSystem(IFileSystem):
             buffersize=buffer_size,
             append=append,
             encoding=encoding,
-            **kwargs,
+            **kwargs
         )
 
     def resolvepath(self, path):
