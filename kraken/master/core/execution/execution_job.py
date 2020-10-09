@@ -308,13 +308,15 @@ class CopyJobExecution(JobExecution):
             params["include_pattern"] if "include_pattern" in params else "*"
         )
         self.min_size = int(params["min_size"]) if "min_size" in params else 0
-        self.preserve = str2bool(params["preserve"]) if "preserve" in params else True
+        self.overwrite = (
+            str2bool(params["overwrite"]) if "overwrite" in params else True
+        )
         self.force = str2bool(params["force"]) if "force" in params else True
         self.checksum = str2bool(params["checksum"]) if "checksum" in params else True
         self.files_only = (
             str2bool(params["files_only"]) if "files_only" in params else True
         )
-        self.part_size = int(params["part_size"]) if "part_size" in params else 65536
+        self.chunk_size = int(params["chunk_size"]) if "chunk_size" in params else 65536
         self.buffer_size = (
             int(params["buffer_size"]) if "buffer_size" in params else 65536
         )
@@ -332,22 +334,25 @@ class CopyJobExecution(JobExecution):
 
     def setup(self):
 
-        from ....client.client_factory import ClientFactory
+        from ....filesystem.filesystem_factory import FileSystemFactory
 
-        src = ClientFactory.getInstance().get_client(self.src)
-        dst = ClientFactory.getInstance().get_client(self.dst)
+        src = FileSystemFactory.getInstance().get_filesystem(self.src)
+        dst = FileSystemFactory.getInstance().get_filesystem(self.dst)
 
         src_path = self.src_path
         dst_path = self.dest_path
-        chunk_size = self.part_size
-        overwrite = self.force
-
-        if not chunk_size:
-            raise ValueError("Copy chunk size must be positive.")
+        overwrite = self.overwrite
 
         # Normalise src and dst paths
         src_path = src.resolvepath(src_path)
-        dst_path = dst.resolvepath(dst_path)
+
+        if str(dst_path).endswith("/"):
+            dst_path = dst.resolvepath(dst_path)
+            dst_name = ""
+        else:
+            r_path = dst.resolvepath(dst_path)
+            dst_path = os.path.dirname(r_path)
+            dst_name = os.path.basename(r_path)
 
         # First, resolve the list of src files/directories to be copied
         copies = [copy_file for copy_file in glob.glob(src, src_path)]
@@ -355,32 +360,22 @@ class CopyJobExecution(JobExecution):
         # need to develop a proper pattern based access function
         if len(copies) == 0:
             raise KrakenError(
-                "Cloud not resolve source path %s, either it does not exist or can not access it.",  # NOQA
+                "Cloud not resolve source path %s : "
+                + "either it does not exist or can not access it.",
                 src_path,
             )
 
         tuples = []
         for copy in copies:
             copy_tuple = dict()
-            try:
-                # filename = osp.basename(copy)
-                # dst_base_path =  osp.join( dst_path, filename )
-                status = dst.status(dst_path, strict=True)
-                # statuses = [status for _, status in dst.list(dst_base_path)]
-            except KrakenError as err:
-                if "File does not exist" in str(err):
-                    # Remote path doesn't exist.
-                    # check if parent exist
-                    if dst.status(osp.dirname(dst_path), strict=False) is None:
-                        raise KrakenError(
-                            "Parent directory of %r does not exist.", dst_path
-                        )
-                    else:
-                        # Remote path does not exist, and parent exist
-                        # so we want the source to be renamed as destination
-                        # so do not add the basename
-                        dst_base_path = dst_path
-                        copy_tuple = dict({"src_path": copy, "dst_path": dst_base_path})
+
+            # filename = osp.basename(copy)
+            # dst_base_path =  osp.join( dst_path, filename )
+            status = dst.status(dst_path, strict=False)
+            # statuses = [status for _, status in dst.list(dst_base_path)]
+            if status is None:
+                # Remote path doesn't exist.
+                raise KrakenError("Base directory of %r does not exist.", dst_path)
             else:
                 # Remote path exists.
                 if status["type"] == "FILE":
@@ -394,24 +389,22 @@ class CopyJobExecution(JobExecution):
                     dst_base_path = dst_path
                 else:
                     # Remote path exists and is a directory.
-                    status = dst.status(
-                        osp.join(dst_path, osp.basename(copy)), strict=False
-                    )
+                    dst_name = osp.basename(copy) if dst_name == "" else dst_name
+                    status = dst.status(osp.join(dst_path, dst_name), strict=False)
                     if status is None:
                         # destination does not exist, great !
-                        dst_base_path = osp.join(dst_path, osp.basename(copy))
+                        dst_base_path = osp.join(dst_path, dst_name)
                         pass
                     else:
                         # destination exists
-                        dst_base_path = osp.join(dst_path, osp.basename(copy))
+                        dst_base_path = osp.join(dst_path, dst_name)
                         if not overwrite:
                             raise KrakenError(
                                 "Destination path %r already exists.", dst_base_path
                             )
 
                 copy_tuple = dict({"src_path": copy, "dst_path": dst_base_path})
-            finally:
-                tuples.append(copy_tuple)
+            tuples.append(copy_tuple)
 
         # This is a workaround for a Bug when copying files using a pattern
         # it may happen that files can have the same name:
@@ -457,13 +450,10 @@ class CopyJobExecution(JobExecution):
                                 fpath[offset:].replace(os.sep, "/"),
                             ).rstrip(os.sep)
                         ),
-                        "include_pattern": str(self.include_pattern),
-                        "min_size": str(self.min_size),
-                        "preserve": str(self.preserve),
+                        "overwrite": str(self.overwrite),
                         "force": str(self.force),
                         "checksum": str(self.checksum),
-                        "files_only": str(self.files_only),
-                        "part_size": str(self.part_size),
+                        "chunk_size": str(self.chunk_size),
                         "buffer_size": str(self.buffer_size),
                     },
                 )
