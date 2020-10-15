@@ -1,4 +1,4 @@
-import codecs
+import io
 import logging as lg
 import os
 import types
@@ -10,6 +10,7 @@ from ...common.utils.glob import iglob
 from ..filesystem import IFileSystem
 from ..ioutils import ChunkFileReader
 from ..ioutils import DelimitedFileReader
+from ..ioutils import FileReader
 from ..ioutils import FileSystemError
 
 _logger = lg.getLogger(__name__)
@@ -49,7 +50,7 @@ class S3FileSystem(IFileSystem):
             else:
                 try:
                     info = self.s3.info(rpath)
-                except s3fs.FileNotFoundError:
+                except FileNotFoundError:
                     # ugly workaround
                     self.s3.ls(os.path.dirname(rpath), refresh=True)
                     info = self.s3.info(rpath)
@@ -101,7 +102,7 @@ class S3FileSystem(IFileSystem):
                 total_folders += len(dirnames)
                 for f in filenames:
                     total_files += 1
-                    total_size += self.s3.size(os.path.join(dirpath, f))
+                    total_size += int(self.s3.info(os.path.join(dirpath, f))["Size"])
 
             return {
                 "length": total_size,
@@ -133,7 +134,7 @@ class S3FileSystem(IFileSystem):
             raise FileSystemError("%r does not exist.", rsrc_path)
         if self.s3.exists(rdst_path):
             raise FileSystemError("%r exists.", rdst_path)
-        self.s3.rename(rsrc_path, rdst_path)
+        self.s3.mv(rsrc_path, rdst_path)
 
     def set_owner(self, path, owner=None, group=None):
         raise NotImplementedError
@@ -174,20 +175,21 @@ class S3FileSystem(IFileSystem):
 
         _logger.debug("Reading file %r.", path)
         file = self.s3.open(rpath, mode="rb")
+        if encoding:
+            file = io.TextIOWrapper(file, encoding=encoding)
+
         if offset > 0:
             file.seek(offset)
-
         try:
             if not chunk_size and not delimiter:
                 # return a file like object
-                yield codecs.getreader(encoding)(file) if encoding else file
+                yield file
             else:
                 # return a generator function
                 if delimiter:
-                    reader = DelimitedFileReader(file, delimiter=delimiter)
+                    yield DelimitedFileReader(file, delimiter=delimiter)
                 else:
-                    reader = ChunkFileReader(file, chunk_size=chunk_size)
-                yield codecs.getreader(encoding)(reader) if encoding else reader
+                    yield ChunkFileReader(file, chunk_size=chunk_size)
         finally:
             file.close()
             _logger.debug("Closed response for reading file %r.", path)
@@ -226,7 +228,9 @@ class S3FileSystem(IFileSystem):
             return file
         else:
             with file:
-                if isinstance(data, types.GeneratorType):
+                if isinstance(data, types.GeneratorType) or isinstance(
+                    data, FileReader
+                ):
                     for chunk in data:
                         file.write(chunk)
                 else:

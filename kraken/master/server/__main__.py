@@ -34,6 +34,7 @@ def configure_logging():
     logger = lg.getLogger()
     logger.setLevel(lg.DEBUG)
     lg.getLogger("requests_kerberos.kerberos_").setLevel(lg.CRITICAL)
+    lg.getLogger("google.resumable_media").setLevel(lg.ERROR)
     lg.getLogger("requests").setLevel(lg.ERROR)
 
     # Configure stream logging if applicable

@@ -64,6 +64,7 @@ setup(
         'pywhdfs>=1.1.0',
         's3fs==0.2.2',
         'google-cloud-storage>=1.20.0',
+        'google-auth>=1.2',
         'pyrsistent==0.15.0'
     ],
     entry_points={'console_scripts':

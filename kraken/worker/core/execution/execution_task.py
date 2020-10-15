@@ -179,7 +179,7 @@ class CopyTaskExecution(TaskExecution):
             with src.read(
                 _src_path, chunk_size=self.chunk_size, buffer_size=self.buffer_size
             ) as _reader:
-                dst.write(_tmp_path, _reader, buffersize=self.buffer_size, **kwargs)
+                dst.write(_tmp_path, _reader, buffer_size=self.buffer_size, **kwargs)
 
             if _tmp_path != _dst_path:
                 _logger.info(

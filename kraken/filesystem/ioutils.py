@@ -1,19 +1,30 @@
 from ..common.core.exception import KrakenError
 
 
-class ChunkFileReader:
+class FileReader:
+    pass
+
+
+class ChunkFileReader(FileReader):
     def __init__(self, file, chunk_size=1024):
         self.file = file
         self.chunk_size = chunk_size
 
-    def read(self):
-        data = self.file.read(self.chunk_size)
-        if not data:
-            return None
-        return data
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next()
+
+    def next(self):
+        while True:
+            data = self.file.read(self.chunk_size)
+            if not data:
+                raise StopIteration
+            return data
 
 
-class DelimitedFileReader:
+class DelimitedFileReader(FileReader):
     def __init__(self, file, delimiter="\n"):
         self.file = file
         self.delimiter = delimiter
@@ -21,7 +32,13 @@ class DelimitedFileReader:
         self.data = []
         self.buffer = ""
 
-    def read(self):
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next()
+
+    def next(self):
         # TODO
         pass
 

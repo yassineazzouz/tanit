@@ -3,6 +3,7 @@ from threading import Lock
 
 from .config import FileSystemsConfig
 from .config import KrakenConfigurationException
+from .gcp.filesystem import GCPFileSystem
 from .hdfs.filesystem import HDFSFileSystem
 from .ioutils import FileSystemError
 from .local.filesystem import LocalFileSystem
@@ -59,6 +60,14 @@ class FileSystemFactory(object):
                             bucket = config["bucket"]
                             del config["bucket"]
                             filesystem = S3FileSystem(bucket, **config)
+                        elif fs_type == "gcs":
+                            project = config["project"]
+                            del config["project"]
+                            bucket = config["bucket"]
+                            del config["bucket"]
+                            token = config["token"]
+                            del config["token"]
+                            filesystem = GCPFileSystem(project, bucket, token, **config)
                         else:
                             raise NonSupportedFileSystemError(
                                 "Non supported filesystem type '%s'" % type

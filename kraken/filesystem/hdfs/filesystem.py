@@ -18,20 +18,26 @@ class HDFSFileSystem(IFileSystem):
 
     def status(self, path, strict=True):
         s = self.client.status(path, strict)
-        return {
-            "fileId": s["fileId"],
-            "length": s["length"],
-            "type": str(s["type"]).upper(),
-            "modificationTime": s["modificationTime"],
-        }
+        if s is None:
+            return None
+        else:
+            return {
+                "fileId": path,
+                "length": s["length"],
+                "type": str(s["type"]).upper(),
+                "modificationTime": s["modificationTime"],
+            }
 
     def content(self, path, strict=True):
         c = self.client.content(path, strict)
-        return {
-            "length": c["length"],
-            "fileCount": c["fileCount"],
-            "directoryCount": c["directoryCount"],
-        }
+        if c is None:
+            return None
+        else:
+            return {
+                "length": c["length"],
+                "fileCount": c["fileCount"],
+                "directoryCount": c["directoryCount"],
+            }
 
     def delete(self, path, recursive=False):
         return self.client.delete(path, recursive)
@@ -53,7 +59,7 @@ class HDFSFileSystem(IFileSystem):
         self,
         path,
         offset=0,
-        buffer_size=None,
+        buffer_size=1024,
         encoding=None,
         chunk_size=None,
         delimiter=None,
@@ -76,7 +82,7 @@ class HDFSFileSystem(IFileSystem):
         data=None,
         overwrite=False,
         permission=None,
-        buffer_size=None,
+        buffer_size=1024,
         append=False,
         encoding=None,
         **kwargs

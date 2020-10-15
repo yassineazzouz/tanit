@@ -161,11 +161,9 @@ class IFileSystem:
             raise FileSystemError("Unknown checksum algorithm '%s'" % algorithm)
 
         checksum = hash_func()
-        with open(path, "rb") as f:
-            chunk = f.read(8192)
-            while chunk:
+        with self.read(path, chunk_size=8192) as reader:
+            for chunk in reader:
                 checksum.update(chunk)
-                chunk = f.read(8192)
         return checksum.hexdigest()
 
     @abc.abstractmethod
@@ -173,7 +171,7 @@ class IFileSystem:
         self,
         path,
         offset=0,
-        buffer_size=None,
+        buffer_size=1024,
         encoding=None,
         chunk_size=None,
         delimiter=None,

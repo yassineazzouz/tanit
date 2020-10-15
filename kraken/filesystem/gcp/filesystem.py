@@ -1,25 +1,77 @@
 import io
+import json
 import logging as lg
 import os
 import re
 import types
 from contextlib import contextmanager
 
+import google.auth
 from google.cloud import storage
+from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
 
 from ...common.utils.glob import iglob
 from ..filesystem import IFileSystem
 from ..ioutils import ChunkFileReader
 from ..ioutils import DelimitedFileReader
+from ..ioutils import FileReader
 from ..ioutils import FileSystemError
 
 _logger = lg.getLogger(__name__)
 
 
 class GCPFileSystem(IFileSystem):
-    def __init__(self, bucket_name, **params):
-        self.client = storage.Client(**params)
+    def __init__(self, project, bucket_name, token=None, **params):
+        credentials = self.connect(token=token)
+        self.client = storage.Client(project=project, credentials=credentials, **params)
         self.bucket = self.client.get_bucket(bucket_name)
+
+    def connect(self, token):
+        """Connect  using a concrete token.
+
+        Parameters
+        ----------
+        token: str, dict or Credentials
+            If a str, try to load as a Service file, or next as a JSON; if
+            dict, try to interpret as credentials; if Credentials, use directly.
+        """
+
+        def _connect_service(service_file):
+            # raises exception if file does not match expectation
+            return service_account.Credentials.from_service_account_file(service_file)
+
+        def _dict_to_credentials(token):
+            try:
+                credentials = service_account.Credentials.from_service_account_info(
+                    token
+                )
+            except Exception:
+                credentials = Credentials(
+                    None,
+                    refresh_token=token["refresh_token"],
+                    client_secret=token["client_secret"],
+                    client_id=token["client_id"],
+                    token_uri="https://oauth2.googleapis.com/token",
+                )
+            return credentials
+
+        if token is None:
+            return None
+        if isinstance(token, str):
+            if not os.path.exists(token):
+                raise FileNotFoundError(token)
+            try:
+                # is this a "service" token?
+                return _connect_service(token)
+            except Exception:
+                token = json.load(open(token))
+        if isinstance(token, dict):
+            return _dict_to_credentials(token)
+        if isinstance(token, google.auth.credentials.Credentials):
+            return token
+        else:
+            raise ValueError("Token format not understood")
 
     def resolvepath(self, path):
         # Remove any leading and trailing slash
@@ -86,7 +138,7 @@ class GCPFileSystem(IFileSystem):
         files.extend(
             [os.path.basename(os.path.normpath(prefix)) for prefix in iter.prefixes]
         )
-        return files
+        return [file for file in files if file not in ["", ".", "/"]]
 
     def list(self, path, status=False, glob=False):
         _logger.debug("Listing %r.", path)
@@ -220,7 +272,7 @@ class GCPFileSystem(IFileSystem):
         self,
         path,
         offset=0,
-        buffer_size=None,
+        buffer_size=1024,
         encoding=None,
         chunk_size=None,
         delimiter=None,
@@ -294,7 +346,9 @@ class GCPFileSystem(IFileSystem):
             return file
         else:
             with file:
-                if isinstance(data, types.GeneratorType):
+                if isinstance(data, types.GeneratorType) or isinstance(
+                    data, FileReader
+                ):
                     for chunk in data:
                         file.write(chunk)
                 else:
