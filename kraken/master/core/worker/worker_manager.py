@@ -14,7 +14,7 @@ class WorkerManager(object):
     machines are active and fetch their state.
     """  # NOQA
 
-    def __init__(self, workers_factory):
+    def __init__(self, workers_factory, config=None):
         self.worker_factory = workers_factory
 
         self.live_workers = []
@@ -25,6 +25,11 @@ class WorkerManager(object):
 
         # monitor
         self.monitor = WorkerMonitor(self)
+
+        self.configure(config)
+
+    def configure(self, config):
+        pass
 
     def start(self):
         _logger.info("Stating kraken worker manager.")

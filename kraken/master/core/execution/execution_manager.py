@@ -18,7 +18,7 @@ class ExecutionManager(object):
     and reflect the real progress.
     """
 
-    def __init__(self, workers_manager):
+    def __init__(self, workers_manager, config=None):
         # jobs list
         self.jobs = []
         # job factory
@@ -32,8 +32,11 @@ class ExecutionManager(object):
         # dispatcher
         self.dispatcher = FairDispatcher(cqueue, workers_manager, self.task_dispatch)
 
+        self.configure(config)
+
     def configure(self, config):
-        pass
+        # should be configurable
+        self.max_task_retries = 3
 
     def start(self):
         _logger.info("Stating Kraken master services.")
@@ -138,7 +141,17 @@ class ExecutionManager(object):
     def task_failure(self, tid):
         task = self.get_task(tid)
         if task is not None:
-            task.on_fail()
+            _logger.info("Received task failure for %s" % tid)
+            if task.attempts == self.max_task_retries:
+                _logger.info("Failing task %s after %s attempts" % (tid, task.attempts))
+                task.on_fail()
+            else:
+                _logger.info(
+                    "Retrying task %s, attempt %s out of %s" %
+                    (tid, task.attempts, self.max_task_retries)
+                )
+                task.on_retry()
+                self.scheduler.schedule(task)
         else:
             raise NoSuchTaskException("No such task [ %s ]", tid)
 

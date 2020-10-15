@@ -18,17 +18,19 @@ class Master(object):
     and the RPC technology used.
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
         # workers factory
         self.workers_factory = WorkerFactory(self)
         # workers manager
-        self.workers_manager = WorkerManager(self.workers_factory)
+        self.workers_manager = WorkerManager(self.workers_factory, config)
         # execution manager
-        self.execution_manager = ExecutionManager(self.workers_manager)
+        self.execution_manager = ExecutionManager(self.workers_manager, config)
         # decommissioner
         self.decommissioner = WorkerDecommissioner(
             self.execution_manager, self.workers_manager
         )
+
+        self.configure(config)
 
         self.started = False
 

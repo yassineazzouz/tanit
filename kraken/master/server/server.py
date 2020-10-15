@@ -79,8 +79,7 @@ class MasterServer(object):
         self.config.load()
 
         self.standalone = standalone
-        self.master = Master() if not standalone else StandaloneMaster()
-        self.master.configure(self.config)
+        self.master = Master(self.config) if not standalone else StandaloneMaster()
 
         self.stopped = False
 

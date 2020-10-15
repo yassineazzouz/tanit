@@ -27,6 +27,7 @@ class TaskExecution(object):
         self.etype = etype
         self.params = params
         self.job = job
+        self.attempts = 1
         self.worker = None
 
     def on_schedule(self):
@@ -87,7 +88,11 @@ class TaskExecution(object):
     def on_reset(self):
         self.job.on_task_reset(self.tid)
 
-    def reset(self):
+    def on_retry(self):
+        self.attempts += 1
+        self.job.on_task_reset(self.tid)
+
+    def _reset(self):
         self.state = ExecutionState.SUBMITTED
         self.worker = None
 
@@ -230,7 +235,7 @@ class JobExecution(object):
                     self.state = ExecutionState.RUNNING
                 self.failed_tasks -= 1
 
-            task.reset()
+            task._reset()
 
 
 class UploadJobExecution(JobExecution):
