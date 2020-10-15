@@ -147,8 +147,8 @@ class ExecutionManager(object):
                 task.on_fail()
             else:
                 _logger.info(
-                    "Retrying task %s, attempt %s out of %s" %
-                    (tid, task.attempts, self.max_task_retries)
+                    "Retrying task %s, attempt %s out of %s"
+                    % (tid, task.attempts, self.max_task_retries)
                 )
                 task.on_retry()
                 self.scheduler.schedule(task)
