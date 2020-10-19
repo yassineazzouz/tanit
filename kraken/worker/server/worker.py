@@ -10,6 +10,7 @@ from ...master.client.client import ThriftClientFactory
 from ..core.execution.task_factory import TaskFactory
 from ..core.executor_factory import ExecutorFactory
 from ..core.executor_pool import ExecutorPool
+from ..filesystem.service import LocalFileSystemService
 
 _logger = lg.getLogger(__name__)
 
@@ -28,6 +29,7 @@ class Worker(object):
         client_factory = ThriftClientFactory(config.master_host, config.master_port)
         self.master = client_factory.create_client(ClientType.WORKER_SERVICE)
 
+
         self.executor = ExecutorPool(
             self.wid,
             ExecutorFactory(client_factory, self.lqueue, config.executor_threads),
@@ -39,6 +41,8 @@ class Worker(object):
 
         self.reporter = WorkerHearbeatReporter(self)
         self.reporter.setDaemon(True)
+
+        self.filesystem = LocalFileSystemService()
 
     def submit(self, task):
         task_exec = self.task_factory.create_task(task)
@@ -71,6 +75,9 @@ class Worker(object):
             raise e
 
         self.executor.start()
+
+        # start the filesystem service
+        self.filesystem.start()
 
         # register the worker
         retries = 1

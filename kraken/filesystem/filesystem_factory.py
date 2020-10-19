@@ -1,17 +1,17 @@
 import logging as lg
-from threading import Lock
+from threading import RLock
+from copy import deepcopy
 
 from .config import FileSystemsConfig
-from .config import KrakenConfigurationException
+from .local.filesystem import LocalFileSystem
 from .gcp.filesystem import GCPFileSystem
 from .hdfs.filesystem import HDFSFileSystem
 from .ioutils import FileSystemError
-from .local.filesystem import LocalFileSystem
 from .s3.filesystem import S3FileSystem
 
 _logger = lg.getLogger(__name__)
 
-_glock = Lock()
+_glock = RLock()
 
 
 class FileSystemFactory(object):
@@ -33,50 +33,80 @@ class FileSystemFactory(object):
             self._configure()
 
     def _configure(self):
-        self.config = FileSystemsConfig(None)
-        self.filesystems = {}
+        self._filesystems = {}
+
+        config = FileSystemsConfig(None)
+        if config:
+            _config = config.get_config()
+            for _fs_conf in _config["filesystems"]:
+                self.register_filesystem(_fs_conf)
+        else:
+            _logger.warning("Empty filesystems configuration file.")
+
+    def register_filesystem(self, conf):
+        _conf = deepcopy(conf)
+        with _glock:
+            if "name" in _conf:
+                name = _conf.pop["name"]
+                self._filesystems[name] = _conf
+                _logger.info("Registered filesystem + %s" % name)
+            else:
+                raise InvalidFileSystemError("Missing filesystem name from %s" % str(_conf))
 
     def get_filesystem(self, name):
-        with _glock:
-            if name in self.filesystems:
-                filesystem = self.filesystems[name]
+        def _get_filesystem(name):
+            if name in self._filesystems:
+                return self._filesystems[name]
             else:
-                if name == "local":
-                    filesystem = LocalFileSystem()
+                # the name does not exist
+                raise UnknownFileSystemError(
+                    "Unknown Filesystem '%s'" % name
+                )
+
+        with _glock:
+            config = _get_filesystem(name)
+            if "type" not in config:
+                raise InvalidFileSystemError(
+                    "filesystem type missing for '%s'" % name
+                )
+            else:
+                fs_type = config.pop("type")
+                if fs_type == "local":
+                    address = config["address"]
+                    port = config["port"]
+                    filesystem = LocalFileSystem(address, port)
+                elif fs_type == "hdfs":
+                    auth_mechanism = config["auth_mechanism"]
+                    del config["auth_mechanism"]
+                    filesystem = HDFSFileSystem(name, auth_mechanism, **config)
+                elif fs_type == "s3":
+                    bucket = config["bucket"]
+                    del config["bucket"]
+                    filesystem = S3FileSystem(bucket, **config)
+                elif fs_type == "gcs":
+                    project = config["project"]
+                    del config["project"]
+                    bucket = config["bucket"]
+                    del config["bucket"]
+                    token = config["token"]
+                    del config["token"]
+                    filesystem = GCPFileSystem(project, bucket, token, **config)
                 else:
-                    config = self.config.get_filesystem(name)
-                    if "type" not in config:
-                        raise KrakenConfigurationException(
-                            "filesystem type missing for '%s'" % name
-                        )
-                    else:
-                        fs_type = config["type"]
-                        del config["type"]
-                        if fs_type == "hdfs":
-                            auth_mechanism = config["auth_mechanism"]
-                            del config["auth_mechanism"]
-                            filesystem = HDFSFileSystem(name, auth_mechanism, **config)
-                        elif fs_type == "s3":
-                            bucket = config["bucket"]
-                            del config["bucket"]
-                            filesystem = S3FileSystem(bucket, **config)
-                        elif fs_type == "gcs":
-                            project = config["project"]
-                            del config["project"]
-                            bucket = config["bucket"]
-                            del config["bucket"]
-                            token = config["token"]
-                            del config["token"]
-                            filesystem = GCPFileSystem(project, bucket, token, **config)
-                        else:
-                            raise NonSupportedFileSystemError(
-                                "Non supported filesystem type '%s'" % type
-                            )
-                # This is an ugly workaround to initialize the client
-                filesystem.list("/")
-                self.filesystems[name] = filesystem
+                    raise NonSupportedFileSystemError(
+                        "Non supported filesystem type '%s'" % type
+                    )
+            # This is an ugly workaround to initialize the client
+            filesystem.list("/")
         return filesystem
 
 
 class NonSupportedFileSystemError(FileSystemError):
+    pass
+
+
+class InvalidFileSystemError(FileSystemError):
+    pass
+
+
+class UnknownFileSystemError(FileSystemError):
     pass

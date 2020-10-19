@@ -5,6 +5,7 @@ from .execution.execution_manager import ExecutionManager
 from .worker.worker_decommissioner import WorkerDecommissioner
 from .worker.worker_factory import WorkerFactory
 from .worker.worker_manager import WorkerManager
+from ...filesystem.filesystem_factory import FileSystemFactory
 
 _logger = lg.getLogger(__name__)
 
@@ -71,7 +72,17 @@ class Master(object):
             )
 
         _logger.info("Registering new Worker [ %s ].", worker.wid)
+        # register the worker as an executor in the workers manager
         self.workers_manager.register_worker(worker)
+        # register the worker as a filesystem
+        FileSystemFactory.getInstance().register_filesystem(
+            {
+                'name': "local" + ":" + worker.address,
+                'type': "local",
+                'address': worker.address,
+                'port': worker.port
+            }
+        )
         _logger.info("Worker [ %s ] registered.", worker.wid)
 
     def register_heartbeat(self, worker):
