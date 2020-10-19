@@ -1,5 +1,6 @@
 import io
 import logging as lg
+
 from thrift.protocol import TBinaryProtocol
 
 # Thrift files
@@ -30,16 +31,19 @@ class LocalFileSystemClient(object):
     def ls(self, path, status=False, glob=False):
         if status:
             return [
-                (st.path, {
-                     "fileId": st.status.fileId,
-                     "length": st.status.length,
-                     "type": st.status.type,
-                     "modificationTime": st.status.modificationTime
-                 })
-                for st in self.client.ls(path, status, glob)]
+                (
+                    st.path,
+                    {
+                        "fileId": st.status.fileId,
+                        "length": st.status.length,
+                        "type": st.status.type,
+                        "modificationTime": st.status.modificationTime,
+                    },
+                )
+                for st in self.client.ls(path, status, glob)
+            ]
         else:
-            return [status.path
-                    for status in self.client.ls(path, status, glob)]
+            return [status.path for status in self.client.ls(path, status, glob)]
 
     def status(self, path, strict=True):
         status = self.client.status(path, strict)
@@ -48,7 +52,7 @@ class LocalFileSystemClient(object):
                 "fileId": status.status.fileId,
                 "length": status.status.length,
                 "type": status.status.type,
-                "modificationTime": status.status.modificationTime
+                "modificationTime": status.status.modificationTime,
             }
         else:
             return None
@@ -59,7 +63,7 @@ class LocalFileSystemClient(object):
             return {
                 "length": content.content.length,
                 "fileCount": content.content.fileCount,
-                "directoryCount": content.content.directoryCount
+                "directoryCount": content.content.directoryCount,
             }
         else:
             return None
@@ -74,10 +78,10 @@ class LocalFileSystemClient(object):
         self.client.set_owner(path, owner, group)
 
     def set_permission(self, path, permission):
-        self.set_permission(path, permission)
+        self.client.set_permission(path, permission)
 
     def mkdir(self, path, permission):
-        self.mkdir(path, permission)
+        self.client.mkdir(path, permission)
 
     def open(self, path, mode, buffer_size=1024, encoding=None):
         mode2 = mode if "b" in mode else (mode.replace("t", "") + "b")
@@ -98,16 +102,9 @@ class LocalFileSystemClient(object):
 
 
 class LocalFile(object):
-    def __init__(
-            self,
-            client,
-            path,
-            mode="rb"
-    ):
-        if 'b' not in mode:
-            raise NotImplementedError(
-                "Only binary read/write modes are supported."
-            )
+    def __init__(self, client, path, mode="rb"):
+        if "b" not in mode:
+            raise NotImplementedError("Only binary read/write modes are supported.")
         self.client = client
         self.loc = 0  # The read/write location pointer
         self.closed = False
@@ -153,9 +150,7 @@ class LocalFile(object):
         self.client.close(self.desc)
 
     def __str__(self):
-        return "<RemoteFile %s:%s %s>" % (
-            self.client.host, self.client.port, self.path
-        )
+        return "<RemoteFile %s:%s %s>" % (self.client.host, self.client.port, self.path)
 
     __repr__ = __str__
 
@@ -175,7 +170,7 @@ class LocalFile(object):
 
     def readinto(self, b):
         data = self.client.read(self.desc, len(b))
-        b[:len(data)] = bytes(data)
+        b[: len(data)] = bytes(data)
         return len(data)
 
     def readinto1(self, b):

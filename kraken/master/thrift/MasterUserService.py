@@ -433,11 +433,11 @@ class list_jobs_result(object):
             if fid == 0:
                 if ftype == TType.LIST:
                     self.success = []
-                    (_etype12, _size9) = iprot.readListBegin()
-                    for _i13 in range(_size9):
-                        _elem14 = JobStatus()
-                        _elem14.read(iprot)
-                        self.success.append(_elem14)
+                    (_etype21, _size18) = iprot.readListBegin()
+                    for _i22 in range(_size18):
+                        _elem23 = JobStatus()
+                        _elem23.read(iprot)
+                        self.success.append(_elem23)
                     iprot.readListEnd()
                 else:
                     iprot.skip(ftype)
@@ -454,8 +454,8 @@ class list_jobs_result(object):
         if self.success is not None:
             oprot.writeFieldBegin('success', TType.LIST, 0)
             oprot.writeListBegin(TType.STRUCT, len(self.success))
-            for iter15 in self.success:
-                iter15.write(oprot)
+            for iter24 in self.success:
+                iter24.write(oprot)
             oprot.writeListEnd()
             oprot.writeFieldEnd()
         oprot.writeFieldStop()

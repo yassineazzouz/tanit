@@ -1,10 +1,9 @@
-import types
-import os
 import logging as lg
+import os
+import types
 from contextlib import contextmanager
 
 from ...worker.filesystem.client import LocalFileSystemClient
-
 from ..filesystem import IFileSystem
 from ..ioutils import ChunkFileReader
 from ..ioutils import DelimitedFileReader
@@ -14,7 +13,7 @@ from ..ioutils import FileSystemError
 _logger = lg.getLogger(__name__)
 
 
-class LocalFileSystem(IFileSystem):
+class RemoteFileSystem(IFileSystem):
     def __init__(self, host, port):
         self.client = LocalFileSystemClient(host, port)
         self.client.start()
@@ -48,14 +47,14 @@ class LocalFileSystem(IFileSystem):
 
     @contextmanager
     def read(
-            self,
-            path,
-            offset=0,
-            buffer_size=1024,
-            encoding=None,
-            chunk_size=None,
-            delimiter=None,
-            **kwargs
+        self,
+        path,
+        offset=0,
+        buffer_size=1024,
+        encoding=None,
+        chunk_size=None,
+        delimiter=None,
+        **kwargs
     ):
         if delimiter:
             if not encoding:
@@ -64,11 +63,13 @@ class LocalFileSystem(IFileSystem):
                 raise ValueError("Delimiter splitting incompatible with chunk size.")
 
         rpath = self.resolvepath(path)
-        if not self.client.status(rpath, strict=False) is None:
+        if self.client.status(rpath, strict=False) is None:
             raise FileSystemError("%r does not exist.", rpath)
 
         _logger.debug("Reading file %r.", path)
-        file = self.client.open(rpath, mode="rb", buffer_size=buffer_size, encoding=encoding)
+        file = self.client.open(
+            rpath, mode="rb", buffer_size=buffer_size, encoding=encoding
+        )
 
         if offset > 0:
             file.seek(offset)
@@ -106,18 +107,23 @@ class LocalFileSystem(IFileSystem):
             if permission:
                 raise ValueError("Cannot change file properties while appending.")
 
-            if status is not None and status['type'] != 'FILE':
+            if status is not None and status["type"] != "FILE":
                 raise ValueError("Path %r is not a file.", rpath)
         else:
             if not overwrite:
                 if status is not None:
                     raise ValueError("Path %r exists, missing `append`.", rpath)
             else:
-                if status is not None and status['type'] != 'FILE':
+                if status is not None and status["type"] != "FILE":
                     raise ValueError("Path %r is not a file.", rpath)
 
         _logger.debug("Writing to %r.", path)
-        file = self.client.open(rpath, mode="ab" if append else "wb", buffer_size=buffer_size, encoding=encoding)
+        file = self.client.open(
+            rpath,
+            mode="ab" if append else "wb",
+            buffer_size=buffer_size,
+            encoding=encoding,
+        )
         if data is None:
             return file
         else:

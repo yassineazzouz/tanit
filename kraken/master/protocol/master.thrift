@@ -35,6 +35,11 @@ struct Worker {
   	3: optional i32 port,
 }
 
+struct FileSystem {
+    1: required string name,
+    2: required map<string,string> parameters
+}
+
 exception JobNotFoundException {
   1: string message,
 }
@@ -61,6 +66,8 @@ service MasterWorkerService{
     void unregister_worker(1:Worker worker),
     
     void register_heartbeat(1:Worker worker),
+
+    void register_filesystem(1:FileSystem filesystem),
    
     void task_start(1:string tid),
         

@@ -30,6 +30,10 @@ class WorkerIFace(object):
         pass
 
     @abc.abstractmethod
+    def register_filesystem(self, name, filesystem):
+        pass
+
+    @abc.abstractmethod
     def status(self):
         pass
 
@@ -55,6 +59,14 @@ class RemoteThriftWorker(WorkerIFace):
                 "Can not submit task [ %s ] to [ %s ] : worker stopped.",
                 task_exec.tid,
                 self.wid,
+            )
+
+    def register_filesystem(self, name, filesystem):
+        if not self.stopped:
+            self.client.register_filesystem(name, filesystem)
+        else:
+            raise WorkerStoppedException(
+                "Can not register filesystem [ %s ] : worker stopped." % name
             )
 
     def status(self):

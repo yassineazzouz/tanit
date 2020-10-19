@@ -1,4 +1,3 @@
-
 import logging as lg
 from threading import Thread
 
@@ -14,8 +13,9 @@ _logger = lg.getLogger(__name__)
 
 
 class LocalFileSystemService(object):
-    bind_address = "0.0.0.0"
-    bind_port = 8989
+    def __init__(self, address="0.0.0.0", port=8989):
+        self.bind_address = address
+        self.bind_port = port
 
     def _run(self):
         # Create Service handler

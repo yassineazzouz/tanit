@@ -7,11 +7,12 @@ import stat
 import types
 from contextlib import contextmanager
 
-from ...common.utils.glob import iglob
-from ...filesystem.filesystem import IFileSystem
-from ...filesystem.ioutils import (
-    FileSystemError, DelimitedFileReader, ChunkFileReader, FileReader
-)
+from kraken.common.utils.glob import iglob
+from kraken.filesystem.filesystem import IFileSystem
+from kraken.filesystem.ioutils import ChunkFileReader
+from kraken.filesystem.ioutils import DelimitedFileReader
+from kraken.filesystem.ioutils import FileReader
+from kraken.filesystem.ioutils import FileSystemError
 
 _logger = lg.getLogger(__name__)
 
@@ -39,14 +40,16 @@ class LocalFileSystem(IFileSystem):
             path_stat = os.stat(rpath)
             return {
                 "owner": str(pwd.getpwuid(path_stat.st_uid)[0]),
-                "childrenNum": str(len(os.listdir(rpath)) if os.path.isdir(rpath) else 0),
+                "childrenNum": str(
+                    len(os.listdir(rpath)) if os.path.isdir(rpath) else 0
+                ),
                 "accessTime": str(int(path_stat.st_atime * 1000)),
                 "fileId": str(path_stat.st_ino),
                 "permission": str(oct(stat.S_IMODE(path_stat.st_mode))),
                 "length": str(path_stat.st_size if os.path.isfile(rpath) else 0),
                 "type": str(_get_type(rpath)),
                 "group": str(grp.getgrgid(path_stat.st_gid)[0]),
-                "modificationTime": str(int(path_stat.st_mtime * 1000))
+                "modificationTime": str(int(path_stat.st_mtime * 1000)),
             }
 
     def content(self, path, strict=True):
@@ -66,7 +69,7 @@ class LocalFileSystem(IFileSystem):
             return {
                 "length": str(total_size),
                 "fileCount": str(total_files),
-                "directoryCount": str(total_folders)
+                "directoryCount": str(total_folders),
             }
 
         _logger.debug("Fetching content summary for %r.", path)
@@ -141,21 +144,22 @@ class LocalFileSystem(IFileSystem):
     def mkdir(self, path, permission=None):
         rpath = os.path.abspath(path)
         if not os.path.exists(rpath):
-            os.mkdir(rpath, int(permission, 8))
+            # TODO: restore permissions
+            os.mkdir(rpath)
 
     def open(self, path, mode, buffer_size=-1, encoding=None):
         return open(path, mode=mode, buffering=buffer_size, encoding=encoding)
 
     @contextmanager
     def read(
-            self,
-            path,
-            offset=0,
-            buffer_size=1024,
-            encoding=None,
-            chunk_size=None,
-            delimiter=None,
-            **kwargs
+        self,
+        path,
+        offset=0,
+        buffer_size=1024,
+        encoding=None,
+        chunk_size=None,
+        delimiter=None,
+        **kwargs
     ):
         if delimiter:
             if not encoding:
@@ -164,7 +168,7 @@ class LocalFileSystem(IFileSystem):
                 raise ValueError("Delimiter splitting incompatible with chunk size.")
 
         rpath = self.resolvepath(path)
-        if not self.status(rpath, strict=False) is None:
+        if self.status(rpath, strict=False) is None:
             raise FileSystemError("%r does not exist.", rpath)
 
         _logger.debug("Reading file %r.", path)
@@ -206,18 +210,23 @@ class LocalFileSystem(IFileSystem):
             if permission:
                 raise ValueError("Cannot change file properties while appending.")
 
-            if status is not None and status['type'] != 'FILE':
+            if status is not None and status["type"] != "FILE":
                 raise ValueError("Path %r is not a file.", rpath)
         else:
             if not overwrite:
                 if status is not None:
                     raise ValueError("Path %r exists, missing `append`.", rpath)
             else:
-                if status is not None and status['type'] != 'FILE':
+                if status is not None and status["type"] != "FILE":
                     raise ValueError("Path %r is not a file.", rpath)
 
         _logger.debug("Writing to %r.", path)
-        file = self.open(rpath, mode="ab" if append else "wb", buffer_size=buffer_size, encoding=encoding)
+        file = self.open(
+            rpath,
+            mode="ab" if append else "wb",
+            buffer_size=buffer_size,
+            encoding=encoding,
+        )
         if data is None:
             return file
         else:

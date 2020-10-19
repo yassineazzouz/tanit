@@ -8,7 +8,6 @@ from ...common.model.worker import WorkerStatus
 from ...worker.core.execution.task_factory import TaskFactory
 from ...worker.core.executor_factory import ExecutorFactory
 from ...worker.core.executor_pool import ExecutorPool
-from ...worker.filesystem.service import LocalFileSystemService
 from ..client.client import LocalClientFactory
 from ..core.worker.worker import WorkerIFace
 
@@ -30,7 +29,6 @@ class LocalWorker(WorkerIFace):
             self.lqueue,
             multiprocessing.cpu_count(),
         )
-        self.filesystem = LocalFileSystemService()
 
     def submit(self, task):
         task_exec = self.task_factory.create_task(
@@ -45,6 +43,10 @@ class LocalWorker(WorkerIFace):
                 self.wid,
             )
 
+    def register_filesystem(self, name, filesystem):
+        # The file system is defined in the master already
+        pass
+
     def status(self):
         return WorkerStatus(
             self.wid,
@@ -57,7 +59,6 @@ class LocalWorker(WorkerIFace):
         _logger.info("Starting kraken worker [%s].", self.wid)
         self.stopped = False
         self.executor.start()
-        self.filesystem.start()
         _logger.info("Kraken worker [%s] started.", self.wid)
 
     def stop(self):

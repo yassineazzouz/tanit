@@ -87,6 +87,9 @@ class WorkerServiceHandler(object):
     def unregister_worker(self, worker):
         self.master.unregister_worker(Worker(worker.wid, worker.address, worker.port))
 
+    def register_filesystem(self, filesystem):
+        self.master.register_filesystem(filesystem.name, filesystem.parameters)
+
     def task_start(self, tid):
         self.master.task_start(tid)
 

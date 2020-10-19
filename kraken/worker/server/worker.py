@@ -5,6 +5,7 @@ from threading import Thread
 from six.moves.queue import Queue
 
 from ...common.model.worker import WorkerStatus
+from ...filesystem.filesystem_factory import FileSystemFactory
 from ...master.client.client import ClientType
 from ...master.client.client import ThriftClientFactory
 from ..core.execution.task_factory import TaskFactory
@@ -28,7 +29,6 @@ class Worker(object):
 
         client_factory = ThriftClientFactory(config.master_host, config.master_port)
         self.master = client_factory.create_client(ClientType.WORKER_SERVICE)
-
 
         self.executor = ExecutorPool(
             self.wid,
@@ -63,6 +63,18 @@ class Worker(object):
             self.executor.num_available(),
         )
 
+    def register_filesystem(self, name, filesystem):
+        if self.stopped:
+            raise WorkerStoppedException(
+                "Can not register filesystem [ %s ] : worker server stopped.", name
+            )
+
+        _logger.info("Registering new filesystem [ %s ].", name)
+        filesystem["name"] = name
+        # register the worker as a filesystem
+        FileSystemFactory.getInstance().register_filesystem(filesystem)
+        _logger.info("Filesystem [ %s ] registered.", name)
+
     def start(self):
         _logger.info("Starting kraken worker [%s].", self.wid)
         self.stopped = False
@@ -75,9 +87,6 @@ class Worker(object):
             raise e
 
         self.executor.start()
-
-        # start the filesystem service
-        self.filesystem.start()
 
         # register the worker
         retries = 1
@@ -102,6 +111,20 @@ class Worker(object):
             )
             self.stop()
             raise last_error
+
+        # start the filesystem service
+        self.filesystem.start()
+        # register the file system
+        if self.filesystem:
+            # register the file system with the master
+            self.master.register_filesystem(
+                "local:%s" % self.address,
+                {
+                    "type": "local",
+                    "address": str(self.address),
+                    "port": str(self.filesystem.bind_port),
+                },
+            )
 
         self.reporter.start()
 

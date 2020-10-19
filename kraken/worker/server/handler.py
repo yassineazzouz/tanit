@@ -31,3 +31,6 @@ class WorkerServiceHandler(object):
         return WorkerStatus(
             status.wid, status.running, status.pending, status.available
         )
+
+    def register_filesystem(self, filesystem):
+        self.worker.register_filesystem(filesystem.name, filesystem.parameters)

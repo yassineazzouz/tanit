@@ -18,5 +18,7 @@ per-file-ignores =
 exclude =
     kraken/master/protocol,
     kraken/worker/protocol,
+    kraken/worker/filesystem/protocol,
     kraken/master/thrift,
     kraken/worker/thrift
+    kraken/worker/filesystem/thrift

@@ -19,10 +19,17 @@ struct Task {
   3: required map<string,string> params,
 }
 
+struct FileSystem {
+    1: required string name,
+    2: required map<string,string> parameters
+}
+
 service WorkerService{
 
     void submit(1:Task task),
     
     WorkerStatus worker_status(),
+
+    void register_filesystem(1:FileSystem filesystem),
     
 }

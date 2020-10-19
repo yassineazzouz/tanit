@@ -26,6 +26,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
     print('Functions:')
     print('  void submit(Task task)')
     print('  WorkerStatus worker_status()')
+    print('  void register_filesystem(FileSystem filesystem)')
     print('')
     sys.exit(0)
 
@@ -116,6 +117,12 @@ elif cmd == 'worker_status':
         print('worker_status requires 0 args')
         sys.exit(1)
     pp.pprint(client.worker_status())
+
+elif cmd == 'register_filesystem':
+    if len(args) != 1:
+        print('register_filesystem requires 1 args')
+        sys.exit(1)
+    pp.pprint(client.register_filesystem(eval(args[0]),))
 
 else:
     print('Unrecognized method %s' % cmd)

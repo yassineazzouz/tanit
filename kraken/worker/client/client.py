@@ -6,6 +6,7 @@ from thrift.transport import TTransport
 
 from ...common.model.worker import WorkerStatus
 from ..thrift import WorkerService
+from ..thrift.ttypes import FileSystem
 from ..thrift.ttypes import Task
 
 
@@ -27,6 +28,9 @@ class WorkerClient(object):
 
     def submit(self, tid, etype, params):
         self.client.submit(Task(tid, etype, params))
+
+    def register_filesystem(self, name, parameters):
+        self.client.register_filesystem(FileSystem(name, parameters))
 
     def worker_status(self):
         status = self.client.worker_status()

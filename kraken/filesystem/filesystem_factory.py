@@ -1,12 +1,13 @@
 import logging as lg
-from threading import RLock
 from copy import deepcopy
+from threading import RLock
 
 from .config import FileSystemsConfig
-from .local.filesystem import LocalFileSystem
 from .gcp.filesystem import GCPFileSystem
 from .hdfs.filesystem import HDFSFileSystem
 from .ioutils import FileSystemError
+from .local.local_filesystem import LocalFileSystem
+from .local.remote_filesystem import RemoteFileSystem
 from .s3.filesystem import S3FileSystem
 
 _logger = lg.getLogger(__name__)
@@ -47,34 +48,38 @@ class FileSystemFactory(object):
         _conf = deepcopy(conf)
         with _glock:
             if "name" in _conf:
-                name = _conf.pop["name"]
+                name = _conf.pop("name")
+                if name in self._filesystems:
+                    # file system already exist, overwrite
+                    del self._filesystems[name]
                 self._filesystems[name] = _conf
-                _logger.info("Registered filesystem + %s" % name)
+                _logger.info("Registered filesystem '%s'" % name)
             else:
-                raise InvalidFileSystemError("Missing filesystem name from %s" % str(_conf))
+                raise InvalidFileSystemError(
+                    "Missing filesystem name from %s" % str(_conf)
+                )
 
     def get_filesystem(self, name):
         def _get_filesystem(name):
             if name in self._filesystems:
-                return self._filesystems[name]
+                return deepcopy(self._filesystems[name])
             else:
                 # the name does not exist
-                raise UnknownFileSystemError(
-                    "Unknown Filesystem '%s'" % name
-                )
+                raise UnknownFileSystemError("Unknown Filesystem '%s'" % name)
 
         with _glock:
             config = _get_filesystem(name)
             if "type" not in config:
-                raise InvalidFileSystemError(
-                    "filesystem type missing for '%s'" % name
-                )
+                raise InvalidFileSystemError("filesystem type missing for '%s'" % name)
             else:
                 fs_type = config.pop("type")
                 if fs_type == "local":
-                    address = config["address"]
-                    port = config["port"]
-                    filesystem = LocalFileSystem(address, port)
+                    if "address" in config and "port" in config:
+                        address = config["address"]
+                        port = int(config["port"])
+                        filesystem = RemoteFileSystem(address, port)
+                    else:
+                        filesystem = LocalFileSystem()
                 elif fs_type == "hdfs":
                     auth_mechanism = config["auth_mechanism"]
                     del config["auth_mechanism"]

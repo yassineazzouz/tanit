@@ -1,11 +1,11 @@
 import logging as lg
 
 from ...common.model.worker import Worker
+from ...filesystem.filesystem_factory import FileSystemFactory
 from .execution.execution_manager import ExecutionManager
 from .worker.worker_decommissioner import WorkerDecommissioner
 from .worker.worker_factory import WorkerFactory
 from .worker.worker_manager import WorkerManager
-from ...filesystem.filesystem_factory import FileSystemFactory
 
 _logger = lg.getLogger(__name__)
 
@@ -77,13 +77,28 @@ class Master(object):
         # register the worker as a filesystem
         FileSystemFactory.getInstance().register_filesystem(
             {
-                'name': "local" + ":" + worker.address,
-                'type': "local",
-                'address': worker.address,
-                'port': worker.port
+                "name": "local" + ":" + worker.address,
+                "type": "local",
+                "address": worker.address,
+                "port": worker.port,
             }
         )
         _logger.info("Worker [ %s ] registered.", worker.wid)
+
+    def register_filesystem(self, name, filesystem):
+        if not self.started:
+            raise MasterStoppedException(
+                "Can not register filesystem [ %s ] : master server stopped.", name
+            )
+
+        _logger.info("Registering new filesystem [ %s ].", name)
+        filesystem["name"] = name
+        # register the worker as a filesystem
+        FileSystemFactory.getInstance().register_filesystem(filesystem)
+        # notify the workers about the new file system
+        for worker in self.workers_manager.list_live_workers():
+            worker.register_filesystem(name, filesystem)
+        _logger.info("Filesystem [ %s ] registered.", name)
 
     def register_heartbeat(self, worker):
         _logger.debug("Received heart beat from Worker [ %s ].", worker.wid)

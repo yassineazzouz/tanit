@@ -1,6 +1,11 @@
+from kraken.filesystem.local.local_filesystem import LocalFileSystem
+
 from ...filesystem.ioutils import FileSystemError
-from kraken.worker.filesystem.filesystem import LocalFileSystem
-from .thrift.ttypes import FileStatus, FileStatusOrNull, FileContent, FileContentOrNull, FileSystemException
+from .thrift.ttypes import FileContent
+from .thrift.ttypes import FileContentOrNull
+from .thrift.ttypes import FileStatus
+from .thrift.ttypes import FileStatusOrNull
+from .thrift.ttypes import FileSystemException
 
 
 class LocalFileSystemHandler(object):
@@ -27,11 +32,14 @@ class LocalFileSystemHandler(object):
                 FileStatusOrNull(
                     path=st[0],
                     status=FileStatus(
-                        fileId=str(st[1]['fileId']),
-                        length=str(st[1]['length']),
-                        type=str(st[1]['type']),
-                        modificationTime=str(st[1]['modificationTime'])
-                    )) for st in _list]
+                        fileId=str(st[1]["fileId"]),
+                        length=str(st[1]["length"]),
+                        type=str(st[1]["type"]),
+                        modificationTime=str(st[1]["modificationTime"]),
+                    ),
+                )
+                for st in _list
+            ]
 
     def status(self, path, strict):
         try:
@@ -47,11 +55,11 @@ class LocalFileSystemHandler(object):
             return FileStatusOrNull(
                 path=path,
                 status=FileStatus(
-                    fileId=str(status['fileId']),
-                    length=str(status['length']),
-                    type=str(status['type']),
-                    modificationTime=str(status['modificationTime'])
-                )
+                    fileId=str(status["fileId"]),
+                    length=str(status["length"]),
+                    type=str(status["type"]),
+                    modificationTime=str(status["modificationTime"]),
+                ),
             )
 
     def content(self, path, strict):
@@ -68,10 +76,10 @@ class LocalFileSystemHandler(object):
             return FileContentOrNull(
                 path=path,
                 content=FileContent(
-                    length=str(content['length']),
-                    fileCount=str(content['fileCount']),
-                    directoryCount=str(content['directoryCount'])
-                )
+                    length=str(content["length"]),
+                    fileCount=str(content["fileCount"]),
+                    directoryCount=str(content["directoryCount"]),
+                ),
             )
 
     def rm(self, path, recursive):
@@ -108,7 +116,7 @@ class LocalFileSystemHandler(object):
 
     def open(self, path, mode):
         if "b" not in mode:
-            mode += 'b'
+            mode += "b"
         try:
             file = self.fs.open(path=path, mode=mode)
         except Exception as e:
@@ -119,7 +127,9 @@ class LocalFileSystemHandler(object):
 
     def flush(self, filedesc):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
         try:
             file.flush()
@@ -128,7 +138,9 @@ class LocalFileSystemHandler(object):
 
     def close(self, filedesc):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
         try:
             file.close()
@@ -138,7 +150,9 @@ class LocalFileSystemHandler(object):
 
     def read(self, filedesc, size):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
         try:
             return file.read(size)
@@ -147,7 +161,9 @@ class LocalFileSystemHandler(object):
 
     def readline(self, filedesc):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
         try:
             return file.readline()
@@ -156,7 +172,9 @@ class LocalFileSystemHandler(object):
 
     def readlines(self, filedesc):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
         try:
             return file.readlines()
@@ -165,7 +183,9 @@ class LocalFileSystemHandler(object):
 
     def write(self, filedesc, data):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
         try:
             return file.write(data)
@@ -174,7 +194,9 @@ class LocalFileSystemHandler(object):
 
     def writelines(self, filedesc, lines):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
         try:
             return file.writelines(lines)
@@ -183,7 +205,9 @@ class LocalFileSystemHandler(object):
 
     def tell(self, filedesc):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
         try:
             return file.tell()
@@ -192,7 +216,9 @@ class LocalFileSystemHandler(object):
 
     def seek(self, filedesc, position):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
         try:
             return file.seek(position)
@@ -201,7 +227,9 @@ class LocalFileSystemHandler(object):
 
     def readable(self, filedesc):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
 
         try:
@@ -211,7 +239,9 @@ class LocalFileSystemHandler(object):
 
     def writable(self, filedesc):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
         try:
             return file.writable()
@@ -220,7 +250,9 @@ class LocalFileSystemHandler(object):
 
     def seekable(self, filedesc):
         if filedesc not in self.file_descs:
-            raise FileSystemException("No such file descriptor %s, is the file open !" % filedesc)
+            raise FileSystemException(
+                "No such file descriptor %s, is the file open !" % filedesc
+            )
         file = self.file_descs[filedesc]
         try:
             return file.seekable()

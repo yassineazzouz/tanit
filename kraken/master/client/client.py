@@ -203,6 +203,9 @@ class ThriftWorkerServiceClient(WorkerServiceClientIFace):
     def register_heartbeat(self, wid, address, port):
         self.client.register_heartbeat(ttypes.Worker(wid, address, port))
 
+    def register_filesystem(self, name, parameters):
+        self.client.register_filesystem(ttypes.FileSystem(name, parameters))
+
     def task_start(self, tid):
         self.client.task_start(tid)
 

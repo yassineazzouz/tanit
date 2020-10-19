@@ -28,6 +28,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
     print('  void register_worker(Worker worker)')
     print('  void unregister_worker(Worker worker)')
     print('  void register_heartbeat(Worker worker)')
+    print('  void register_filesystem(FileSystem filesystem)')
     print('  void task_start(string tid)')
     print('  void task_success(string tid)')
     print('  void task_failure(string tid)')
@@ -133,6 +134,12 @@ elif cmd == 'register_heartbeat':
         print('register_heartbeat requires 1 args')
         sys.exit(1)
     pp.pprint(client.register_heartbeat(eval(args[0]),))
+
+elif cmd == 'register_filesystem':
+    if len(args) != 1:
+        print('register_filesystem requires 1 args')
+        sys.exit(1)
+    pp.pprint(client.register_filesystem(eval(args[0]),))
 
 elif cmd == 'task_start':
     if len(args) != 1:

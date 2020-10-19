@@ -332,6 +332,88 @@ class Worker(object):
         return not (self == other)
 
 
+class FileSystem(object):
+    """
+    Attributes:
+     - name
+     - parameters
+
+    """
+
+
+    def __init__(self, name=None, parameters=None,):
+        self.name = name
+        self.parameters = parameters
+
+    def read(self, iprot):
+        if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
+            iprot._fast_decode(self, iprot, [self.__class__, self.thrift_spec])
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.STRING:
+                    self.name = iprot.readString().decode('utf-8') if sys.version_info[0] == 2 else iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 2:
+                if ftype == TType.MAP:
+                    self.parameters = {}
+                    (_ktype10, _vtype11, _size9) = iprot.readMapBegin()
+                    for _i13 in range(_size9):
+                        _key14 = iprot.readString().decode('utf-8') if sys.version_info[0] == 2 else iprot.readString()
+                        _val15 = iprot.readString().decode('utf-8') if sys.version_info[0] == 2 else iprot.readString()
+                        self.parameters[_key14] = _val15
+                    iprot.readMapEnd()
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot._fast_encode is not None and self.thrift_spec is not None:
+            oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
+            return
+        oprot.writeStructBegin('FileSystem')
+        if self.name is not None:
+            oprot.writeFieldBegin('name', TType.STRING, 1)
+            oprot.writeString(self.name.encode('utf-8') if sys.version_info[0] == 2 else self.name)
+            oprot.writeFieldEnd()
+        if self.parameters is not None:
+            oprot.writeFieldBegin('parameters', TType.MAP, 2)
+            oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.parameters))
+            for kiter16, viter17 in self.parameters.items():
+                oprot.writeString(kiter16.encode('utf-8') if sys.version_info[0] == 2 else kiter16)
+                oprot.writeString(viter17.encode('utf-8') if sys.version_info[0] == 2 else viter17)
+            oprot.writeMapEnd()
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        if self.name is None:
+            raise TProtocolException(message='Required field name is unset!')
+        if self.parameters is None:
+            raise TProtocolException(message='Required field parameters is unset!')
+        return
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+             for key, value in self.__dict__.items()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+
+
 class JobNotFoundException(TException):
     """
     Attributes:
@@ -412,6 +494,12 @@ Worker.thrift_spec = (
     (1, TType.STRING, 'wid', 'UTF8', None, ),  # 1
     (2, TType.STRING, 'address', 'UTF8', None, ),  # 2
     (3, TType.I32, 'port', None, None, ),  # 3
+)
+all_structs.append(FileSystem)
+FileSystem.thrift_spec = (
+    None,  # 0
+    (1, TType.STRING, 'name', 'UTF8', None, ),  # 1
+    (2, TType.MAP, 'parameters', (TType.STRING, 'UTF8', TType.STRING, 'UTF8', False), None, ),  # 2
 )
 all_structs.append(JobNotFoundException)
 JobNotFoundException.thrift_spec = (
