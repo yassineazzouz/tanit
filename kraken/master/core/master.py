@@ -20,6 +20,8 @@ class Master(object):
     """
 
     def __init__(self, config=None):
+        # filesystems factory
+        self.filesystems_factory = FileSystemFactory.getInstance()
         # workers factory
         self.workers_factory = WorkerFactory(self)
         # workers manager
@@ -74,15 +76,6 @@ class Master(object):
         _logger.info("Registering new Worker [ %s ].", worker.wid)
         # register the worker as an executor in the workers manager
         self.workers_manager.register_worker(worker)
-        # register the worker as a filesystem
-        FileSystemFactory.getInstance().register_filesystem(
-            {
-                "name": "local" + ":" + worker.address,
-                "type": "local",
-                "address": worker.address,
-                "port": worker.port,
-            }
-        )
         _logger.info("Worker [ %s ] registered.", worker.wid)
 
     def register_filesystem(self, name, filesystem):
@@ -94,7 +87,7 @@ class Master(object):
         _logger.info("Registering new filesystem [ %s ].", name)
         filesystem["name"] = name
         # register the worker as a filesystem
-        FileSystemFactory.getInstance().register_filesystem(filesystem)
+        self.filesystems_factory.register_filesystem(filesystem)
         # notify the workers about the new file system
         for worker in self.workers_manager.list_live_workers():
             worker.register_filesystem(name, filesystem)

@@ -19,6 +19,9 @@ class MockWorker(WorkerIFace):
     def submit(self, task):
         self.tasks.append(task)
 
+    def register_filesystem(self, name, filesystem):
+        pass
+
     def status(self):
         return WorkerStatus(
             self.wid,

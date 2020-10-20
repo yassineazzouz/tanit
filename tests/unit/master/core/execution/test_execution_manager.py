@@ -67,6 +67,9 @@ class TestExecutionManager:
             assert task.state == ExecutionState.FINISHED
 
     def test_task_fail(self, execution_manager):
+        # do not retry tasks on failure
+        execution_manager.max_task_retries = 1
+
         job_exec = execution_manager.submit_job(
             Job(ExecutionType.MOCK, {"num_tasks": "2"})
         )

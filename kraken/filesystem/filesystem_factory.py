@@ -35,10 +35,8 @@ class FileSystemFactory(object):
 
     def _configure(self):
         self._filesystems = {}
-
-        config = FileSystemsConfig(None)
-        if config:
-            _config = config.get_config()
+        _config = FileSystemsConfig(None).get_config()
+        if _config is not None:
             for _fs_conf in _config["filesystems"]:
                 self.register_filesystem(_fs_conf)
         else:
