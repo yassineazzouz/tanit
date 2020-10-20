@@ -11,7 +11,7 @@ from ...master.client.client import ThriftClientFactory
 from ..core.execution.task_factory import TaskFactory
 from ..core.executor_factory import ExecutorFactory
 from ..core.executor_pool import ExecutorPool
-from ..filesystem.service import LocalFileSystemService
+from kraken.worker.filesystem.server.service import LocalFileSystemService
 
 _logger = lg.getLogger(__name__)
 
