@@ -1,16 +1,10 @@
-import io
 import logging as lg
 import os
-import types
-from contextlib import contextmanager
 
 import s3fs
 
 from ...common.utils.glob import iglob
 from ..filesystem import IFileSystem
-from ..ioutils import ChunkFileReader
-from ..ioutils import DelimitedFileReader
-from ..ioutils import FileReader
 from ..ioutils import FileSystemError
 
 _logger = lg.getLogger(__name__)
@@ -151,87 +145,7 @@ class S3FileSystem(IFileSystem):
         if not self.s3.exists(rpath):
             self.s3.mkdir(rpath, permission)
 
-    @contextmanager
-    def read(
-        self,
-        path,
-        offset=0,
-        buffer_size=1024,
-        encoding=None,
-        chunk_size=None,
-        delimiter=None,
-        **kwargs
-    ):
-
-        if delimiter:
-            if not encoding:
-                raise ValueError("Delimiter splitting requires an encoding.")
-            if chunk_size:
-                raise ValueError("Delimiter splitting incompatible with chunk size.")
-
+    def open(self, path, mode, buffer_size=-1, encoding=None, **kwargs):
         rpath = self.resolvepath(path)
-        if not self.s3.exists(rpath):
-            raise FileSystemError("%r does not exist.", rpath)
-
-        _logger.debug("Reading file %r.", path)
-        file = self.s3.open(rpath, mode="rb")
-        if encoding:
-            file = io.TextIOWrapper(file, encoding=encoding)
-
-        if offset > 0:
-            file.seek(offset)
-        try:
-            if not chunk_size and not delimiter:
-                # return a file like object
-                yield file
-            else:
-                # return a generator function
-                if delimiter:
-                    yield DelimitedFileReader(file, delimiter=delimiter)
-                else:
-                    yield ChunkFileReader(file, chunk_size=chunk_size)
-        finally:
-            file.close()
-            _logger.debug("Closed response for reading file %r.", path)
-
-    def write(
-        self,
-        path,
-        data=None,
-        overwrite=False,
-        permission=None,
-        buffer_size=1024,
-        append=False,
-        encoding=None,
-        **kwargs
-    ):
-
-        rpath = self.resolvepath(path)
-        if append:
-            if overwrite:
-                raise ValueError("Cannot both overwrite and append.")
-            if permission:
-                raise ValueError("Cannot change file properties while appending.")
-            if self.s3.exists(rpath) and not self.s3.isfile(rpath):
-                raise ValueError("Path %r is not a file.", rpath)
-        else:
-            if not overwrite:
-                if self.s3.exists(rpath):
-                    raise ValueError("Path %r exists, missing `append`.", rpath)
-            else:
-                if self.s3.exists(rpath) and not self.s3.isfile(rpath):
-                    raise ValueError("Path %r is not a file.", rpath)
-
-        _logger.debug("Writing to %r.", path)
-        file = self.s3.open(rpath, mode="ab" if append else "wb", encoding=encoding)
-        if data is None:
-            return file
-        else:
-            with file:
-                if isinstance(data, types.GeneratorType) or isinstance(
-                    data, FileReader
-                ):
-                    for chunk in data:
-                        file.write(chunk)
-                else:
-                    file.write(data)
+        # omit buffer_size, s3 lib use whole block buffering
+        return self.s3.open(rpath, mode=mode, encoding=encoding)

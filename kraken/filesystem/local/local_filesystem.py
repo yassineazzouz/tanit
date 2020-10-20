@@ -4,20 +4,18 @@ import os
 import pwd
 import shutil
 import stat
-import types
-from contextlib import contextmanager
 
-from kraken.common.utils.glob import iglob
-from kraken.filesystem.filesystem import IFileSystem
-from kraken.filesystem.ioutils import ChunkFileReader
-from kraken.filesystem.ioutils import DelimitedFileReader
-from kraken.filesystem.ioutils import FileReader
-from kraken.filesystem.ioutils import FileSystemError
+from ...common.utils.glob import iglob
+from ..filesystem import IFileSystem
+from ..ioutils import FileSystemError
 
 _logger = lg.getLogger(__name__)
 
 
 class LocalFileSystem(IFileSystem):
+    def resolvepath(self, path):
+        return os.path.normpath(os.path.abspath(path))
+
     def status(self, path, strict=True):
         def _get_type(p):
             if os.path.isfile(p):
@@ -142,102 +140,11 @@ class LocalFileSystem(IFileSystem):
             os.chmod(rpath, int(permission, 8))
 
     def mkdir(self, path, permission=None):
-        rpath = os.path.abspath(path)
+        rpath = self.resolvepath(path)
         if not os.path.exists(rpath):
-            # TODO: restore permissions
             os.mkdir(rpath)
-
-    def open(self, path, mode, buffer_size=-1, encoding=None):
-        return open(path, mode=mode, buffering=buffer_size, encoding=encoding)
-
-    @contextmanager
-    def read(
-        self,
-        path,
-        offset=0,
-        buffer_size=1024,
-        encoding=None,
-        chunk_size=None,
-        delimiter=None,
-        **kwargs
-    ):
-        if delimiter:
-            if not encoding:
-                raise ValueError("Delimiter splitting requires an encoding.")
-            if chunk_size:
-                raise ValueError("Delimiter splitting incompatible with chunk size.")
-
-        rpath = self.resolvepath(path)
-        if self.status(rpath, strict=False) is None:
-            raise FileSystemError("%r does not exist.", rpath)
-
-        _logger.debug("Reading file %r.", path)
-        file = self.open(rpath, mode="rb", buffer_size=buffer_size, encoding=encoding)
-
-        if offset > 0:
-            file.seek(offset)
-        try:
-            if not chunk_size and not delimiter:
-                # return a file like object
-                yield file
-            else:
-                # return a generator function
-                if delimiter:
-                    yield DelimitedFileReader(file, delimiter=delimiter)
-                else:
-                    yield ChunkFileReader(file, chunk_size=chunk_size)
-        finally:
-            file.close()
-            _logger.debug("Closed response for reading file %r.", path)
-
-    def write(
-        self,
-        path,
-        data=None,
-        overwrite=False,
-        permission=None,
-        buffer_size=1024,
-        append=False,
-        encoding=None,
-        **kwargs
-    ):
-
-        rpath = self.resolvepath(path)
-        status = self.status(rpath, strict=False)
-        if append:
-            if overwrite:
-                raise ValueError("Cannot both overwrite and append.")
             if permission:
-                raise ValueError("Cannot change file properties while appending.")
+                os.chmod(rpath, int(permission, 8))
 
-            if status is not None and status["type"] != "FILE":
-                raise ValueError("Path %r is not a file.", rpath)
-        else:
-            if not overwrite:
-                if status is not None:
-                    raise ValueError("Path %r exists, missing `append`.", rpath)
-            else:
-                if status is not None and status["type"] != "FILE":
-                    raise ValueError("Path %r is not a file.", rpath)
-
-        _logger.debug("Writing to %r.", path)
-        file = self.open(
-            rpath,
-            mode="ab" if append else "wb",
-            buffer_size=buffer_size,
-            encoding=encoding,
-        )
-        if data is None:
-            return file
-        else:
-            with file:
-                if isinstance(data, types.GeneratorType) or isinstance(
-                    data, FileReader
-                ):
-                    for chunk in data:
-                        file.write(chunk)
-                else:
-                    file.write(data)
-
-    def resolvepath(self, path):
-        return os.path.normpath(os.path.abspath(path))
+    def open(self, path, mode, buffer_size=-1, encoding=None, **kwargs):
+        return open(path, mode=mode, buffering=buffer_size, encoding=encoding)

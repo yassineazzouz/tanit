@@ -3,8 +3,6 @@ import json
 import logging as lg
 import os
 import re
-import types
-from contextlib import contextmanager
 
 import google.auth
 from google.cloud import storage
@@ -13,9 +11,6 @@ from google.oauth2.credentials import Credentials
 
 from ...common.utils.glob import iglob
 from ..filesystem import IFileSystem
-from ..ioutils import ChunkFileReader
-from ..ioutils import DelimitedFileReader
-from ..ioutils import FileReader
 from ..ioutils import FileSystemError
 
 _logger = lg.getLogger(__name__)
@@ -260,99 +255,11 @@ class GCPFileSystem(IFileSystem):
             mode2,
             buffer_size=buffer_size,
             part_size=part_size,
-            acl=acl,
-            **kwargs
+            acl=acl
         )
         if "b" in mode:
             return raw_file
         return io.TextIOWrapper(raw_file, encoding=encoding)
-
-    @contextmanager
-    def read(
-        self,
-        path,
-        offset=0,
-        buffer_size=1024,
-        encoding=None,
-        chunk_size=None,
-        delimiter=None,
-        **kwargs
-    ):
-        if delimiter:
-            if not encoding:
-                raise ValueError("Delimiter splitting requires an encoding.")
-            if chunk_size:
-                raise ValueError("Delimiter splitting incompatible with chunk size.")
-
-        rpath = self.resolvepath(path)
-        if not self.exists(rpath):
-            raise FileSystemError("%r does not exist.", rpath)
-
-        _logger.debug("Reading file %r.", path)
-        file = self.open(rpath, mode="rb", buffer_size=buffer_size, encoding=encoding)
-        if offset > 0:
-            file.seek(offset)
-
-        try:
-            if not chunk_size and not delimiter:
-                # return a file like object
-                yield file
-            else:
-                # return a generator function
-                if delimiter:
-                    reader = DelimitedFileReader(file, delimiter=delimiter)
-                else:
-                    reader = ChunkFileReader(file, chunk_size=chunk_size)
-                yield reader
-        finally:
-            file.close()
-            _logger.debug("Closed response for reading file %r.", path)
-
-    def write(
-        self,
-        path,
-        data=None,
-        overwrite=False,
-        permission=None,
-        buffer_size=1024,
-        append=False,
-        encoding=None,
-        **kwargs
-    ):
-        rpath = self.resolvepath(path)
-        if append:
-            if overwrite:
-                raise ValueError("Cannot both overwrite and append.")
-            if permission:
-                raise ValueError("Cannot change file properties while appending.")
-            if self.exists(rpath) and self.status(rpath)["type"] != "FILE":
-                raise ValueError("Path %r is not a file.", rpath)
-        else:
-            if not overwrite:
-                if self.exists(rpath):
-                    raise ValueError("Path %r exists, missing `append`.", rpath)
-            else:
-                if self.exists(rpath) and self.status(rpath)["type"] != "FILE":
-                    raise ValueError("Path %r is not a file.", rpath)
-
-        _logger.debug("Writing to %r.", path)
-        file = self.open(
-            rpath,
-            mode="ab" if append else "wb",
-            buffer_size=buffer_size,
-            encoding=encoding,
-        )
-        if data is None:
-            return file
-        else:
-            with file:
-                if isinstance(data, types.GeneratorType) or isinstance(
-                    data, FileReader
-                ):
-                    for chunk in data:
-                        file.write(chunk)
-                else:
-                    file.write(data)
 
 
 class GCSFile(object):
@@ -363,8 +270,7 @@ class GCSFile(object):
         mode="rb",
         buffer_size=1024,
         part_size=16 * 2 ** 20,
-        acl="",
-        **kwargs
+        acl=""
     ):
         self.mode = mode
         if mode not in {"rb", "wb", "ab"}:

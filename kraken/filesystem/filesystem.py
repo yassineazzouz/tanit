@@ -2,9 +2,14 @@ import abc
 import hashlib
 import logging as lg
 import posixpath as psp
+from contextlib import contextmanager
 
+import types
 import six
 
+from .ioutils import ChunkFileReader
+from .ioutils import DelimitedFileReader
+from .ioutils import FileReader
 from .ioutils import FileSystemError
 
 _logger = lg.getLogger(__name__)
@@ -12,6 +17,14 @@ _logger = lg.getLogger(__name__)
 
 @six.add_metaclass(abc.ABCMeta)
 class IFileSystem:
+    @abc.abstractmethod
+    def resolvepath(self, path):
+        """Return absolute, normalized path.
+
+        :param path: Remote path.
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def list(self, path, status=False, glob=False):
         """Return names of files contained in a remote folder.
@@ -167,6 +180,29 @@ class IFileSystem:
         return checksum.hexdigest()
 
     @abc.abstractmethod
+    def open(self, path, mode, buffer_size=-1, encoding=None, **kwargs):
+        """ Access a file from the Filesystem.
+
+        Parameters
+        ----------
+        path: string
+            Path of file on S3
+        mode: string
+            One of 'r', 'w', 'a', 'rb', 'wb', or 'ab'. These have the same meaning
+            as they do for the built-in `open` function.
+        buffer_size: int
+            Size of data buffer when reading/writing data to the filesystem.
+            The purpose of the buffer is to reduce the number of io.
+        encoding : str
+            The encoding to use if opening the file in text mode. The platform's
+            default text encoding is used if not given.
+        kwargs: dict-like
+            Additional parameters used for file system specific usage.
+        :return: A file object, idially an implementation of `BufferedIOBase`
+        """
+        raise NotImplementedError
+
+    @contextmanager
     def read(
         self,
         path,
@@ -202,9 +238,41 @@ class IFileSystem:
             content = reader.read()
         This ensures that connections are always properly closed.
         """
-        raise NotImplementedError
+        if delimiter:
+            if not encoding:
+                raise ValueError("Delimiter splitting requires an encoding.")
+            if chunk_size:
+                raise ValueError("Delimiter splitting incompatible with chunk size.")
 
-    @abc.abstractmethod
+        rpath = self.resolvepath(path)
+        if self.status(rpath, strict=False) is None:
+            raise FileSystemError("%r does not exist.", rpath)
+
+        _logger.debug("Reading file %r.", path)
+        file = self.open(
+            rpath,
+            mode="rb",
+            buffer_size=buffer_size,
+            encoding=encoding,
+            **kwargs
+        )
+
+        if offset > 0:
+            file.seek(offset)
+        try:
+            if not chunk_size and not delimiter:
+                # return a file like object
+                yield file
+            else:
+                # return a generator function
+                if delimiter:
+                    yield DelimitedFileReader(file, delimiter=delimiter)
+                else:
+                    yield ChunkFileReader(file, chunk_size=chunk_size)
+        finally:
+            file.close()
+            _logger.debug("Closed response for reading file %r.", path)
+
     def write(
         self,
         path,
@@ -231,6 +299,8 @@ class IFileSystem:
         :param buffer_size: Size of upload buffer.
         :param append: Append to a file rather than create a new one.
         :param encoding: Encoding used to serialize data written.
+        :return: The file object returned by `open` if data is `None` else
+        write the data to the file and return `void`.
         Sample usages:
         .. code-block:: python
           from json import dump, dumps
@@ -244,12 +314,40 @@ class IFileSystem:
           # Or, passing in a generator directly:
           client.write('data/records.jsonl', data=dumps(records), encoding='utf-8')
         """
-        raise NotImplementedError
+        rpath = self.resolvepath(path)
+        status = self.status(rpath, strict=False)
+        if append:
+            if overwrite:
+                raise ValueError("Cannot both overwrite and append.")
+            if permission:
+                raise ValueError("Cannot change file properties while appending.")
 
-    @abc.abstractmethod
-    def resolvepath(self, path):
-        """Return absolute, normalized path.
+            if status is not None and status["type"] != "FILE":
+                raise ValueError("Path %r is not a file.", rpath)
+        else:
+            if not overwrite:
+                if status is not None:
+                    raise ValueError("Path %r exists, missing `append`.", rpath)
+            else:
+                if status is not None and status["type"] != "FILE":
+                    raise ValueError("Path %r is not a file.", rpath)
 
-        :param path: Remote path.
-        """
-        raise NotImplementedError
+        _logger.debug("Writing to %r.", path)
+        file = self.open(
+            rpath,
+            mode="ab" if append else "wb",
+            buffer_size=buffer_size,
+            encoding=encoding,
+            **kwargs
+        )
+        if data is None:
+            return file
+        else:
+            with file:
+                if isinstance(data, types.GeneratorType) or isinstance(
+                    data, FileReader
+                ):
+                    for chunk in data:
+                        file.write(chunk)
+                else:
+                    file.write(data)

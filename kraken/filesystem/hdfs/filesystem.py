@@ -13,6 +13,9 @@ class HDFSFileSystem(IFileSystem):
         self.cluster = cluster
         self.client = create_client(auth_mechanism, **params)
 
+    def resolvepath(self, path):
+        return self.client.resolvepath(path)
+
     def list(self, path, status=False, glob=False):
         return self.client.list(path, status, glob)
 
@@ -53,6 +56,10 @@ class HDFSFileSystem(IFileSystem):
 
     def mkdir(self, path, permission=None):
         return self.client.makedirs(path, permission)
+
+    def open(self, path, mode, buffer_size=-1, encoding=None, **kwargs):
+        # HDFS library does not implement open method
+        raise NotImplementedError
 
     @contextmanager
     def read(
@@ -97,6 +104,3 @@ class HDFSFileSystem(IFileSystem):
             encoding=encoding,
             **kwargs
         )
-
-    def resolvepath(self, path):
-        return self.client.resolvepath(path)
