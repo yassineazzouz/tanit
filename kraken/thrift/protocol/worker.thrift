@@ -1,4 +1,4 @@
-namespace py thrift
+namespace py worker.service
 
 enum TaskType {
   COPY = 1,

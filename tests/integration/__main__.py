@@ -8,7 +8,8 @@ from kraken.master.client.client import ThriftClientFactory
 from kraken.master.config.config import MasterConfig
 from kraken.master.server.server import MasterServer
 from kraken.worker.server.server import WorkerServer
-from tests.unit.resources import conf
+
+from ..resources import conf
 
 config_dir = os.path.dirname(os.path.abspath(conf.__file__))
 

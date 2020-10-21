@@ -1,4 +1,4 @@
-namespace py thrift
+namespace py master.service
 
 enum JobState {
   SUBMITTED = 1,

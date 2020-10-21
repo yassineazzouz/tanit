@@ -5,9 +5,9 @@ from thrift.transport import TSocket
 from thrift.transport import TTransport
 
 from ...common.model.worker import WorkerStatus
-from ..thrift import WorkerService
-from ..thrift.ttypes import FileSystem
-from ..thrift.ttypes import Task
+from ...thrift.worker.service import WorkerService
+from ...thrift.worker.service.ttypes import FileSystem
+from ...thrift.worker.service.ttypes import Task
 
 
 class WorkerClient(object):

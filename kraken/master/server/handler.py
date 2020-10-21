@@ -1,10 +1,10 @@
 import logging as lg
 
+from ..core.execution.execution_state import ExecutionState
 from ...common.model.execution_type import ExecutionType
 from ...common.model.job import Job
 from ...common.model.worker import Worker
-from ..core.execution.execution_state import ExecutionState
-from ..thrift import ttypes
+from ...thrift.master.service import ttypes
 
 _logger = lg.getLogger(__name__)
 

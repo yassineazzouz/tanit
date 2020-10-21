@@ -6,7 +6,7 @@ from thrift.server import TServer
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
-from kraken.worker.filesystem.thrift.LocalFilesystem import Processor
+from ...thrift.worker.filesystem import LocalFilesystem
 
 from .handler import LocalFileSystemHandler
 
@@ -23,7 +23,7 @@ class LocalFileSystemService(object):
         handler = LocalFileSystemHandler()
 
         server = TServer.TThreadedServer(
-            Processor(handler),
+            LocalFilesystem.Processor(handler),
             TSocket.TServerSocket(self.bind_address, self.bind_port),
             TTransport.TBufferedTransportFactory(),
             TBinaryProtocol.TBinaryProtocolFactory(),

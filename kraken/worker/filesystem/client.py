@@ -2,12 +2,10 @@ import io
 import logging as lg
 
 from thrift.protocol import TBinaryProtocol
-
-# Thrift files
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
-from kraken.worker.filesystem.thrift import LocalFilesystem
+from ...thrift.worker.filesystem import LocalFilesystem
 
 _logger = lg.getLogger(__name__)
 

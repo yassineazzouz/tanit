@@ -9,11 +9,11 @@ from thrift.server import TServer
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
+from ...thrift.master.service import MasterUserService
+from ...thrift.master.service import MasterWorkerService
 from ..config.config import MasterConfig
 from ..core.master import Master
 from ..standalone.master import StandaloneMaster
-from ..thrift import MasterUserService
-from ..thrift import MasterWorkerService
 from .handler import UserServiceHandler
 from .handler import WorkerServiceHandler
 

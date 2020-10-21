@@ -14,9 +14,9 @@ import six
 
 from ...common.model.job import JobStatus
 from ...common.model.worker import Worker
-from ..thrift import MasterUserService
-from ..thrift import MasterWorkerService
-from ..thrift import ttypes
+from ...thrift.master.service import MasterUserService
+from ...thrift.master.service import MasterWorkerService
+from ...thrift.master.service import ttypes
 
 _logger = lg.getLogger(__name__)
 

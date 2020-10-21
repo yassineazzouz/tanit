@@ -4,7 +4,7 @@ from threading import Thread
 
 from six.moves.queue import Queue
 
-from kraken.worker.filesystem.server.service import LocalFileSystemService
+from kraken.worker.filesystem.service import LocalFileSystemService
 
 from ...common.model.worker import WorkerStatus
 from ...filesystem.filesystem_factory import FileSystemFactory

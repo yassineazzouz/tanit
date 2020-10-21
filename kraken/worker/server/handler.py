@@ -2,8 +2,9 @@ import logging as lg
 
 from ...common.model.execution_type import ExecutionType
 from ...common.model.task import Task
-from ..thrift.ttypes import TaskType
-from ..thrift.ttypes import WorkerStatus
+
+from ...thrift.worker.service.ttypes import TaskType
+from ...thrift.worker.service.ttypes import WorkerStatus
 
 _logger = lg.getLogger(__name__)
 

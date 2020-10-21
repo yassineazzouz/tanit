@@ -1,4 +1,4 @@
-namespace py thrift
+namespace py worker.filesystem
 
 struct FileStatus {
   	1: string fileId,

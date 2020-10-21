@@ -8,8 +8,8 @@ from thrift.server import TServer
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
+from ...thrift.worker.service import WorkerService
 from ..config.config import WorkerConfig
-from ..thrift import WorkerService
 from .handler import WorkerServiceHandler
 from .worker import Worker
 

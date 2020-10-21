@@ -1,10 +1,11 @@
-from kraken.filesystem.ioutils import FileSystemError
-from kraken.filesystem.local.local_filesystem import LocalFileSystem
-from kraken.worker.filesystem.thrift.ttypes import FileContent
-from kraken.worker.filesystem.thrift.ttypes import FileContentOrNull
-from kraken.worker.filesystem.thrift.ttypes import FileStatus
-from kraken.worker.filesystem.thrift.ttypes import FileStatusOrNull
-from kraken.worker.filesystem.thrift.ttypes import FileSystemException
+from ...filesystem.ioutils import FileSystemError
+from ...filesystem.local.local_filesystem import LocalFileSystem
+
+from ...thrift.worker.filesystem.ttypes import FileContent
+from ...thrift.worker.filesystem.ttypes import FileContentOrNull
+from ...thrift.worker.filesystem.ttypes import FileStatus
+from ...thrift.worker.filesystem.ttypes import FileStatusOrNull
+from ...thrift.worker.filesystem.ttypes import FileSystemException
 
 
 class LocalFileSystemHandler(object):
