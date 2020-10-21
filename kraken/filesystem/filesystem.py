@@ -2,9 +2,9 @@ import abc
 import hashlib
 import logging as lg
 import posixpath as psp
+import types
 from contextlib import contextmanager
 
-import types
 import six
 
 from .ioutils import ChunkFileReader
@@ -181,7 +181,7 @@ class IFileSystem:
 
     @abc.abstractmethod
     def open(self, path, mode, buffer_size=-1, encoding=None, **kwargs):
-        """ Access a file from the Filesystem.
+        """Access a file from the Filesystem.
 
         Parameters
         ----------
@@ -250,11 +250,7 @@ class IFileSystem:
 
         _logger.debug("Reading file %r.", path)
         file = self.open(
-            rpath,
-            mode="rb",
-            buffer_size=buffer_size,
-            encoding=encoding,
-            **kwargs
+            rpath, mode="rb", buffer_size=buffer_size, encoding=encoding, **kwargs
         )
 
         if offset > 0:

@@ -1,6 +1,5 @@
-from kraken.filesystem.local.local_filesystem import LocalFileSystem
-
 from kraken.filesystem.ioutils import FileSystemError
+from kraken.filesystem.local.local_filesystem import LocalFileSystem
 from kraken.worker.filesystem.thrift.ttypes import FileContent
 from kraken.worker.filesystem.thrift.ttypes import FileContentOrNull
 from kraken.worker.filesystem.thrift.ttypes import FileStatus

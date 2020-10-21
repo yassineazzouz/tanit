@@ -6,8 +6,9 @@ from thrift.server import TServer
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
-from .handler import LocalFileSystemHandler
 from kraken.worker.filesystem.thrift.LocalFilesystem import Processor
+
+from .handler import LocalFileSystemHandler
 
 _logger = lg.getLogger(__name__)
 

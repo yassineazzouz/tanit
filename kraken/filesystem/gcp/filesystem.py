@@ -255,7 +255,7 @@ class GCPFileSystem(IFileSystem):
             mode2,
             buffer_size=buffer_size,
             part_size=part_size,
-            acl=acl
+            acl=acl,
         )
         if "b" in mode:
             return raw_file
@@ -264,13 +264,7 @@ class GCPFileSystem(IFileSystem):
 
 class GCSFile(object):
     def __init__(
-        self,
-        bucket,
-        path,
-        mode="rb",
-        buffer_size=1024,
-        part_size=16 * 2 ** 20,
-        acl=""
+        self, bucket, path, mode="rb", buffer_size=1024, part_size=16 * 2 ** 20, acl=""
     ):
         self.mode = mode
         if mode not in {"rb", "wb", "ab"}:

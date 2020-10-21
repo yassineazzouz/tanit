@@ -23,9 +23,14 @@ class FileSystemsConfig(object):
                     "Exception while loading configuration file %s.", self.conf_file, e
                 )
 
-            _logger.info("Instantiated filesystems configuration from %s.", self.conf_file)
+            _logger.info(
+                "Instantiated filesystems configuration from %s.", self.conf_file
+            )
         else:
-            _logger.warning("Could not find filesystems configuration file, Instantiating empty configuration.")
+            _logger.warning(
+                "Could not find filesystems configuration file, "
+                + "instantiating empty configuration."
+            )
             self.config = None
 
     def get_config(self):
