@@ -2,7 +2,6 @@ import logging as lg
 
 from ...common.model.execution_type import ExecutionType
 from ...common.model.task import Task
-
 from ...thrift.worker.service.ttypes import TaskType
 from ...thrift.worker.service.ttypes import WorkerStatus
 

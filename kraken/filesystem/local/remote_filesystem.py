@@ -1,7 +1,7 @@
 import logging as lg
 import os
 
-from kraken.worker.filesystem.client import LocalFileSystemClient
+from ...worker.filesystem.client import LocalFileSystemClient
 from ..filesystem import IFileSystem
 
 _logger = lg.getLogger(__name__)

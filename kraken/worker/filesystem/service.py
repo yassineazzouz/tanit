@@ -7,7 +7,6 @@ from thrift.transport import TSocket
 from thrift.transport import TTransport
 
 from ...thrift.worker.filesystem import LocalFilesystem
-
 from .handler import LocalFileSystemHandler
 
 _logger = lg.getLogger(__name__)

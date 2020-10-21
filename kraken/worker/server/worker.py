@@ -4,8 +4,6 @@ from threading import Thread
 
 from six.moves.queue import Queue
 
-from kraken.worker.filesystem.service import LocalFileSystemService
-
 from ...common.model.worker import WorkerStatus
 from ...filesystem.filesystem_factory import FileSystemFactory
 from ...master.client.client import ClientType
@@ -13,6 +11,7 @@ from ...master.client.client import ThriftClientFactory
 from ..core.execution.task_factory import TaskFactory
 from ..core.executor_factory import ExecutorFactory
 from ..core.executor_pool import ExecutorPool
+from ..filesystem.service import LocalFileSystemService
 
 _logger = lg.getLogger(__name__)
 

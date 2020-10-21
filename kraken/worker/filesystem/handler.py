@@ -1,6 +1,5 @@
 from ...filesystem.ioutils import FileSystemError
 from ...filesystem.local.local_filesystem import LocalFileSystem
-
 from ...thrift.worker.filesystem.ttypes import FileContent
 from ...thrift.worker.filesystem.ttypes import FileContentOrNull
 from ...thrift.worker.filesystem.ttypes import FileStatus
