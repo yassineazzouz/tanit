@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""kraken: python WebHDFS inter/intra-cluster data copy tool."""
+"""kraken: python distributed data transfer tool."""
 
 import os
 import sys
