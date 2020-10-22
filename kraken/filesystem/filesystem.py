@@ -275,7 +275,7 @@ class IFileSystem:
         data=None,
         overwrite=False,
         permission=None,
-        buffer_size=None,
+        buffer_size=1024,
         append=False,
         encoding=None,
         **kwargs

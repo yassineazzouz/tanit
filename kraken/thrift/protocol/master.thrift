@@ -40,6 +40,10 @@ struct FileSystem {
     2: required map<string,string> parameters
 }
 
+exception JobInitializationException {
+  1: string message,
+}
+
 exception JobNotFoundException {
   1: string message,
 }
@@ -47,7 +51,7 @@ exception JobNotFoundException {
 service MasterUserService{
 
     // submit a job 
-    string submit_job(1:Job job),
+    string submit_job(1:Job job) throws (1:JobInitializationException e),
     
     // list jobs
     list<JobStatus> list_jobs(),

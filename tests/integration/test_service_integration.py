@@ -1,9 +1,8 @@
-from thrift.Thrift import TApplicationException
-
 import pytest
 
 from kraken.common.model.execution_type import ExecutionType
 from kraken.common.model.job import Job
+from kraken.thrift.master.service.ttypes import JobInitializationException
 
 from ..unit.utils.tutils import wait_until
 
@@ -24,7 +23,7 @@ class TestServiceIntegration:
         )
 
     def test_submit_job_failure(self, user_client):
-        with pytest.raises(TApplicationException):
+        with pytest.raises(JobInitializationException):
             user_client.submit_job(Job(ExecutionType.MOCK, {"num_tasks": "not_an_int"}))
 
     def test_inexistent_job(self, user_client):

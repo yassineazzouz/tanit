@@ -1,5 +1,6 @@
 import io
 import logging as lg
+import time
 
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TSocket
@@ -24,7 +25,28 @@ class LocalFileSystemClient(object):
 
     def start(self):
         # Connect to server
-        self.transport.open()
+        retries = 1
+        last_error = None
+        while retries < 10:
+            try:
+                self.transport.open()
+                break
+            except TTransport.TTransportException as e:
+                _logger.error(
+                    "Could not connect to any local system service. "
+                    + "retrying after 5 seconds ..."
+                )
+                last_error = e
+            retries += 1
+            time.sleep(5.0)
+
+        if retries == 10:
+            _logger.error(
+                "Could not connect to any local system service after 30 retries. "
+                + "exiting ..."
+            )
+            self.stop()
+            raise last_error
 
     def ls(self, path, status=False, glob=False):
         if status:

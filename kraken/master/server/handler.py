@@ -24,7 +24,10 @@ class UserServiceHandler(object):
             # should raise exception here
             pass
 
-        job_exec = self.master.submit_job(Job(etype, job.params))
+        try:
+            job_exec = self.master.submit_job(Job(etype, job.params))
+        except Exception as e:
+            raise ttypes.JobInitializationException(str(e))
         return job_exec.jid
 
     def list_jobs(self):
