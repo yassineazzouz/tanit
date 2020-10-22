@@ -1,5 +1,6 @@
 import grp
 import logging as lg
+import io
 import os
 import pwd
 import shutil
@@ -147,4 +148,8 @@ class LocalFileSystem(IFileSystem):
                 os.chmod(rpath, int(permission, 8))
 
     def open(self, path, mode, buffer_size=-1, encoding=None, **kwargs):
-        return open(path, mode=mode, buffering=buffer_size, encoding=encoding)
+        file = open(path, mode=mode, buffering=buffer_size)
+        if encoding:
+            return io.TextIOWrapper(file, encoding=encoding)
+        else:
+            return file

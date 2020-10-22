@@ -78,7 +78,7 @@ class TestRemoteFilesystem:
             filesystem_client.status(os.path.join(test_dir, "ktd-1", "ktf.txt"))[
                 "length"
             ]
-            == "1024"
+            in ["1024", "1026"]
         )
 
     def test_content(self, filesystem_client):

@@ -187,7 +187,8 @@ class LocalFileSystemHandler(object):
             )
         file = self.file_descs[filedesc]
         try:
-            return file.write(data)
+            pos = file.write(data)
+            return pos if pos is not None else file.tell()
         except Exception as e:
             raise FileSystemException(str(e))
 
@@ -220,7 +221,8 @@ class LocalFileSystemHandler(object):
             )
         file = self.file_descs[filedesc]
         try:
-            return file.seek(position)
+            pos = file.seek(position)
+            return pos if pos is not None else file.tell()
         except Exception as e:
             raise FileSystemException(str(e))
 
@@ -233,6 +235,14 @@ class LocalFileSystemHandler(object):
 
         try:
             return file.readable()
+        except AttributeError:
+            # python 27
+            try:
+                file.seek(file.tell())
+                return True
+            except Exception:
+                # non seekable
+                return False
         except Exception as e:
             raise FileSystemException(str(e))
 
@@ -244,6 +254,12 @@ class LocalFileSystemHandler(object):
         file = self.file_descs[filedesc]
         try:
             return file.writable()
+        except AttributeError:
+            # python 27
+            if "w" in file.mode or "a" in file.mode or "+" in file.mode:
+                return True
+            else:
+                return False
         except Exception as e:
             raise FileSystemException(str(e))
 
@@ -255,5 +271,11 @@ class LocalFileSystemHandler(object):
         file = self.file_descs[filedesc]
         try:
             return file.seekable()
+        except AttributeError:
+            # python 27
+            if "w" in file.mode or "a" in file.mode or "+" in file.mode:
+                return True
+            else:
+                return False
         except Exception as e:
             raise FileSystemException(str(e))
