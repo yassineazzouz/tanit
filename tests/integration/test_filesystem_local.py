@@ -53,6 +53,11 @@ class TestRemoteFilesystem:
     def test_list(self, filesystem_client):
         assert len(filesystem_client.list(test_dir)) == 5
 
+    def test_list_glob(self, filesystem_client):
+        assert (
+            len(filesystem_client.list(os.path.join(test_dir, "ktd-*"), glob=True)) == 5
+        )
+
     def test_walk(self, filesystem_client):
         for dpath, dnames, fnames in filesystem_client.walk(test_dir):
             assert dpath in [test_dir] + [
@@ -77,6 +82,12 @@ class TestRemoteFilesystem:
         assert filesystem_client.status(os.path.join(test_dir, "ktd-1", "ktf.txt"))[
             "length"
         ] in ["1024", "1026"]
+
+    def test_permissions(self, filesystem_client):
+        try:
+            filesystem_client.set_permission(os.path.join(test_dir, "ktd-1"), "777")
+        except Exception:
+            pass
 
     def test_content(self, filesystem_client):
         assert filesystem_client.content(os.path.join(test_dir))["fileCount"] == "5"
