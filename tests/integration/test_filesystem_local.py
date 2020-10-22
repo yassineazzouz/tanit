@@ -74,12 +74,9 @@ class TestRemoteFilesystem:
             filesystem_client.status(os.path.join(test_dir, "ktd-1", "ktf.txt"))["type"]
             == "FILE"
         )
-        assert (
-            filesystem_client.status(os.path.join(test_dir, "ktd-1", "ktf.txt"))[
-                "length"
-            ]
-            in ["1024", "1026"]
-        )
+        assert filesystem_client.status(os.path.join(test_dir, "ktd-1", "ktf.txt"))[
+            "length"
+        ] in ["1024", "1026"]
 
     def test_content(self, filesystem_client):
         assert filesystem_client.content(os.path.join(test_dir))["fileCount"] == "5"
