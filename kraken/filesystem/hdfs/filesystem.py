@@ -13,25 +13,16 @@ class HDFSFileSystem(IFileSystem):
         self.cluster = cluster
         self.client = create_client(auth_mechanism, **params)
 
-    def resolvepath(self, path):
-        return self.client.resolvepath(path)
+    def resolve_path(self, path):
+        return self.client.resolve_path(path)
 
-    def list(self, path, status=False, glob=False):
+    def _list(self, path, status=False, glob=False):
         return self.client.list(path, status, glob)
 
-    def status(self, path, strict=True):
-        s = self.client.status(path, strict)
-        if s is None:
-            return None
-        else:
-            return {
-                "fileId": path,
-                "length": s["length"],
-                "type": str(s["type"]).upper(),
-                "modificationTime": s["modificationTime"],
-            }
+    def _status(self, path, strict=True):
+        return self.client.status(path, strict)
 
-    def content(self, path, strict=True):
+    def _content(self, path, strict=True):
         c = self.client.content(path, strict)
         if c is None:
             return None
@@ -42,22 +33,27 @@ class HDFSFileSystem(IFileSystem):
                 "directoryCount": c["directoryCount"],
             }
 
-    def delete(self, path, recursive=False):
+    def _delete(self, path, recursive=False):
         return self.client.delete(path, recursive)
+
+    def _copy(self, src_path, dst_path):
+        # HDFS does not support copy natively : ugly implementation
+        with self.client.read(src_path, chunk_size=1024) as reader:
+            self.client.write(dst_path, reader)
 
     def rename(self, src_path, dst_path):
         return self.client.rename(src_path, dst_path)
 
-    def set_owner(self, path, owner=None, group=None):
+    def _set_owner(self, path, owner=None, group=None):
         return self.client.set_owner(path, owner, group)
 
-    def set_permission(self, path, permission):
+    def _set_permission(self, path, permission):
         return self.client.set_permission(path, permission)
 
-    def mkdir(self, path, permission=None):
+    def _mkdir(self, path, permission=None):
         return self.client.makedirs(path, permission)
 
-    def open(self, path, mode, buffer_size=-1, encoding=None, **kwargs):
+    def _open(self, path, mode, buffer_size=-1, encoding=None, **kwargs):
         # HDFS library does not implement open method
         raise NotImplementedError
 

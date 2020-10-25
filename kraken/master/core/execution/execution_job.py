@@ -349,13 +349,13 @@ class CopyJobExecution(JobExecution):
         overwrite = self.overwrite
 
         # Normalise src and dst paths
-        src_path = src.resolvepath(src_path)
+        src_path = src.resolve_path(src_path)
 
         if str(dst_path).endswith("/"):
-            dst_path = dst.resolvepath(dst_path)
+            dst_path = dst.resolve_path(dst_path)
             dst_name = ""
         else:
-            r_path = dst.resolvepath(dst_path)
+            r_path = dst.resolve_path(dst_path)
             dst_path = os.path.dirname(r_path)
             dst_name = os.path.basename(r_path)
 

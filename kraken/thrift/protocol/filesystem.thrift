@@ -37,6 +37,8 @@ service LocalFilesystem{
 
     void rm(1:string path, 2:bool recursive) throws (1:FileSystemException e),
 
+    void copy(1:string src_path, 2:string dst_path) throws (1:FileSystemException e),
+
     void rename(1:string src_path, 2:string dst_path) throws (1:FileSystemException e),
 
     void set_owner(1:string path, 2:string owner, 3:string group) throws (1:FileSystemException e),

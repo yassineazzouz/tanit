@@ -89,6 +89,12 @@ class LocalFileSystemHandler(object):
         except Exception as e:
             raise FileSystemException(str(e))
 
+    def copy(self, src_path, dst_path):
+        try:
+            self.fs.copy(src_path, dst_path)
+        except Exception as e:
+            raise FileSystemException(str(e))
+
     def rename(self, src_path, dst_path):
         try:
             self.fs.rename(src_path, dst_path)

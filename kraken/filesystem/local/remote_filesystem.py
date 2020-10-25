@@ -12,34 +12,40 @@ class RemoteFileSystem(IFileSystem):
         self.client = LocalFileSystemClient(host, port)
         self.client.start()
 
-    def resolvepath(self, path):
+    def resolve_path(self, path):
         return os.path.normpath(os.path.abspath(path))
 
-    def list(self, path, status=False, glob=False):
+    def _list(self, path, status=False, glob=False):
         return self.client.ls(path, status, glob)
 
-    def status(self, path, strict=True):
+    def _status(self, path, strict=True):
         return self.client.status(path, strict)
 
-    def content(self, path, strict=True):
+    def _content(self, path, strict=True):
         return self.client.content(path, strict)
 
-    def delete(self, path, recursive=False):
+    def _delete(self, path, recursive=False):
         return self.client.rm(path, recursive)
+
+    def copy(self, src_path, dst_path, recursive=True):
+        return self.client.copy(src_path, dst_path)
+
+    def _copy(self, src_path, dst_path):
+        return self.client.copy(src_path, dst_path)
 
     def rename(self, src_path, dst_path):
         return self.client.rename(src_path, dst_path)
 
-    def set_owner(self, path, owner=None, group=None):
+    def _set_owner(self, path, owner=None, group=None):
         return self.client.set_owner(path, owner, group)
 
-    def set_permission(self, path, permission):
+    def _set_permission(self, path, permission):
         return self.client.set_permission(path, permission)
 
-    def mkdir(self, path, permission=None):
+    def _mkdir(self, path, permission=None):
         return self.client.mkdir(path, permission)
 
-    def open(self, path, mode, buffer_size=-1, encoding=None, **kwargs):
+    def _open(self, path, mode, buffer_size=0, encoding=None, **kwargs):
         return self.client.open(
             path,
             mode=mode,

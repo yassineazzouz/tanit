@@ -94,6 +94,9 @@ class LocalFileSystemClient(object):
     def rename(self, src_path, dst_path):
         self.client.rename(src_path, dst_path)
 
+    def copy(self, src_path, dst_path):
+        self.client.copy(src_path, dst_path)
+
     def set_owner(self, path, owner=None, group=None):
         self.client.set_owner(path, owner, group)
 

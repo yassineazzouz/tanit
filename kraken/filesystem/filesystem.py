@@ -1,6 +1,7 @@
 import abc
 import hashlib
 import logging as lg
+import os
 import posixpath as psp
 import types
 from contextlib import contextmanager
@@ -17,16 +18,22 @@ _logger = lg.getLogger(__name__)
 
 @six.add_metaclass(abc.ABCMeta)
 class IFileSystem:
-    @abc.abstractmethod
-    def resolvepath(self, path):
+    def resolve_path(self, path):
         """Return absolute, normalized path.
 
         :param path: Remote path.
         """
-        raise NotImplementedError
+        return path
+
+    def format_path(self, path):
+        """Return the path in the normalized display format.
+
+        :param path: Remote path.
+        """
+        return path
 
     @abc.abstractmethod
-    def list(self, path, status=False, glob=False):
+    def _list(self, path, status=False, glob=False):
         """Return names of files contained in a remote folder.
 
         :param path: Remote path to a directory. If `path` doesn't exist
@@ -36,7 +43,24 @@ class IFileSystem:
         """
         raise NotImplementedError
 
+    def list(self, path, status=False, glob=False):
+        """Return names of files contained in a remote folder.
+
+        :param path: Remote path to a directory. If `path` doesn't exist
+          or points to a normal file, an :class:`FileSystemError` will be raised.
+        :glob: Whether the path should be considered a glob expressions
+        :param status: Also return each file's corresponding FileStatus.
+        """
+        rpath = self.resolve_path(path)
+        if not glob and not self.exists(rpath):
+            raise FileSystemError("%r does not exist.", rpath)
+        else:
+            return self._list(rpath, status=status, glob=glob)
+
     @abc.abstractmethod
+    def _status(self, path, strict=True):
+        raise NotImplementedError
+
     def status(self, path, strict=True):
         """Get FileStatus_ for a file or folder on HDFS.
 
@@ -44,19 +68,55 @@ class IFileSystem:
         :param strict: If `False`, return `None` rather than raise an exception if
           the path doesn't exist.
         """
+        rpath = self.resolve_path(path)
+        s = self._status(rpath, strict)
+        if s is None:
+            return None
+        else:
+            return {
+                "fileId": rpath,
+                "length": s["length"],
+                "type": str(s["type"]).upper(),
+                "modificationTime": s["modificationTime"],
+            }
+
+    def exists(self, path):
+        rpath = self.resolve_path(path)
+        return self.status(rpath, strict=False) is not None
+
+    def content(self, path, strict=True):
+        def _get_size(start_path="."):
+            total_folders = 0
+            total_files = 0
+            total_size = 0
+
+            for dirpath, dirnames, filenames in self.walk(start_path):
+                total_folders += len(dirnames)
+                for f in filenames:
+                    total_files += 1
+                    total_size += int(self.status(os.path.join(dirpath, f))["length"])
+
+            return {
+                "length": str(total_size),
+                "fileCount": str(total_files),
+                "directoryCount": str(total_folders),
+            }
+
+        _logger.debug("Fetching content summary for %r.", path)
+        rpath = self.resolve_path(path)
+        if not self.exists(rpath):
+            if not strict:
+                return None
+            else:
+                raise FileSystemError("%r does not exist.", rpath)
+        else:
+            return _get_size(rpath)
 
     @abc.abstractmethod
-    def content(self, path, strict=True):
-        """Get ContentSummary_ for a file or folder.
-
-        :param path: Remote path.
-        :param strict: If `False`, return `None` rather than raise an exception if
-          the path doesn't exist.
-        """
+    def _delete(self, path, recursive=True):
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def delete(self, path, recursive=False):
+    def delete(self, path, recursive=True):
         """Remove a file or directory.
 
         :param path: path.
@@ -66,22 +126,61 @@ class IFileSystem:
         This function returns `True` if the deletion was successful and `False` if
         no file or directory previously existed at `path`.
         """
-        raise NotImplementedError
+        rpath = self.resolve_path(path)
+        if not self.exists(rpath):
+            raise FileSystemError("%r does not exist.", rpath)
+        self._delete(rpath, recursive=recursive)
 
     @abc.abstractmethod
-    def rename(self, src_path, dst_path):
-        """Move a file or folder.
+    def _copy(self, src_path, dst_path):
+        raise NotImplementedError
+
+    def copy(self, src_path, dst_path, recursive=True):
+        """Copy a file.
 
         :param src_path: Source path.
         :param dst_path: Destination path. If the path already exists and is
           a directory, the source will be moved into it. If the path exists and is
           a file, or if a parent destination directory is missing, this method will
           raise an :class:`FileSystemError`.
+        :param recursive: recursively copy.
         """
-        raise NotImplementedError
+        rsrc_path = self.resolve_path(src_path)
+        rdst_path = self.resolve_path(dst_path)
+        src_status = self.status(rsrc_path, strict=False)
+        dst_status = self.status(rdst_path, strict=False)
+        if src_status is None:
+            raise FileSystemError("%r does not exist.", rsrc_path)
+
+        if src_status["type"] == "DIRECTORY":
+            if not recursive:
+                raise FileSystemError("'%s' is a directory." % src_path)
+            if dst_status is None:
+                self.mkdir(rdst_path)
+            for rpath, _, files in self.walk(src_path):
+                for f in files:
+                    self._copy(os.path.join(rsrc_path, f), os.path.join(rdst_path, f))
+        else:
+            self._copy(rsrc_path, rdst_path)
+
+    def rename(self, src_path, dst_path):
+        """Rename a file or folder.
+
+        Not all filesystems have a native rename implementation based
+        on metadata only modification.
+        :param src_path: Source path.
+        :param dst_path: Destination path. If the path already exists and is
+          a directory, the source will be moved into it. If the path exists and is
+          a file, or if a parent destination directory is missing, this method will
+          raise an :class:`FileSystemError`.
+        """
+        rsrc_path = self.resolve_path(src_path)
+        rdst_path = self.resolve_path(dst_path)
+        self.copy(rsrc_path, rdst_path, recursive=True)
+        self.delete(rsrc_path)
 
     @abc.abstractmethod
-    def set_owner(self, path, owner=None, group=None):
+    def _set_owner(self, path, owner=None, group=None):
         """Change the owner of file.
 
         :param path: path.
@@ -91,8 +190,15 @@ class IFileSystem:
         """
         raise NotImplementedError
 
+    def set_owner(self, path, owner=None, group=None):
+        rpath = self.resolve_path(path)
+        if not self.exists(rpath):
+            self._set_owner(rpath, owner=owner, group=group)
+        else:
+            raise FileSystemError("%r does not exist.", rpath)
+
     @abc.abstractmethod
-    def set_permission(self, path, permission):
+    def _set_permission(self, path, permission):
         """Change the permissions of file.
 
         :param path: path.
@@ -100,8 +206,15 @@ class IFileSystem:
         """
         raise NotImplementedError
 
+    def set_permission(self, path, permission=None):
+        rpath = self.resolve_path(path)
+        if not self.exists(rpath):
+            self._set_permission(rpath, permission)
+        else:
+            raise FileSystemError("%r does not exist.", rpath)
+
     @abc.abstractmethod
-    def mkdir(self, path, permission=None):
+    def _mkdir(self, path, permission=None):
         """Create a remote directory, recursively if necessary.
 
         :param path: Remote path. Intermediate directories will be created
@@ -111,6 +224,13 @@ class IFileSystem:
           exist.
         """
         raise NotImplementedError
+
+    def mkdir(self, path, permission=None):
+        rpath = self.resolve_path(path)
+        if not self.exists(rpath):
+            self._mkdir(rpath, permission)
+        else:
+            raise FileSystemError("%r does not exist.", rpath)
 
     def walk(self, path, depth=0, status=False):
         """Depth-first walk of remote filesystem.
@@ -133,10 +253,10 @@ class IFileSystem:
             dir_infos = [info for info in infos if info[1]["type"] == "DIRECTORY"]
             file_infos = [info for info in infos if info[1]["type"] == "FILE"]
             if status:
-                yield ((dir_path, dir_status), dir_infos, file_infos)
+                yield ((self.format_path(dir_path), dir_status), dir_infos, file_infos)
             else:
                 yield (
-                    dir_path,
+                    self.format_path(dir_path),
                     [name for name, _ in dir_infos],
                     [name for name, _ in file_infos],
                 )
@@ -146,7 +266,7 @@ class IFileSystem:
                     for infos in _walk(path, s, depth - 1):
                         yield infos
 
-        rpath = self.resolvepath(path)  # Cache resolution.
+        rpath = self.resolve_path(path)  # Cache resolution.
         s = self.status(rpath)
         if s["type"] == "DIRECTORY":
             for infos in _walk(rpath, s, depth):
@@ -180,7 +300,10 @@ class IFileSystem:
         return checksum.hexdigest()
 
     @abc.abstractmethod
-    def open(self, path, mode, buffer_size=-1, encoding=None, **kwargs):
+    def _open(self, path, mode, buffer_size=0, encoding=None, **kwargs):
+        raise NotImplementedError
+
+    def open(self, path, mode, buffer_size=1024, encoding=None, **kwargs):
         """Access a file from the Filesystem.
 
         Parameters
@@ -200,7 +323,10 @@ class IFileSystem:
             Additional parameters used for file system specific usage.
         :return: A file object, idially an implementation of `BufferedIOBase`
         """
-        raise NotImplementedError
+        rpath = self.resolve_path(path)
+        return self._open(
+            path=rpath, mode=mode, buffer_size=buffer_size, encoding=encoding, **kwargs
+        )
 
     @contextmanager
     def read(
@@ -244,7 +370,7 @@ class IFileSystem:
             if chunk_size:
                 raise ValueError("Delimiter splitting incompatible with chunk size.")
 
-        rpath = self.resolvepath(path)
+        rpath = self.resolve_path(path)
         if self.status(rpath, strict=False) is None:
             raise FileSystemError("%r does not exist.", rpath)
 
@@ -310,7 +436,7 @@ class IFileSystem:
           # Or, passing in a generator directly:
           client.write('data/records.jsonl', data=dumps(records), encoding='utf-8')
         """
-        rpath = self.resolvepath(path)
+        rpath = self.resolve_path(path)
         status = self.status(rpath, strict=False)
         if append:
             if overwrite:

@@ -68,13 +68,13 @@ class GCPFileSystem(IFileSystem):
         else:
             raise ValueError("Token format not understood")
 
-    def resolvepath(self, path):
+    def resolve_path(self, path):
         # Remove any leading and trailing slash
         rpath = os.path.normpath(re.sub("^/*", "", path))
         return "" if rpath == "." else rpath
 
     def exists(self, path):
-        rpath = self.resolvepath(path)
+        rpath = self.resolve_path(path)
         # Ihe only way to know if a path is a direc or not is by listing
         if len(self._list(rpath)) == 0:
             # Path is not a directory
@@ -83,17 +83,16 @@ class GCPFileSystem(IFileSystem):
                 return False
         return True
 
-    def status(self, path, strict=True):
+    def _status(self, path, strict=True):
 
         _logger.debug("Fetching status for %r.", path)
-        rpath = self.resolvepath(path)
-        if not self.exists(rpath):
+        if not self.exists(path):
             if not strict:
                 return None
             else:
-                raise FileSystemError("%r does not exist." % rpath)
+                raise FileSystemError("%r does not exist." % path)
         else:
-            if rpath in ["", "/"]:
+            if path in ["", "/"]:
                 # consider empty or slash the root of the bucket
                 return {
                     "fileId": "/",
@@ -102,11 +101,11 @@ class GCPFileSystem(IFileSystem):
                     "creationTime": None,
                     "modificationTime": None,
                 }
-            blob = self.bucket.get_blob(rpath)
+            blob = self.bucket.get_blob(path)
             if blob is None:
                 # The path is just a prefix, there is no real object
                 return {
-                    "fileId": self.bucket.name + "/" + rpath,
+                    "fileId": self.bucket.name + "/" + path,
                     "type": "DIRECTORY",
                     "length": 0,
                     "creationTime": None,
@@ -121,25 +120,25 @@ class GCPFileSystem(IFileSystem):
                     "modificationTime": int(blob.updated.timestamp() * 1000),
                 }
 
-    def _list(self, path):
-        if path not in [".", ""]:
-            # make sure the prefix have a tailing slash
-            prefix = path + "/" if not str(path).endswith("/") else path
-        else:
-            prefix = ""
-        iter = self.bucket.list_blobs(delimiter="/", prefix=prefix)
-        files = [os.path.basename(blob.name) for blob in iter]
-        # prefixes have a tailing slash, make sure to strip it
-        files.extend(
-            [os.path.basename(os.path.normpath(prefix)) for prefix in iter.prefixes]
-        )
-        return [file for file in files if file not in ["", ".", "/"]]
+    def _list(self, path, status=False, glob=False):
+        def __list(path):
+            if path not in [".", ""]:
+                # make sure the prefix have a tailing slash
+                prefix = path + "/" if not str(path).endswith("/") else path
+            else:
+                prefix = ""
+            iter = self.bucket.list_blobs(delimiter="/", prefix=prefix)
+            files = [os.path.basename(blob.name) for blob in iter]
+            # prefixes have a tailing slash, make sure to strip it
+            files.extend(
+                [os.path.basename(os.path.normpath(prefix)) for prefix in iter.prefixes]
+            )
+            return [file for file in files if file not in ["", ".", "/"]]
 
-    def list(self, path, status=False, glob=False):
         _logger.debug("Listing %r.", path)
-        rpath = self.resolvepath(path)
+        rpath = self.resolve_path(path)
         if not glob:
-            files = self._list(rpath)
+            files = __list(rpath)
             if len(files) == 0:
                 raise FileSystemError("%r is not a directory." % rpath)
             elif len(files) == 1 and files[0] == "":
@@ -158,66 +157,27 @@ class GCPFileSystem(IFileSystem):
             else:
                 return files
 
-    def content(self, path, strict=True):
-        def _get_size(start_path="."):
-            total_folders = 0
-            total_files = 0
-            total_size = 0
+    def _delete(self, path, recursive=False):
+        for blob in self.bucket.list_blobs(prefix=path):
+            blob.delete()
 
-            for dirpath, dirnames, filenames in self.walk(start_path):
-                total_folders += len(dirnames)
-                for f in filenames:
-                    total_files += 1
-                    total_size += self.status(os.path.join(dirpath, f))["length"]
+    def _copy(self, src_path, dst_path):
+        src_blob = self.bucket.get_blob(src_path)
+        self.bucket.copy_blob(
+            src_blob, self.bucket, re.sub("^" + src_path, dst_path, src_blob.name)
+        )
 
-            return {
-                "length": total_size,
-                "fileCount": total_files,
-                "directoryCount": total_folders,
-            }
-
-        _logger.debug("Fetching content summary for %r.", path)
-        rpath = self.resolvepath(path)
-        if not self.exists(rpath):
-            if not strict:
-                return None
-            else:
-                raise FileSystemError("%r does not exist.", rpath)
-        else:
-            return _get_size(rpath)
-
-    def delete(self, path, recursive=False):
-        rpath = self.resolvepath(path)
-        if not self.exists(rpath):
-            raise FileSystemError("%r does not exist.", rpath)
-        else:
-            for blob in self.bucket.list_blobs(prefix=rpath):
-                blob.delete()
-
-    def rename(self, src_path, dst_path):
-        rsrc_path = self.resolvepath(src_path)
-        rdst_path = self.resolvepath(dst_path)
-        if not self.exists(rsrc_path):
-            raise FileSystemError("%r does not exist.", rsrc_path)
-        if self.exists(rdst_path):
-            raise FileSystemError("%r exists.", rdst_path)
-        for blob in self.bucket.list_blobs(prefix=rsrc_path):
-            self.bucket.rename_blob(blob, re.sub("^" + rsrc_path, rdst_path, blob.name))
-
-    def set_owner(self, path, owner=None, group=None):
+    def _set_owner(self, path, owner=None, group=None):
         raise NotImplementedError
 
-    def set_permission(self, path, permission):
+    def _set_permission(self, path, permission):
         raise NotImplementedError
 
-    def mkdir(self, path, permission=None):
-        rpath = self.resolvepath(path)
-        if not self.exists(rpath):
-            # Make sure the path ends with / to be considered a folder
-            blob = self.bucket.blob(rpath + "/")
-            blob.upload_from_string("")
+    def _mkdir(self, path, permission=None):
+        blob = self.bucket.blob(path + "/")
+        blob.upload_from_string("")
 
-    def open(
+    def _open(
         self,
         path,
         mode="rb",
@@ -227,27 +187,6 @@ class GCPFileSystem(IFileSystem):
         encoding=None,
         **kwargs
     ):
-        """Open a GCS file for reading or writing.
-
-        Parameters
-        ----------
-        path: string
-            Path of file on the GCS bucket
-        mode: string
-            One of 'r', 'w', 'a', 'rb', 'wb', or 'ab'. These have the same meaning
-            as they do for the built-in `open` function.
-        buffer_size: int
-            Size of the read cache buffer when reading.
-        part_size: int
-            Size of data partition when writing.
-        acl: str
-            Canned ACL to set when writing
-        encoding : str
-            The encoding to use if opening the file in text mode. The platform's
-            default text encoding is used if not given.
-        kwargs: dict-like
-            Additional parameters used for GCS methods.
-        """
         mode2 = mode if "b" in mode else (mode.replace("t", "") + "b")
         raw_file = GCSFile(
             self.bucket,
