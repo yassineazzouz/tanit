@@ -3,6 +3,7 @@ import json
 import logging as lg
 import os
 import re
+import time
 
 import google.auth
 from google.cloud import storage
@@ -73,85 +74,85 @@ class GCPFileSystem(IFileSystem):
         rpath = os.path.normpath(re.sub("^/*", "", path))
         return "" if rpath == "." else rpath
 
-    def exists(self, path):
-        rpath = self.resolve_path(path)
-        # Ihe only way to know if a path is a direc or not is by listing
-        if len(self._list(rpath)) == 0:
-            # Path is not a directory
-            if self.bucket.get_blob(rpath) is None:
-                # Path is not a file
-                return False
-        return True
+    def format_path(self, path):
+        if path.startswith(self.bucket.name + "/"):
+            return re.sub("^%s" % self.bucket.name, "", path)
+        else:
+            if not path.startswith("/"):
+                return "/" + path
 
     def _status(self, path, strict=True):
+        def _datetime2timestamp(dt):
+            try:
+                int(dt.timestamp() * 1000)
+            except AttributeError:
+                # python 2.7
+                int(time.mktime(dt.timetuple()) * 1000)
 
-        _logger.debug("Fetching status for %r.", path)
-        if not self.exists(path):
-            if not strict:
-                return None
-            else:
-                raise FileSystemError("%r does not exist." % path)
+        if path in ["", "/"]:
+            # consider empty or slash the root of the bucket
+            return {
+                "fileId": "/",
+                "type": "DIRECTORY",
+                "length": 0,
+                "creationTime": None,
+                "modificationTime": None,
+            }
+        # check if the path is a prefix
+        if len(self._list_prefix(path)) != 0:
+            return {
+                "fileId": self.bucket.name + "/" + path,
+                "type": "DIRECTORY",
+                "length": 0,
+                "creationTime": None,
+                "modificationTime": None,
+            }
+        # check if the path is a real object
+        blob = self.bucket.get_blob(path)
+        if blob is not None:
+            return {
+                "fileId": blob.id,
+                "type": "FILE",
+                "length": blob.size,
+                "creationTime": _datetime2timestamp(blob.time_created),
+                "modificationTime": _datetime2timestamp(blob.updated),
+            }
+        # the path does not exist
+        if not strict:
+            return None
         else:
-            if path in ["", "/"]:
-                # consider empty or slash the root of the bucket
-                return {
-                    "fileId": "/",
-                    "type": "DIRECTORY",
-                    "length": 0,
-                    "creationTime": None,
-                    "modificationTime": None,
-                }
-            blob = self.bucket.get_blob(path)
-            if blob is None:
-                # The path is just a prefix, there is no real object
-                return {
-                    "fileId": self.bucket.name + "/" + path,
-                    "type": "DIRECTORY",
-                    "length": 0,
-                    "creationTime": None,
-                    "modificationTime": None,
-                }
-            else:
-                return {
-                    "fileId": blob.id,
-                    "type": "FILE",
-                    "length": blob.size,
-                    "creationTime": int(blob.time_created.timestamp() * 1000),
-                    "modificationTime": int(blob.updated.timestamp() * 1000),
-                }
+            raise FileSystemError("%r does not exist." % path)
+
+    def _list_prefix(self, prefix):
+        if prefix not in [".", ""]:
+            # make sure the prefix have a tailing slash
+            pfx = prefix + "/" if not str(prefix).endswith("/") else prefix
+        else:
+            pfx = ""
+        iter = self.bucket.list_blobs(delimiter="/", prefix=pfx)
+        files = [os.path.basename(blob.name) for blob in iter]
+        # prefixes have a tailing slash, make sure to strip it
+        files.extend(
+            [os.path.basename(os.path.normpath(prefix)) for prefix in iter.prefixes]
+        )
+        return [file for file in files if file not in ["", ".", "/"]]
 
     def _list(self, path, status=False, glob=False):
-        def __list(path):
-            if path not in [".", ""]:
-                # make sure the prefix have a tailing slash
-                prefix = path + "/" if not str(path).endswith("/") else path
-            else:
-                prefix = ""
-            iter = self.bucket.list_blobs(delimiter="/", prefix=prefix)
-            files = [os.path.basename(blob.name) for blob in iter]
-            # prefixes have a tailing slash, make sure to strip it
-            files.extend(
-                [os.path.basename(os.path.normpath(prefix)) for prefix in iter.prefixes]
-            )
-            return [file for file in files if file not in ["", ".", "/"]]
-
-        _logger.debug("Listing %r.", path)
-        rpath = self.resolve_path(path)
         if not glob:
-            files = __list(rpath)
+            files = self._list_prefix(path)
             if len(files) == 0:
-                raise FileSystemError("%r is not a directory." % rpath)
+                raise FileSystemError("%r is not a directory." % path)
             elif len(files) == 1 and files[0] == "":
                 # special case when the directory exist and is empty
                 # _list returns [''] return empty array instead
                 return []
             else:
                 if status:
-                    return [(f, self.status(os.path.join(rpath, f))) for f in files]
+                    return [(f, self.status(os.path.join(path, f))) for f in files]
                 else:
                     return files
         else:
-            files = [i_file for i_file in iglob(self, rpath)]
+            files = [i_file for i_file in iglob(self, path)]
             if status:
                 return [(f, self.status(f)) for f in files]
             else:

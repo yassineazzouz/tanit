@@ -1,5 +1,4 @@
 import os
-import time
 from threading import Thread
 
 import pytest
@@ -22,9 +21,6 @@ def master_server():
     server_daemon.setDaemon(True)
     server_daemon.start()
 
-    # wait for the server to start
-    time.sleep(2.0)
-
     yield
 
     server.stop()
@@ -37,9 +33,6 @@ def worker_server():
     server_daemon = Thread(target=server.start, args=())
     server_daemon.setDaemon(True)
     server_daemon.start()
-
-    # wait for the server to start
-    time.sleep(2.0)
 
     yield
 

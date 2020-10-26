@@ -20,6 +20,10 @@ matrix:
   allow_failures:
     - python: 3.4
 
+before_install:
+  - openssl aes-256-cbc -K $encrypted_f5440da4f437_key -iv $encrypted_f5440da4f437_iv -in .travis/gcp.json.enc -out .travis/gcp.json -d
+  - export GOOGLE_APPLICATION_CREDENTIALS=$(readlink -f .travis/gcp.json)
+
 install:
   - pip install tox codecov
 

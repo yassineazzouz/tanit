@@ -75,7 +75,7 @@ class IFileSystem:
         else:
             return {
                 "fileId": rpath,
-                "length": s["length"],
+                "length": str(s["length"]),
                 "type": str(s["type"]).upper(),
                 "modificationTime": s["modificationTime"],
             }
