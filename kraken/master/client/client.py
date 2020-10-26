@@ -3,10 +3,9 @@
 
 import abc
 import logging as lg
+import time
 
 from thrift.protocol import TBinaryProtocol
-
-# Thrift files
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
@@ -22,6 +21,35 @@ _logger = lg.getLogger(__name__)
 
 WORKER_SERVICE_CLIENT_NAME = "worker-service"
 USER_SERVICE_CLIENT_NAME = "user-service"
+
+
+def connect(master_host, master_port):
+    # Create Transport
+    socket = TSocket.TSocket(master_host, master_port)
+    transport = TTransport.TBufferedTransport(socket)
+
+    # Connect to server
+    retries = 1
+    last_error = None
+    while retries < 30:
+        try:
+            transport.open()
+            break
+        except TTransport.TTransportException as e:
+            _logger.error(
+                "Could not connect to the master server. " + "retrying in 5 seconds ..."
+            )
+            last_error = e
+        retries += 1
+        time.sleep(5.0)
+
+    if retries == 30:
+        _logger.error(
+            "Could not connect to the master server after 30 retries. " + "exiting ..."
+        )
+        raise last_error
+
+    return transport
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -53,16 +81,10 @@ class ThriftUserServiceClient(UserServiceClientIFace):
         self.master_port = master_port
 
     def start(self):
-        # Init thrift connection and protocol handlers
-        socket = TSocket.TSocket(self.master_host, self.master_port)
-        self.transport = TTransport.TBufferedTransport(socket)
-        protocol = TBinaryProtocol.TBinaryProtocol(self.transport)
-
-        # Set client to our Example
-        self.client = MasterUserService.Client(protocol)
-
-        # Connect to server
-        self.transport.open()
+        self.transport = connect(self.master_host, self.master_port)
+        self.client = MasterUserService.Client(
+            TBinaryProtocol.TBinaryProtocol(self.transport)
+        )
 
     def list_jobs(self):
         jobs = []
@@ -177,16 +199,10 @@ class ThriftWorkerServiceClient(WorkerServiceClientIFace):
         self.master_port = master_port
 
     def start(self):
-        # Init thrift connection and protocol handlers
-        socket = TSocket.TSocket(self.master_host, self.master_port)
-        self.transport = TTransport.TBufferedTransport(socket)
-        protocol = TBinaryProtocol.TBinaryProtocol(self.transport)
-
-        # Set client to our Example
-        self.client = MasterWorkerService.Client(protocol)
-
-        # Connect to server
-        self.transport.open()
+        self.transport = connect(self.master_host, self.master_port)
+        self.client = MasterWorkerService.Client(
+            TBinaryProtocol.TBinaryProtocol(self.transport)
+        )
 
     def list_workers(self):
         wkr_list = []

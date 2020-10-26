@@ -89,28 +89,7 @@ class Worker(object):
         self.executor.start()
 
         # register the worker
-        retries = 1
-        last_error = None
-        while retries < 30:
-            try:
-                self.master.register_worker(self.wid, self.address, self.port)
-                break
-            except Exception as e:
-                _logger.error(
-                    "Could not register worker to the master server. "
-                    + "retrying in 5 seconds ..."
-                )
-                last_error = e
-            retries += 1
-            time.sleep(5.0)
-
-        if retries == 30:
-            _logger.error(
-                "Could not register worker to the master server after 30 retries. "
-                + "exiting ..."
-            )
-            self.stop()
-            raise last_error
+        self.master.register_worker(self.wid, self.address, self.port)
 
         # start the filesystem service
         self.filesystem.start()
