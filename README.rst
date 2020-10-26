@@ -1,23 +1,23 @@
-.. image:: https://img.shields.io/pypi/v/kraken-pyds
-    :target: https://pypi.org/project/kraken-pyds
+.. image:: https://img.shields.io/pypi/v/tanit
+    :target: https://pypi.org/project/tanit
 
-.. image:: https://img.shields.io/pypi/pyversions/kraken-pyds
-    :target: https://pypi.org/project/kraken-pyds
+.. image:: https://img.shields.io/pypi/pyversions/tanit
+    :target: https://pypi.org/project/tanit
 
-.. image:: https://img.shields.io/travis/com/yassineazzouz/kraken
-    :target: https://travis-ci.com/yassineazzouz/kraken
+.. image:: https://img.shields.io/travis/com/yassineazzouz/tanit
+    :target: https://travis-ci.com/yassineazzouz/tanit
 
-.. image:: https://img.shields.io/codecov/c/github/yassineazzouz/kraken
-    :target: https://codecov.io/gh/yassineazzouz/kraken
+.. image:: https://img.shields.io/codecov/c/github/yassineazzouz/tanit
+    :target: https://codecov.io/gh/yassineazzouz/tanit
 
-Kraken
+Tanit
 ==================================
 
 
-Kraken is a distributed, fast, and reliable data transfer service for efficiently moving large amounts of data between different storage technologies. It uses a distributed master worker architecture, to allow very fast data transfer speed and horizontal scaling, while implementing multiple failover, recovery and data consistency checks mechanisms to ensure robustness, fault tolerance and reliability.
+Tanit is a distributed, fast, and reliable data transfer service for efficiently moving large amounts of data between different storage technologies. It uses a distributed master worker architecture, to allow very fast data transfer speed and horizontal scaling, while implementing multiple failover, recovery and data consistency checks mechanisms to ensure robustness, fault tolerance and reliability.
 
 
-*Kraken* typical use cases include but are not limited to :
+*Tanit* typical use cases include but are not limited to :
 - Data migration (across storage technologies)
 - Data Replication.
 - Backup and Disaster recovery.
@@ -39,4 +39,4 @@ Install
 
 ::
 
-    pip install kraken-pyds
+    pip install tanit-pyds

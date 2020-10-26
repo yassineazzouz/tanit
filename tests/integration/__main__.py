@@ -3,11 +3,11 @@ import os
 import time
 from threading import Thread
 
-from kraken.master.client.client import ClientType
-from kraken.master.client.client import ThriftClientFactory
-from kraken.master.config.config import MasterConfig
-from kraken.master.server.server import MasterServer
-from kraken.worker.server.server import WorkerServer
+from tanit.master.client.client import ClientType
+from tanit.master.client.client import ThriftClientFactory
+from tanit.master.config.config import MasterConfig
+from tanit.master.server.server import MasterServer
+from tanit.worker.server.server import WorkerServer
 
 from ..resources import conf
 

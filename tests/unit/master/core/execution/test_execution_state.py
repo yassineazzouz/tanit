@@ -1,12 +1,12 @@
 import pytest
 
-from kraken.common.model.execution_type import ExecutionType
-from kraken.common.model.job import Job
-from kraken.master.core.execution.execution_job import (
+from tanit.common.model.execution_type import ExecutionType
+from tanit.common.model.job import Job
+from tanit.master.core.execution.execution_job import (
     IllegalStateTransitionException,  # NOQA
 )
-from kraken.master.core.execution.execution_state import ExecutionState  # NOQA
-from kraken.master.core.execution.job_factory import JobFactory  # NOQA
+from tanit.master.core.execution.execution_state import ExecutionState  # NOQA
+from tanit.master.core.execution.job_factory import JobFactory  # NOQA
 
 job_factory = JobFactory()
 

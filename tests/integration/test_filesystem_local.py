@@ -2,8 +2,8 @@ import time
 
 import pytest
 
-from kraken.filesystem.filesystem_factory import FileSystemFactory
-from kraken.worker.filesystem.service import LocalFileSystemService
+from tanit.filesystem.filesystem_factory import FileSystemFactory
+from tanit.worker.filesystem.service import LocalFileSystemService
 
 from .test_filesystem import BaseFilesystemTest
 

@@ -1,10 +1,10 @@
 import pytest
 from six.moves.queue import Queue
 
-from kraken.common.model.execution_type import ExecutionType
-from kraken.common.model.job import Job
-from kraken.master.core.execution.job_factory import JobFactory
-from kraken.master.core.scheduler import SimpleScheduler
+from tanit.common.model.execution_type import ExecutionType
+from tanit.common.model.job import Job
+from tanit.master.core.execution.job_factory import JobFactory
+from tanit.master.core.scheduler import SimpleScheduler
 
 from ...utils.tutils import wait_until
 

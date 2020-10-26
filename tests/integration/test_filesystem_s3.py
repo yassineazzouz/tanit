@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from kraken.filesystem.filesystem_factory import FileSystemFactory
+from tanit.filesystem.filesystem_factory import FileSystemFactory
 
 from .test_filesystem import BaseFilesystemTest
 
@@ -11,9 +11,9 @@ from .test_filesystem import BaseFilesystemTest
 def filesystem():
     filesystems_factory = FileSystemFactory.getInstance()
     filesystems_factory.register_filesystem(
-        {"name": "s3-kraken-test-bucket", "type": "s3", "bucket": "kraken-test"}
+        {"name": "s3-karken-test-bucket", "type": "s3", "bucket": "kraken-test"}
     )
-    filesystem = filesystems_factory.get_filesystem("s3-kraken-test-bucket")
+    filesystem = filesystems_factory.get_filesystem("s3-karken-test-bucket")
     yield filesystem
 
 

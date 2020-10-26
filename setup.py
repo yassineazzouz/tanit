@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""kraken: python distributed data transfer tool."""
+"""tanit: python distributed data transfer tool."""
 
 import os
 import sys
@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath('src'))
 
 def _get_version():
     """Extract version from package."""
-    with open('kraken/__init__.py') as reader:
+    with open('tanit/__init__.py') as reader:
         match = re.search(
             r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
             reader.read(),
@@ -31,14 +31,14 @@ def _get_long_description():
 
 
 setup(
-    name='kraken-pyds',
+    name='tanit',
     version=_get_version(),
     description=__doc__,
-    keywords="thrift python kraken hdfs",
+    keywords="thrift python tanit hdfs",
     long_description=_get_long_description(),
     author='Yassine Azzouz',
     author_email='yassine.azzouz@agmail.com',
-    url='https://github.com/yassineazzouz/kraken',
+    url='https://github.com/yassineazzouz/tanit',
     license='MIT',
     packages=find_packages(),
     classifiers=[
@@ -67,9 +67,9 @@ setup(
         'pyrsistent==0.15.0'
     ],
     entry_points={'console_scripts':
-                      ['kraken-master = kraken.master.server.__main__:main',
-                       'kraken-worker = kraken.worker.server.__main__:main',
-                       'kraken-client = kraken.master.client.__main__:main']
+                      ['tanit-master = tanit.master.server.__main__:main',
+                       'tanit-worker = tanit.worker.server.__main__:main',
+                       'tanit-client = tanit.master.client.__main__:main']
                   },
     long_description_content_type='text/markdown'
 )

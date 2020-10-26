@@ -1,6 +1,6 @@
 import pytest
 
-from kraken.master.standalone.master import StandaloneMaster
+from tanit.master.standalone.master import StandaloneMaster
 
 
 @pytest.fixture

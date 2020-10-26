@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from kraken.filesystem.filesystem_factory import FileSystemFactory
+from tanit.filesystem.filesystem_factory import FileSystemFactory
 
 from .test_filesystem import BaseFilesystemTest
 

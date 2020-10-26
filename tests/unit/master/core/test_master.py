@@ -1,11 +1,11 @@
 import pytest
 
-from kraken.common.model.execution_type import ExecutionType
-from kraken.common.model.job import Job
-from kraken.common.model.worker import Worker
-from kraken.master.core.execution.execution_job import JobInitializationException
-from kraken.master.core.execution.execution_state import ExecutionState
-from kraken.master.core.master import Master
+from tanit.common.model.execution_type import ExecutionType
+from tanit.common.model.job import Job
+from tanit.common.model.worker import Worker
+from tanit.master.core.execution.execution_job import JobInitializationException
+from tanit.master.core.execution.execution_state import ExecutionState
+from tanit.master.core.master import Master
 
 from ...utils.tutils import wait_until
 

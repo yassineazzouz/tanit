@@ -12,8 +12,8 @@ per-file-ignores =
     # D103 Missing docstring in public function
     # D104 Missing docstring in public package
     # D105 Missing docstring in magic method
-    kraken/*: D100,D101,D102,D103,D104,D105
+    tanit/*: D100,D101,D102,D103,D104,D105
     tests/*: D100,D101,D102,D103,D104,D105
 
 exclude =
-    kraken/thrift
+    tanit/thrift

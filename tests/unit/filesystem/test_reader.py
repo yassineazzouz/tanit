@@ -1,7 +1,7 @@
 import random
 import string
 
-from kraken.filesystem.ioutils import ChunkFileReader
+from tanit.filesystem.ioutils import ChunkFileReader
 
 
 class MockDataGenerator:

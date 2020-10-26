@@ -1,7 +1,7 @@
 import pytest
 
-from kraken.common.model.execution_type import ExecutionType
-from kraken.common.model.job import Job
+from tanit.common.model.execution_type import ExecutionType
+from tanit.common.model.job import Job
 
 from ..unit.utils.tutils import wait_until
 

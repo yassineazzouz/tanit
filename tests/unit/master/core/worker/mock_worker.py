@@ -1,6 +1,6 @@
-from kraken.common.model.worker import WorkerStatus
-from kraken.master.core.worker.worker import WorkerIFace
-from kraken.master.core.worker.worker_factory import WorkerFactory
+from tanit.common.model.worker import WorkerStatus
+from tanit.master.core.worker.worker import WorkerIFace
+from tanit.master.core.worker.worker_factory import WorkerFactory
 
 
 class MockWorker(WorkerIFace):
