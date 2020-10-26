@@ -35,7 +35,7 @@ def filesystem(filesystem_local_server, request):
 
 @pytest.fixture(scope="class")
 def test_data(filesystem):
-    test_dir = "/tmp/integration-test/dataset-%s" % int(time.time())
+    test_dir = "/tmp/integration-test/dataset-%s" % int(time.time() * 1000)
     filesystem.mkdir(test_dir)
     yield test_dir
     filesystem.delete(test_dir, recursive=True)
