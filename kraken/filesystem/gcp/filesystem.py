@@ -18,9 +18,9 @@ _logger = lg.getLogger(__name__)
 
 
 class GCPFileSystem(IFileSystem):
-    def __init__(self, project, bucket_name, token=None, **params):
+    def __init__(self, bucket_name, token=None, **params):
         credentials = self.connect(token=token)
-        self.client = storage.Client(project=project, credentials=credentials, **params)
+        self.client = storage.Client(credentials=credentials, **params)
         self.bucket = self.client.get_bucket(bucket_name)
 
     def connect(self, token):

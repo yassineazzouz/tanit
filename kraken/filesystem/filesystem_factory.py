@@ -87,13 +87,14 @@ class FileSystemFactory(object):
                     del config["bucket"]
                     filesystem = S3FileSystem(bucket, **config)
                 elif fs_type == "gcs":
-                    project = config["project"]
-                    del config["project"]
                     bucket = config["bucket"]
                     del config["bucket"]
-                    token = config["token"]
-                    del config["token"]
-                    filesystem = GCPFileSystem(project, bucket, token, **config)
+                    if "token" in config:
+                        token = config["token"]
+                        del config["token"]
+                    else:
+                        token = None
+                    filesystem = GCPFileSystem(bucket, token, **config)
                 else:
                     raise NonSupportedFileSystemError(
                         "Non supported filesystem type '%s'" % type
