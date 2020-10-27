@@ -58,7 +58,7 @@ setup(
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     install_requires=[
         'six',
-        'docopt',
+        'click',
         'thrift>=0.10',
         'pywhdfs>=1.1.0',
         's3fs==0.2.2',
@@ -67,9 +67,7 @@ setup(
         'pyrsistent==0.15.0'
     ],
     entry_points={'console_scripts':
-                      ['tanit-master = tanit.master.server.__main__:main',
-                       'tanit-worker = tanit.worker.server.__main__:main',
-                       'tanit-client = tanit.master.client.__main__:main']
+                      ['tanit = tanit.client.cli:tanit']
                   },
     long_description_content_type='text/markdown'
 )
