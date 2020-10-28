@@ -16,6 +16,7 @@ from ...common.model.worker import Worker
 from ...thrift.master.service import MasterUserService
 from ...thrift.master.service import MasterWorkerService
 from ...thrift.master.service import ttypes
+from ..core.worker.worker import WorkerStats
 
 _logger = lg.getLogger(__name__)
 
@@ -146,6 +147,17 @@ class ThriftUserServiceClient(UserServiceClientIFace):
     def activate_worker(self, wid):
         self.client.activate_worker(wid)
 
+    def worker_stats(self, wid):
+        stats = self.client.worker_stats(wid)
+        return WorkerStats(
+            wid=stats.wid,
+            state=stats.state,
+            last_heartbeat=stats.last_heartbeat,
+            running_tasks=stats.running_tasks,
+            pending_tasks=stats.pending_tasks,
+            available_cores=stats.available_cores,
+        )
+
     def stop(self):
         self.transport.close()
 
@@ -166,6 +178,9 @@ class LocalUserServiceClient(UserServiceClientIFace):
 
     def activate_worker(self, wid):
         self.master.activate_worker(wid)
+
+    def worker_stats(self, wid):
+        return self.master.get_worker_stats(wid)
 
     def list_jobs(self):
         return self.master.list_jobs()

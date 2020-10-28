@@ -53,15 +53,15 @@ class WorkerManager(object):
                     return wkr
             return None
 
-    def list_workers(self):
+    def list_workers(self, state=None):
         with self.lock:
-            return self.workers
+            if state is None:
+                return self.workers
+            else:
+                return [wkr for wkr in self.list_workers() if wkr.state == state]
 
     def list_active_workers(self):
-        with self.lock:
-            return [
-                wkr for wkr in self.list_workers() if wkr.state == WorkerState.ACTIVE
-            ]
+        return self.list_workers(state=WorkerState.ACTIVE)
 
     def register_worker(self, worker):
         """Register a Worker.

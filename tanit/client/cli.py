@@ -161,5 +161,21 @@ def workers_activate(wid):
     client.stop()
 
 
+@workers.command("status")
+@click.argument("wid")
+def worker_stats(wid):
+    """Print worker stats."""
+    client = get_client()
+    client.start()
+
+    worker = client.worker_stats(wid)
+    if worker is None:
+        _logger.info("No such worker %s", wid)
+    else:
+        print(str(worker))
+
+    client.stop()
+
+
 if __name__ == "__main__":
     tanit()

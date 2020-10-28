@@ -60,10 +60,13 @@ class Master(object):
     def task_failure(self, tid):
         self.execution_manager.task_failure(tid)
 
-    def list_workers(self):
+    def get_worker_stats(self, wid):
+        return self.workers_manager.get_worker(wid).stats()
+
+    def list_workers(self, state=None):
         _logger.info("Listing Workers.")
         wkr_list = []
-        for wkr in self.workers_manager.list_workers():
+        for wkr in self.workers_manager.list_workers(state):
             wkr_list.append(Worker(wkr.wid, wkr.address, wkr.port))
         return wkr_list
 

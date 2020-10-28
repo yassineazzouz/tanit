@@ -10,7 +10,7 @@ class StandaloneMaster(Master):
     def start(self):
         super(StandaloneMaster, self).start()
         _logger.info("Registering local Worker.")
-        self.workers_manager.register_worker(Worker("local-worker", None, None))
+        self.register_worker(Worker("local-worker", None, None))
         # register the local file system
         self.register_filesystem("local", {"type": "local"})
         _logger.info("Local worker Registered.")

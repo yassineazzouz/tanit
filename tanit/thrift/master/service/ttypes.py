@@ -332,24 +332,26 @@ class Worker(object):
         return not (self == other)
 
 
-class WorkerStatus(object):
+class WorkerStats(object):
     """
     Attributes:
      - wid
-     - address
-     - port
-     - status
+     - state
      - last_heartbeat
+     - running_tasks
+     - pending_tasks
+     - available_cores
 
     """
 
 
-    def __init__(self, wid=None, address=None, port=None, status=None, last_heartbeat=None,):
+    def __init__(self, wid=None, state=None, last_heartbeat=None, running_tasks=None, pending_tasks=None, available_cores=None,):
         self.wid = wid
-        self.address = address
-        self.port = port
-        self.status = status
+        self.state = state
         self.last_heartbeat = last_heartbeat
+        self.running_tasks = running_tasks
+        self.pending_tasks = pending_tasks
+        self.available_cores = available_cores
 
     def read(self, iprot):
         if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
@@ -367,22 +369,27 @@ class WorkerStatus(object):
                     iprot.skip(ftype)
             elif fid == 2:
                 if ftype == TType.STRING:
-                    self.address = iprot.readString().decode('utf-8') if sys.version_info[0] == 2 else iprot.readString()
+                    self.state = iprot.readString().decode('utf-8') if sys.version_info[0] == 2 else iprot.readString()
                 else:
                     iprot.skip(ftype)
             elif fid == 3:
-                if ftype == TType.I32:
-                    self.port = iprot.readI32()
+                if ftype == TType.STRING:
+                    self.last_heartbeat = iprot.readString().decode('utf-8') if sys.version_info[0] == 2 else iprot.readString()
                 else:
                     iprot.skip(ftype)
             elif fid == 4:
-                if ftype == TType.STRING:
-                    self.status = iprot.readString().decode('utf-8') if sys.version_info[0] == 2 else iprot.readString()
+                if ftype == TType.I32:
+                    self.running_tasks = iprot.readI32()
                 else:
                     iprot.skip(ftype)
             elif fid == 5:
                 if ftype == TType.I32:
-                    self.last_heartbeat = iprot.readI32()
+                    self.pending_tasks = iprot.readI32()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 6:
+                if ftype == TType.I32:
+                    self.available_cores = iprot.readI32()
                 else:
                     iprot.skip(ftype)
             else:
@@ -394,26 +401,30 @@ class WorkerStatus(object):
         if oprot._fast_encode is not None and self.thrift_spec is not None:
             oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
             return
-        oprot.writeStructBegin('WorkerStatus')
+        oprot.writeStructBegin('WorkerStats')
         if self.wid is not None:
             oprot.writeFieldBegin('wid', TType.STRING, 1)
             oprot.writeString(self.wid.encode('utf-8') if sys.version_info[0] == 2 else self.wid)
             oprot.writeFieldEnd()
-        if self.address is not None:
-            oprot.writeFieldBegin('address', TType.STRING, 2)
-            oprot.writeString(self.address.encode('utf-8') if sys.version_info[0] == 2 else self.address)
-            oprot.writeFieldEnd()
-        if self.port is not None:
-            oprot.writeFieldBegin('port', TType.I32, 3)
-            oprot.writeI32(self.port)
-            oprot.writeFieldEnd()
-        if self.status is not None:
-            oprot.writeFieldBegin('status', TType.STRING, 4)
-            oprot.writeString(self.status.encode('utf-8') if sys.version_info[0] == 2 else self.status)
+        if self.state is not None:
+            oprot.writeFieldBegin('state', TType.STRING, 2)
+            oprot.writeString(self.state.encode('utf-8') if sys.version_info[0] == 2 else self.state)
             oprot.writeFieldEnd()
         if self.last_heartbeat is not None:
-            oprot.writeFieldBegin('last_heartbeat', TType.I32, 5)
-            oprot.writeI32(self.last_heartbeat)
+            oprot.writeFieldBegin('last_heartbeat', TType.STRING, 3)
+            oprot.writeString(self.last_heartbeat.encode('utf-8') if sys.version_info[0] == 2 else self.last_heartbeat)
+            oprot.writeFieldEnd()
+        if self.running_tasks is not None:
+            oprot.writeFieldBegin('running_tasks', TType.I32, 4)
+            oprot.writeI32(self.running_tasks)
+            oprot.writeFieldEnd()
+        if self.pending_tasks is not None:
+            oprot.writeFieldBegin('pending_tasks', TType.I32, 5)
+            oprot.writeI32(self.pending_tasks)
+            oprot.writeFieldEnd()
+        if self.available_cores is not None:
+            oprot.writeFieldBegin('available_cores', TType.I32, 6)
+            oprot.writeI32(self.available_cores)
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -656,14 +667,15 @@ Worker.thrift_spec = (
     (2, TType.STRING, 'address', 'UTF8', None, ),  # 2
     (3, TType.I32, 'port', None, None, ),  # 3
 )
-all_structs.append(WorkerStatus)
-WorkerStatus.thrift_spec = (
+all_structs.append(WorkerStats)
+WorkerStats.thrift_spec = (
     None,  # 0
     (1, TType.STRING, 'wid', 'UTF8', None, ),  # 1
-    (2, TType.STRING, 'address', 'UTF8', None, ),  # 2
-    (3, TType.I32, 'port', None, None, ),  # 3
-    (4, TType.STRING, 'status', 'UTF8', None, ),  # 4
-    (5, TType.I32, 'last_heartbeat', None, None, ),  # 5
+    (2, TType.STRING, 'state', 'UTF8', None, ),  # 2
+    (3, TType.STRING, 'last_heartbeat', 'UTF8', None, ),  # 3
+    (4, TType.I32, 'running_tasks', None, None, ),  # 4
+    (5, TType.I32, 'pending_tasks', None, None, ),  # 5
+    (6, TType.I32, 'available_cores', None, None, ),  # 6
 )
 all_structs.append(FileSystem)
 FileSystem.thrift_spec = (

@@ -30,6 +30,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
     print('   list_workers()')
     print('  void deactivate_worker(string wid)')
     print('  void activate_worker(string wid)')
+    print('  WorkerStats worker_stats(string wid)')
     print('')
     sys.exit(0)
 
@@ -144,6 +145,12 @@ elif cmd == 'activate_worker':
         print('activate_worker requires 1 args')
         sys.exit(1)
     pp.pprint(client.activate_worker(args[0],))
+
+elif cmd == 'worker_stats':
+    if len(args) != 1:
+        print('worker_stats requires 1 args')
+        sys.exit(1)
+    pp.pprint(client.worker_stats(args[0],))
 
 else:
     print('Unrecognized method %s' % cmd)

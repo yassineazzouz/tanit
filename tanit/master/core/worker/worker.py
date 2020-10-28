@@ -4,6 +4,7 @@ from datetime import datetime
 
 import six
 
+from ....common.model.worker import WorkerStatus
 from ....worker.client.client import WorkerClient
 
 _logger = lg.getLogger(__name__)
@@ -31,6 +32,38 @@ class WorkerState:
         "DEACTIVATED": 4,
         "DEAD": 5,
     }
+
+
+class WorkerStats:
+    def __init__(
+        self, wid, state, last_heartbeat, running_tasks, pending_tasks, available_cores
+    ):
+        self.wid = wid
+        self.state = state
+        self.last_heartbeat = last_heartbeat
+        self.running_tasks = running_tasks
+        self.pending_tasks = pending_tasks
+        self.available_cores = available_cores
+
+    def __str__(self):
+        return (
+            "WorkerStats { "
+            "id: %s, "
+            "state: %s, "
+            "last_heartbeat: %s, "
+            "running_tasks: %s, "
+            "pending_tasks: %s, "
+            "available_cores: %s "
+            "}"
+            % (
+                self.wid,
+                self.state,
+                self.last_heartbeat,
+                self.running_tasks,
+                self.pending_tasks,
+                self.available_cores,
+            )
+        )
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -73,7 +106,27 @@ class WorkerIFace(object):
 
     @abc.abstractmethod
     def status(self):
+        """Return the status of this worker.
+
+        This is used by the Dispatcher, to make scheduling decisions.
+        Returns: an instance of
+            `tanit.common.model.worker.WorkerStatus`
+        """
         pass
+
+    def stats(self):
+        if self.state == WorkerState.DEAD:
+            status = WorkerStatus(self.wid, 0, 0, 0)
+        else:
+            status = self.status()
+        return WorkerStats(
+            self.wid,
+            WorkerState._VALUES_TO_NAMES[self.state],
+            self.last_hear_beat.strftime("%d%m%Y%H%M%S"),
+            status.running,
+            status.pending,
+            status.available,
+        )
 
 
 class RemoteThriftWorker(WorkerIFace):

@@ -35,12 +35,13 @@ struct Worker {
   	3: optional i32 port,
 }
 
-struct WorkerStatus {
+struct WorkerStats {
   	1: string wid,
-  	2: string address,
-  	3: i32 port,
-  	4: string status,
-  	5: i32 last_heartbeat
+  	2: string state,
+  	3: string last_heartbeat,
+  	4: i32 running_tasks,
+  	5: i32 pending_tasks,
+  	6: i32 available_cores
 }
 
 struct FileSystem {
@@ -71,6 +72,8 @@ service MasterUserService{
     void deactivate_worker(1:string wid),
 
     void activate_worker(1:string wid),
+
+    WorkerStats worker_stats(1:string wid),
     
 }
 

@@ -82,6 +82,17 @@ class UserServiceHandler(object):
     def activate_worker(self, wid):
         self.master.activate_worker(wid)
 
+    def worker_stats(self, wid):
+        stats = self.master.get_worker_stats(wid)
+        return ttypes.WorkerStats(
+            wid=stats.wid,
+            state=stats.state,
+            last_heartbeat=stats.last_heartbeat,
+            running_tasks=stats.running_tasks,
+            pending_tasks=stats.pending_tasks,
+            available_cores=stats.available_cores,
+        )
+
 
 class WorkerServiceHandler(object):
     def __init__(self, master):
