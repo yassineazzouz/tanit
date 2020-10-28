@@ -11,9 +11,9 @@ class TestMasterStandalone:
     def test_server_up(self, user_client):
         assert len(user_client.list_jobs()) >= 0
 
-    def test_register_local_worker(self, worker_client):
+    def test_register_local_worker(self, worker_client, user_client):
         worker_client.register_worker("local-worker", None, None)
-        assert len(worker_client.list_workers()) == 1
+        assert len(user_client.list_workers()) >= 1
 
     def test_submit_job(self, user_client):
         jid = user_client.submit_job(Job(ExecutionType.MOCK, {"num_tasks": "10"}))
@@ -28,6 +28,5 @@ class TestMasterStandalone:
     def test_list_jobs(self, user_client):
         assert len(user_client.list_jobs()) >= 1
 
-    def test_unregister_local_worker(self, worker_client):
+    def test_unregister_local_worker(self, worker_client, user_client):
         worker_client.unregister_worker("local-worker", None, None)
-        assert len(worker_client.list_workers()) == 0

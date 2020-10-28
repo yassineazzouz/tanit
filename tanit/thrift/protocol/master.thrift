@@ -35,6 +35,14 @@ struct Worker {
   	3: optional i32 port,
 }
 
+struct WorkerStatus {
+  	1: string wid,
+  	2: string address,
+  	3: i32 port,
+  	4: string status,
+  	5: i32 last_heartbeat
+}
+
 struct FileSystem {
     1: required string name,
     2: required map<string,string> parameters
@@ -50,20 +58,23 @@ exception JobNotFoundException {
 
 service MasterUserService{
 
-    // submit a job 
+    // Manage jobs
     string submit_job(1:Job job) throws (1:JobInitializationException e),
-    
-    // list jobs
+
+    JobStatus job_status(1:string jid) throws (1:JobNotFoundException e),
+
     list<JobStatus> list_jobs(),
 
-    // job status
-    JobStatus job_status(1:string jid) throws (1:JobNotFoundException e),
+    // Manage workers
+    list<Worker> list_workers(),
+
+    void deactivate_worker(1:string wid),
+
+    void activate_worker(1:string wid),
     
 }
 
 service MasterWorkerService{
-
-    list<Worker> list_workers(),
 
     void register_worker(1:Worker worker),
     

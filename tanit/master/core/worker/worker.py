@@ -9,6 +9,30 @@ from ....worker.client.client import WorkerClient
 _logger = lg.getLogger(__name__)
 
 
+class WorkerState:
+    ALIVE = 1
+    ACTIVE = 2
+    DEACTIVATING = 3
+    DEACTIVATED = 4
+    DEAD = 5
+
+    _VALUES_TO_NAMES = {
+        1: "ALIVE",
+        2: "ACTIVE",
+        3: "DEACTIVATING",
+        4: "DEACTIVATED",
+        5: "DEAD",
+    }
+
+    _NAMES_TO_VALUES = {
+        "ALIVE": 1,
+        "ACTIVE": 2,
+        "DEACTIVATING": 3,
+        "DEACTIVATED": 4,
+        "DEAD": 5,
+    }
+
+
 @six.add_metaclass(abc.ABCMeta)
 class WorkerIFace(object):
     def __init__(self, wid, address, port):
@@ -19,11 +43,25 @@ class WorkerIFace(object):
 
         self.stopped = True
 
+        self.state = WorkerState.ALIVE
+
     def start(self):
         self.stopped = False
 
     def stop(self):
         self.stopped = True
+
+    def activate(self):
+        self.state = WorkerState.ACTIVE
+
+    def decommissioning(self):
+        self.state = WorkerState.DEACTIVATING
+
+    def decommissioned(self):
+        self.state = WorkerState.DEACTIVATED
+
+    def dead(self):
+        self.state = WorkerState.DEAD
 
     @abc.abstractmethod
     def submit(self, task):

@@ -1,17 +1,16 @@
-import click
-
 import json
 import logging as lg
 
-from .. import __version__
+import click
 
-from ..master.server.server import MasterServer
-from ..worker.server.server import WorkerServer
+from .. import __version__
 from ..common.model.execution_type import ExecutionType
 from ..common.model.job import Job
-from ..master.config.config import MasterConfig
 from ..master.client.client import ClientType
 from ..master.client.client import ThriftClientFactory
+from ..master.config.config import MasterConfig
+from ..master.server.server import MasterServer
+from ..worker.server.server import WorkerServer
 
 _logger = lg.getLogger(__name__)
 
@@ -35,7 +34,7 @@ def configure_logging():
     logger.addHandler(stream_handler)
 
 
-def get_master_client():
+def get_client():
     config = MasterConfig()
     client = ThriftClientFactory(
         config.client_service_host, config.client_service_port
@@ -43,17 +42,8 @@ def get_master_client():
     return client
 
 
-def get_worker_client():
-    config = MasterConfig()
-    client = ThriftClientFactory(
-        config.worker_service_host, config.worker_service_port
-    ).create_client(ClientType.WORKER_SERVICE)
-    client.start()
-    return client
-
-
 @click.group()
-@click.version_option(version=__version__, message='Tanit, version %(version)s')
+@click.version_option(version=__version__, message="Tanit, version %(version)s")
 def tanit():
     """Tanit service client."""
     configure_logging()
@@ -63,7 +53,7 @@ def tanit():
 @click.option("--standalone", "-s", is_flag=True, help="Enables standalone mode.")
 def master(standalone):
     """Run the Tanit master."""
-    server = MasterServer(standalone)
+    server = MasterServer(standalone=standalone)
     server.start()
 
 
@@ -82,8 +72,8 @@ def jobs():
 @jobs.command("submit")
 @click.argument("job")
 def job_submit(job):
-    """Submits a job."""
-    client = get_master_client()
+    """Submit a job."""
+    client = get_client()
     client.start()
 
     try:
@@ -97,18 +87,15 @@ def job_submit(job):
         raise e
 
     params = job_spec["params"]
-    client.submit_job(
-        Job(ExecutionType._NAMES_TO_VALUES[job_spec["type"]], params)
-    )
+    client.submit_job(Job(ExecutionType._NAMES_TO_VALUES[job_spec["type"]], params))
 
     client.stop()
 
 
 @jobs.command("list")
 def job_list():
-    """Lists jobs."""
-
-    client = get_master_client()
+    """List jobs."""
+    client = get_client()
     client.start()
 
     for job in client.list_jobs():
@@ -120,9 +107,8 @@ def job_list():
 @jobs.command("status")
 @click.argument("jid")
 def job_status(jid):
-    """Prints job information."""
-
-    client = get_master_client()
+    """Print job information."""
+    client = get_client()
     client.start()
 
     job = client.job_status(jid)
@@ -141,13 +127,36 @@ def workers():
 
 @workers.command("list")
 def workers_list():
-    """Lists workers."""
-
-    client = get_worker_client()
+    """List workers."""
+    client = get_client()
     client.start()
 
     for worker in client.list_workers():
         print(str(worker))
+
+    client.stop()
+
+
+@workers.command("deactivate")
+@click.argument("wid")
+def workers_deactivate(wid):
+    """Decommission a workers."""
+    client = get_client()
+    client.start()
+
+    client.deactivate_worker(wid)
+
+    client.stop()
+
+
+@workers.command("activate")
+@click.argument("wid")
+def workers_activate(wid):
+    """Decommission a workers."""
+    client = get_client()
+    client.start()
+
+    client.activate_worker(wid)
 
     client.stop()
 

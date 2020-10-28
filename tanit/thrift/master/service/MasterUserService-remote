@@ -25,8 +25,11 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
     print('')
     print('Functions:')
     print('  string submit_job(Job job)')
-    print('   list_jobs()')
     print('  JobStatus job_status(string jid)')
+    print('   list_jobs()')
+    print('   list_workers()')
+    print('  void deactivate_worker(string wid)')
+    print('  void activate_worker(string wid)')
     print('')
     sys.exit(0)
 
@@ -112,17 +115,35 @@ if cmd == 'submit_job':
         sys.exit(1)
     pp.pprint(client.submit_job(eval(args[0]),))
 
+elif cmd == 'job_status':
+    if len(args) != 1:
+        print('job_status requires 1 args')
+        sys.exit(1)
+    pp.pprint(client.job_status(args[0],))
+
 elif cmd == 'list_jobs':
     if len(args) != 0:
         print('list_jobs requires 0 args')
         sys.exit(1)
     pp.pprint(client.list_jobs())
 
-elif cmd == 'job_status':
-    if len(args) != 1:
-        print('job_status requires 1 args')
+elif cmd == 'list_workers':
+    if len(args) != 0:
+        print('list_workers requires 0 args')
         sys.exit(1)
-    pp.pprint(client.job_status(args[0],))
+    pp.pprint(client.list_workers())
+
+elif cmd == 'deactivate_worker':
+    if len(args) != 1:
+        print('deactivate_worker requires 1 args')
+        sys.exit(1)
+    pp.pprint(client.deactivate_worker(args[0],))
+
+elif cmd == 'activate_worker':
+    if len(args) != 1:
+        print('activate_worker requires 1 args')
+        sys.exit(1)
+    pp.pprint(client.activate_worker(args[0],))
 
 else:
     print('Unrecognized method %s' % cmd)

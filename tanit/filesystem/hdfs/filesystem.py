@@ -14,7 +14,7 @@ class HDFSFileSystem(IFileSystem):
         self.client = create_client(auth_mechanism, **params)
 
     def resolve_path(self, path):
-        return self.client.resolve_path(path)
+        return self.client.resolvepath(path)
 
     def _list(self, path, status=False, glob=False):
         return self.client.list(path, status, glob)

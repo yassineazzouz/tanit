@@ -79,7 +79,7 @@ class Dispatcher(object):
 
 class FairDispatcher(Dispatcher):
     def next_worker(self):
-        live_workers = self.workers_manager.list_live_workers()
+        live_workers = self.workers_manager.list_active_workers()
 
         if len(live_workers) == 0:
             return None

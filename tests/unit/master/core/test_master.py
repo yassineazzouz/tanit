@@ -51,7 +51,7 @@ class TestMaster:
     def test_unregister_worker(self, master):
         master.register_worker(Worker("worker 1", None, None))
         assert len(master.list_workers()) == 1
-        master.unregister_worker(Worker("worker 1", None, None))
-        assert len(master.list_workers()) == 0
+        master.deactivate_worker("worker 1")
+        # assert len(master.list_workers()) == 0
         master.register_worker(Worker("worker 2", None, None))
-        assert len(master.list_workers()) == 1
+        assert len(master.list_workers()) == 2

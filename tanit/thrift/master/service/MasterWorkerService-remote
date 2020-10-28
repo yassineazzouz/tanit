@@ -24,7 +24,6 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
     print('Usage: ' + sys.argv[0] + ' [-h host[:port]] [-u url] [-f[ramed]] [-s[sl]] [-novalidate] [-ca_certs certs] [-keyfile keyfile] [-certfile certfile] function [arg1 [arg2...]]')
     print('')
     print('Functions:')
-    print('   list_workers()')
     print('  void register_worker(Worker worker)')
     print('  void unregister_worker(Worker worker)')
     print('  void register_heartbeat(Worker worker)')
@@ -111,13 +110,7 @@ protocol = TBinaryProtocol(transport)
 client = MasterWorkerService.Client(protocol)
 transport.open()
 
-if cmd == 'list_workers':
-    if len(args) != 0:
-        print('list_workers requires 0 args')
-        sys.exit(1)
-    pp.pprint(client.list_workers())
-
-elif cmd == 'register_worker':
+if cmd == 'register_worker':
     if len(args) != 1:
         print('register_worker requires 1 args')
         sys.exit(1)

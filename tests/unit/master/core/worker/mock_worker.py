@@ -1,5 +1,6 @@
 from tanit.common.model.worker import WorkerStatus
 from tanit.master.core.worker.worker import WorkerIFace
+from tanit.master.core.worker.worker import WorkerState
 from tanit.master.core.worker.worker_factory import WorkerFactory
 
 
@@ -9,6 +10,7 @@ class MockWorker(WorkerIFace):
 
         self.tasks = []
         self.cores = cores
+        self.state = WorkerState.ACTIVE
 
     def start(self):
         super(MockWorker, self).start()

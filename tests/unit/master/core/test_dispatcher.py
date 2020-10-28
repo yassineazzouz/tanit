@@ -93,7 +93,7 @@ class TestFairDispatcher:
 
         assert wait_until(_verify_queue_size, 10, 0.5, simple_dispatcher.cqueue, 0)
 
-        for worker in simple_dispatcher.workers_manager.list_live_workers():
+        for worker in simple_dispatcher.workers_manager.list_active_workers():
             assert len(worker.tasks) == 2
 
     def test_dispatcher_fairness_2(self, simple_dispatcher):
@@ -117,7 +117,7 @@ class TestFairDispatcher:
 
         assert wait_until(_verify_queue_size, 10, 0.5, simple_dispatcher.cqueue, 0)
 
-        for worker in simple_dispatcher.workers_manager.list_live_workers():
+        for worker in simple_dispatcher.workers_manager.list_active_workers():
             if worker.wid == "worker 1":
                 assert len(worker.tasks) == 7
             elif worker.wid == "worker 2":

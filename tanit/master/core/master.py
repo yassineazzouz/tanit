@@ -63,7 +63,7 @@ class Master(object):
     def list_workers(self):
         _logger.info("Listing Workers.")
         wkr_list = []
-        for wkr in self.workers_manager.list_live_workers():
+        for wkr in self.workers_manager.list_workers():
             wkr_list.append(Worker(wkr.wid, wkr.address, wkr.port))
         return wkr_list
 
@@ -73,10 +73,9 @@ class Master(object):
                 "Can not register worker [ %s ] : master server stopped.", worker.wid
             )
 
-        _logger.info("Registering new Worker [ %s ].", worker.wid)
         # register the worker as an executor in the workers manager
         self.workers_manager.register_worker(worker)
-        _logger.info("Worker [ %s ] registered.", worker.wid)
+        self.workers_manager.activate_worker(worker.wid)
 
     def register_filesystem(self, name, filesystem):
         if not self.started:
@@ -89,7 +88,7 @@ class Master(object):
         # register the worker as a filesystem
         self.filesystems_factory.register_filesystem(filesystem)
         # notify the workers about the new file system
-        for worker in self.workers_manager.list_live_workers():
+        for worker in self.workers_manager.list_active_workers():
             worker.register_filesystem(name, filesystem)
         _logger.info("Filesystem [ %s ] registered.", name)
 
@@ -97,14 +96,23 @@ class Master(object):
         _logger.debug("Received heart beat from Worker [ %s ].", worker.wid)
         self.workers_manager.register_heartbeat(worker)
 
-    def unregister_worker(self, worker):
+    def deactivate_worker(self, wid):
         if not self.started:
             raise MasterStoppedException(
-                "Can not register worker [ %s ] : master server stopped.", worker.wid
+                "Can not register worker [ %s ] : master server stopped.", wid
             )
 
         # This will prevent any future tasks from being sent to the worker
-        self.workers_manager.decommission_worker(worker.wid)
+        self.workers_manager.deactivate_worker(wid)
+
+    def activate_worker(self, wid):
+        if not self.started:
+            raise MasterStoppedException(
+                "Can not register worker [ %s ] : master server stopped.", wid
+            )
+
+        # This will prevent any future tasks from being sent to the worker
+        self.workers_manager.activate_worker(wid)
 
     def start(self):
         _logger.info("Stating Tanit master services.")

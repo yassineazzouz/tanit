@@ -19,9 +19,6 @@ all_structs = []
 
 
 class Iface(object):
-    def list_workers(self):
-        pass
-
     def register_worker(self, worker):
         """
         Parameters:
@@ -85,32 +82,6 @@ class Client(Iface):
         if oprot is not None:
             self._oprot = oprot
         self._seqid = 0
-
-    def list_workers(self):
-        self.send_list_workers()
-        return self.recv_list_workers()
-
-    def send_list_workers(self):
-        self._oprot.writeMessageBegin('list_workers', TMessageType.CALL, self._seqid)
-        args = list_workers_args()
-        args.write(self._oprot)
-        self._oprot.writeMessageEnd()
-        self._oprot.trans.flush()
-
-    def recv_list_workers(self):
-        iprot = self._iprot
-        (fname, mtype, rseqid) = iprot.readMessageBegin()
-        if mtype == TMessageType.EXCEPTION:
-            x = TApplicationException()
-            x.read(iprot)
-            iprot.readMessageEnd()
-            raise x
-        result = list_workers_result()
-        result.read(iprot)
-        iprot.readMessageEnd()
-        if result.success is not None:
-            return result.success
-        raise TApplicationException(TApplicationException.MISSING_RESULT, "list_workers failed: unknown result")
 
     def register_worker(self, worker):
         """
@@ -327,7 +298,6 @@ class Processor(Iface, TProcessor):
     def __init__(self, handler):
         self._handler = handler
         self._processMap = {}
-        self._processMap["list_workers"] = Processor.process_list_workers
         self._processMap["register_worker"] = Processor.process_register_worker
         self._processMap["unregister_worker"] = Processor.process_unregister_worker
         self._processMap["register_heartbeat"] = Processor.process_register_heartbeat
@@ -356,29 +326,6 @@ class Processor(Iface, TProcessor):
         else:
             self._processMap[name](self, seqid, iprot, oprot)
         return True
-
-    def process_list_workers(self, seqid, iprot, oprot):
-        args = list_workers_args()
-        args.read(iprot)
-        iprot.readMessageEnd()
-        result = list_workers_result()
-        try:
-            result.success = self._handler.list_workers()
-            msg_type = TMessageType.REPLY
-        except TTransport.TTransportException:
-            raise
-        except TApplicationException as ex:
-            logging.exception('TApplication exception in handler')
-            msg_type = TMessageType.EXCEPTION
-            result = ex
-        except Exception:
-            logging.exception('Unexpected exception in handler')
-            msg_type = TMessageType.EXCEPTION
-            result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
-        oprot.writeMessageBegin("list_workers", msg_type, seqid)
-        result.write(oprot)
-        oprot.writeMessageEnd()
-        oprot.trans.flush()
 
     def process_register_worker(self, seqid, iprot, oprot):
         args = register_worker_args()
@@ -542,119 +489,6 @@ class Processor(Iface, TProcessor):
         oprot.trans.flush()
 
 # HELPER FUNCTIONS AND STRUCTURES
-
-
-class list_workers_args(object):
-
-
-    def read(self, iprot):
-        if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
-            iprot._fast_decode(self, iprot, [self.__class__, self.thrift_spec])
-            return
-        iprot.readStructBegin()
-        while True:
-            (fname, ftype, fid) = iprot.readFieldBegin()
-            if ftype == TType.STOP:
-                break
-            else:
-                iprot.skip(ftype)
-            iprot.readFieldEnd()
-        iprot.readStructEnd()
-
-    def write(self, oprot):
-        if oprot._fast_encode is not None and self.thrift_spec is not None:
-            oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
-            return
-        oprot.writeStructBegin('list_workers_args')
-        oprot.writeFieldStop()
-        oprot.writeStructEnd()
-
-    def validate(self):
-        return
-
-    def __repr__(self):
-        L = ['%s=%r' % (key, value)
-             for key, value in self.__dict__.items()]
-        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
-
-    def __eq__(self, other):
-        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-    def __ne__(self, other):
-        return not (self == other)
-all_structs.append(list_workers_args)
-list_workers_args.thrift_spec = (
-)
-
-
-class list_workers_result(object):
-    """
-    Attributes:
-     - success
-
-    """
-
-
-    def __init__(self, success=None,):
-        self.success = success
-
-    def read(self, iprot):
-        if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
-            iprot._fast_decode(self, iprot, [self.__class__, self.thrift_spec])
-            return
-        iprot.readStructBegin()
-        while True:
-            (fname, ftype, fid) = iprot.readFieldBegin()
-            if ftype == TType.STOP:
-                break
-            if fid == 0:
-                if ftype == TType.LIST:
-                    self.success = []
-                    (_etype28, _size25) = iprot.readListBegin()
-                    for _i29 in range(_size25):
-                        _elem30 = Worker()
-                        _elem30.read(iprot)
-                        self.success.append(_elem30)
-                    iprot.readListEnd()
-                else:
-                    iprot.skip(ftype)
-            else:
-                iprot.skip(ftype)
-            iprot.readFieldEnd()
-        iprot.readStructEnd()
-
-    def write(self, oprot):
-        if oprot._fast_encode is not None and self.thrift_spec is not None:
-            oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
-            return
-        oprot.writeStructBegin('list_workers_result')
-        if self.success is not None:
-            oprot.writeFieldBegin('success', TType.LIST, 0)
-            oprot.writeListBegin(TType.STRUCT, len(self.success))
-            for iter31 in self.success:
-                iter31.write(oprot)
-            oprot.writeListEnd()
-            oprot.writeFieldEnd()
-        oprot.writeFieldStop()
-        oprot.writeStructEnd()
-
-    def validate(self):
-        return
-
-    def __repr__(self):
-        L = ['%s=%r' % (key, value)
-             for key, value in self.__dict__.items()]
-        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
-
-    def __eq__(self, other):
-        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-    def __ne__(self, other):
-        return not (self == other)
-all_structs.append(list_workers_result)
-list_workers_result.thrift_spec = (
-    (0, TType.LIST, 'success', (TType.STRUCT, [Worker, None], False), None, ),  # 0
-)
 
 
 class register_worker_args(object):

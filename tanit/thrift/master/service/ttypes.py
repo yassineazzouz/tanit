@@ -332,6 +332,107 @@ class Worker(object):
         return not (self == other)
 
 
+class WorkerStatus(object):
+    """
+    Attributes:
+     - wid
+     - address
+     - port
+     - status
+     - last_heartbeat
+
+    """
+
+
+    def __init__(self, wid=None, address=None, port=None, status=None, last_heartbeat=None,):
+        self.wid = wid
+        self.address = address
+        self.port = port
+        self.status = status
+        self.last_heartbeat = last_heartbeat
+
+    def read(self, iprot):
+        if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
+            iprot._fast_decode(self, iprot, [self.__class__, self.thrift_spec])
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.STRING:
+                    self.wid = iprot.readString().decode('utf-8') if sys.version_info[0] == 2 else iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 2:
+                if ftype == TType.STRING:
+                    self.address = iprot.readString().decode('utf-8') if sys.version_info[0] == 2 else iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 3:
+                if ftype == TType.I32:
+                    self.port = iprot.readI32()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 4:
+                if ftype == TType.STRING:
+                    self.status = iprot.readString().decode('utf-8') if sys.version_info[0] == 2 else iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 5:
+                if ftype == TType.I32:
+                    self.last_heartbeat = iprot.readI32()
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot._fast_encode is not None and self.thrift_spec is not None:
+            oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
+            return
+        oprot.writeStructBegin('WorkerStatus')
+        if self.wid is not None:
+            oprot.writeFieldBegin('wid', TType.STRING, 1)
+            oprot.writeString(self.wid.encode('utf-8') if sys.version_info[0] == 2 else self.wid)
+            oprot.writeFieldEnd()
+        if self.address is not None:
+            oprot.writeFieldBegin('address', TType.STRING, 2)
+            oprot.writeString(self.address.encode('utf-8') if sys.version_info[0] == 2 else self.address)
+            oprot.writeFieldEnd()
+        if self.port is not None:
+            oprot.writeFieldBegin('port', TType.I32, 3)
+            oprot.writeI32(self.port)
+            oprot.writeFieldEnd()
+        if self.status is not None:
+            oprot.writeFieldBegin('status', TType.STRING, 4)
+            oprot.writeString(self.status.encode('utf-8') if sys.version_info[0] == 2 else self.status)
+            oprot.writeFieldEnd()
+        if self.last_heartbeat is not None:
+            oprot.writeFieldBegin('last_heartbeat', TType.I32, 5)
+            oprot.writeI32(self.last_heartbeat)
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+             for key, value in self.__dict__.items()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+
+
 class FileSystem(object):
     """
     Attributes:
@@ -554,6 +655,15 @@ Worker.thrift_spec = (
     (1, TType.STRING, 'wid', 'UTF8', None, ),  # 1
     (2, TType.STRING, 'address', 'UTF8', None, ),  # 2
     (3, TType.I32, 'port', None, None, ),  # 3
+)
+all_structs.append(WorkerStatus)
+WorkerStatus.thrift_spec = (
+    None,  # 0
+    (1, TType.STRING, 'wid', 'UTF8', None, ),  # 1
+    (2, TType.STRING, 'address', 'UTF8', None, ),  # 2
+    (3, TType.I32, 'port', None, None, ),  # 3
+    (4, TType.STRING, 'status', 'UTF8', None, ),  # 4
+    (5, TType.I32, 'last_heartbeat', None, None, ),  # 5
 )
 all_structs.append(FileSystem)
 FileSystem.thrift_spec = (

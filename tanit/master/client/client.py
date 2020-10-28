@@ -59,6 +59,18 @@ class UserServiceClientIFace(object):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def list_workers(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def deactivate_worker(self, wid):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def activate_worker(self, wid):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def list_jobs(self):
         raise NotImplementedError
 
@@ -122,6 +134,18 @@ class ThriftUserServiceClient(UserServiceClientIFace):
         _logger.info("Job submitted : %s.", jid)
         return jid
 
+    def list_workers(self):
+        wkr_list = []
+        for wkr in self.client.list_workers():
+            wkr_list.append(Worker(wkr.wid, wkr.address, wkr.port))
+        return wkr_list
+
+    def deactivate_worker(self, wid):
+        self.client.deactivate_worker(wid)
+
+    def activate_worker(self, wid):
+        self.client.activate_worker(wid)
+
     def stop(self):
         self.transport.close()
 
@@ -133,6 +157,15 @@ class LocalUserServiceClient(UserServiceClientIFace):
     def start(self):
         # do nothing
         return
+
+    def list_workers(self):
+        return self.master.list_workers()
+
+    def deactivate_worker(self, wid):
+        self.master.deactivate_worker(wid)
+
+    def activate_worker(self, wid):
+        self.master.activate_worker(wid)
 
     def list_jobs(self):
         return self.master.list_jobs()
@@ -152,10 +185,6 @@ class LocalUserServiceClient(UserServiceClientIFace):
 class WorkerServiceClientIFace(object):
     @abc.abstractmethod
     def start(self):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def list_workers(self):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -204,12 +233,6 @@ class ThriftWorkerServiceClient(WorkerServiceClientIFace):
             TBinaryProtocol.TBinaryProtocol(self.transport)
         )
 
-    def list_workers(self):
-        wkr_list = []
-        for wkr in self.client.list_workers():
-            wkr_list.append(Worker(wkr.wid, wkr.address, wkr.port))
-        return wkr_list
-
     def register_worker(self, wid, address, port):
         return self.client.register_worker(ttypes.Worker(wid, address, port))
 
@@ -244,9 +267,6 @@ class LocalWorkerServiceClient(WorkerServiceClientIFace):
     def start(self):
         # do nothing
         return
-
-    def list_workers(self):
-        return self.master.list_workers()
 
     def register_worker(self, wid, address, port):
         self.master.register_worker(Worker(self, wid, address, port))

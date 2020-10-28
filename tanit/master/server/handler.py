@@ -70,16 +70,22 @@ class UserServiceHandler(object):
             job_exec.execution_time_s,
         )
 
-
-class WorkerServiceHandler(object):
-    def __init__(self, master):
-        self.master = master
-
     def list_workers(self):
         workers = []
         for wkr in self.master.list_workers():
             workers.append(ttypes.Worker(wkr.wid, wkr.address, wkr.port))
         return workers
+
+    def deactivate_worker(self, wid):
+        self.master.deactivate_worker(wid)
+
+    def activate_worker(self, wid):
+        self.master.activate_worker(wid)
+
+
+class WorkerServiceHandler(object):
+    def __init__(self, master):
+        self.master = master
 
     def register_heartbeat(self, worker):
         self.master.register_heartbeat(Worker(worker.wid, worker.address, worker.port))
@@ -88,7 +94,7 @@ class WorkerServiceHandler(object):
         self.master.register_worker(Worker(worker.wid, worker.address, worker.port))
 
     def unregister_worker(self, worker):
-        self.master.unregister_worker(Worker(worker.wid, worker.address, worker.port))
+        self.master.deactivate_worker(worker.wid)
 
     def register_filesystem(self, filesystem):
         self.master.register_filesystem(filesystem.name, filesystem.parameters)

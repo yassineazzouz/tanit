@@ -3,6 +3,7 @@ import time
 from threading import Thread
 
 from ..execution.execution_state import ExecutionState
+from .worker import WorkerState
 
 _logger = lg.getLogger(__name__)
 
@@ -16,9 +17,17 @@ class WorkerDecommissioner(Thread):
 
     def run(self):
         while not self.stopped:
-            for worker in self.workers_manager.list_decommissioning_workers():
-                self._decommission_worker(worker)
-                self.workers_manager.on_worker_decommissioned(worker.wid)
+            for worker in self.workers_manager.list_workers():
+                if worker.state == WorkerState.DEACTIVATING:
+                    _logger.info(
+                        "Decommissioning worker %s in state DEACTIVATING" % worker.wid
+                    )
+                    self._decommission_worker(worker)
+                    worker.state = WorkerState.DEACTIVATED
+                    _logger.info(
+                        "Worker %s decommissioned, and marked as DEACTIVATED"
+                        % worker.wid
+                    )
 
     def stop(self):
         self.stopped = True
