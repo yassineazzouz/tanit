@@ -3,12 +3,13 @@ branch = True
 omit =
         *__init__*
         *__main__*
-        *cli*
+        tanit/thrift/*
 
 [report]
 omit =
         *__init__*
         *__main__*
+        tanit/thrift/*
 # Regexes for lines to exclude from consideration
 exclude_lines =
     # Have to re-enable the standard pragma
