@@ -80,21 +80,6 @@ class Master(object):
         self.workers_manager.register_worker(worker)
         self.workers_manager.activate_worker(worker.wid)
 
-    def register_filesystem(self, name, filesystem):
-        if not self.started:
-            raise MasterStoppedException(
-                "Can not register filesystem [ %s ] : master server stopped.", name
-            )
-
-        _logger.info("Registering new filesystem [ %s ].", name)
-        filesystem["name"] = name
-        # register the worker as a filesystem
-        self.filesystems_factory.register_filesystem(filesystem)
-        # notify the workers about the new file system
-        for worker in self.workers_manager.list_active_workers():
-            worker.register_filesystem(name, filesystem)
-        _logger.info("Filesystem [ %s ] registered.", name)
-
     def register_heartbeat(self, worker):
         _logger.debug("Received heart beat from Worker [ %s ].", worker.wid)
         self.workers_manager.register_heartbeat(worker)
@@ -116,6 +101,21 @@ class Master(object):
 
         # This will prevent any future tasks from being sent to the worker
         self.workers_manager.activate_worker(wid)
+
+    def register_filesystem(self, name, filesystem):
+        if not self.started:
+            raise MasterStoppedException(
+                "Can not register filesystem [ %s ] : master server stopped.", name
+            )
+
+        _logger.info("Registering new filesystem [ %s ].", name)
+        filesystem["name"] = name
+        # register the worker as a filesystem
+        self.filesystems_factory.register_filesystem(filesystem)
+        # notify the workers about the new file system
+        for worker in self.workers_manager.list_active_workers():
+            worker.register_filesystem(name, filesystem)
+        _logger.info("Filesystem [ %s ] registered.", name)
 
     def start(self):
         _logger.info("Stating Tanit master services.")
