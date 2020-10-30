@@ -1,3 +1,4 @@
+import hashlib
 import os
 import random
 
@@ -107,3 +108,27 @@ class BaseFilesystemTest:
         with filesystem.read(test_writer_file) as reader:
             rbts = reader.read()
         assert rbts == wbts
+
+    def test_checksum(self, filesystem, test_data):
+        test_file = os.path.join(test_data, "ktf-checksum")
+        wbts = "This is a test generated file".encode("utf-8")
+        filesystem.write(test_file, data=wbts)
+        for algorithm in ["md5", "sha1", "sha224", "sha256", "sha384", "sha512"]:
+            if algorithm == "md5":
+                hash_func = hashlib.md5
+            elif algorithm == "sha1":
+                hash_func = hashlib.sha1
+            elif algorithm == "sha224":
+                hash_func = hashlib.sha224
+            elif algorithm == "sha256":
+                hash_func = hashlib.sha256
+            elif algorithm == "sha384":
+                hash_func = hashlib.sha384
+            elif algorithm == "sha512":
+                hash_func = hashlib.sha512
+            data_checksum = hash_func()
+            data_checksum.update(wbts)
+
+            assert data_checksum.hexdigest() == filesystem.checksum(
+                test_file, algorithm
+            )

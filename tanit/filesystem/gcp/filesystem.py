@@ -234,8 +234,8 @@ class GCSFile(object):
         else:
             self.cache = b""
             self.buffer_size = buffer_size
-            self.start = None  # The start position of the cache
-            self.end = None  # The end position of the cache
+            self.buf_start = None  # The start position of the cache
+            self.buf_end = None  # The end position of the cache
             self.blob = self.bucket.get_blob(self.path)
             if self.blob is None:
                 raise FileSystemError("Can not read non existent file %s" % self.path)
@@ -287,40 +287,42 @@ class GCSFile(object):
 
     def _fetch(self, start, end):
         part_end = max(end, start + self.buffer_size)
-        if self.start is None and self.end is None:
+        if self.buf_start is None and self.buf_end is None:
             # First read
-            self.start = start
-            self.end = part_end
-            _logger.debug("fetch %s --> %s" % (self.start, self.end))
-            self.cache = self.blob.download_as_bytes(start=self.start, end=self.end)
-        if start < self.start:
-            if part_end < self.start:
-                self.start, self.end = None, None
+            self.buf_start = start
+            self.buf_end = part_end
+            _logger.debug("fetch %s --> %s" % (self.buf_start, self.buf_end))
+            self.cache = self.blob.download_as_bytes(
+                start=self.buf_start, end=self.buf_end
+            )
+        if start < self.buf_start:
+            if part_end < self.buf_start:
+                self.buf_start, self.buf_end = None, None
                 return self._fetch(start, end)
             else:
-                _logger.debug("fetch %s --> %s" % (start, self.start))
-                pre = self.blob.download_as_bytes(start=start, end=self.start)
-                self.start = start
-                if part_end < self.end:
-                    self.cache = pre + self.cache[self.start : part_end]
-                    self.end = part_end
+                _logger.debug("fetch %s --> %s" % (start, self.buf_start))
+                pre = self.blob.download_as_bytes(start=start, end=self.buf_start)
+                self.buf_start = start
+                if part_end < self.buf_end:
+                    self.cache = pre + self.cache[self.buf_start : part_end]
+                    self.buf_end = part_end
                 else:
                     self.cache = pre + self.cache
-        if end > self.end:
-            if self.end >= self.size:
+        if end > self.buf_end:
+            if self.buf_end >= self.size:
                 return b""
-            if start > self.end:
-                self.start, self.end = None, None
+            if start > self.buf_end:
+                self.buf_start, self.buf_end = None, None
                 return self._fetch(start, end)
             else:
-                _logger.debug("fetch %s --> %s" % (self.end, part_end))
-                new = self.blob.download_as_bytes(start=self.end, end=part_end)
-                self.end = part_end
-                if start <= self.start:
+                _logger.debug("fetch %s --> %s" % (self.buf_end, part_end))
+                new = self.blob.download_as_bytes(start=self.buf_end, end=part_end)
+                self.buf_end = part_end
+                if start <= self.buf_start:
                     self.cache = self.cache + new
                 else:
                     self.cache = self.cache[start:] + new
-                    self.start = start
+                    self.buf_start = start
 
     def read(self, length=-1):
         """
@@ -340,7 +342,7 @@ class GCSFile(object):
         if self.loc >= self.size:
             return b""
         self._fetch(self.loc, self.loc + length)
-        out = self.cache[self.loc - self.start : self.loc - self.start + length]
+        out = self.cache[self.loc - self.buf_start : self.loc - self.buf_start + length]
         self.loc += len(out)
         if len(out) > 0:
             return out
@@ -363,14 +365,14 @@ class GCSFile(object):
 
         self._fetch(self.loc, self.loc + 1)
         while True:
-            found = self.cache[self.loc - self.start :].find(b"\n") + 1  # NOOP
+            found = self.cache[self.loc - self.buf_start :].find(b"\n") + 1  # NOOP
             if 0 < length < found:
                 return self.read(length)
             if found:
                 return self.read(found)
-            if self.end >= self.size:
+            if self.buf_end >= self.size:
                 return self.read(length)
-            self._fetch(self.start, self.end + self.buffer_size)
+            self._fetch(self.buf_start, self.buf_end + self.buffer_size)
 
     def write(self, data):
         """Write data to a the GCS file.
