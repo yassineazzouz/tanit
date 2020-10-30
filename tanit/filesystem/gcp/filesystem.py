@@ -270,22 +270,6 @@ class GCSFile(object):
         self.loc = nloc
         return self.loc
 
-    def readline(self, length=-1):
-        """Read and return a line from the stream.
-
-        If length is specified, at most size bytes will be read.
-        """
-        self._fetch(self.loc, self.loc + 1)
-        while True:
-            found = self.cache[self.loc - self.start :].find(b"\n") + 1  # NOOP
-            if 0 < length < found:
-                return self.read(length)
-            if found:
-                return self.read(found)
-            if self.end > self.size:
-                return self.read(length)
-            self._fetch(self.start, self.end + self.buffer_size)
-
     def __next__(self):
         out = self.readline()
         if not out:
@@ -323,8 +307,8 @@ class GCSFile(object):
                 else:
                     self.cache = pre + self.cache
         if end > self.end:
-            if self.end > self.size:
-                return
+            if self.end >= self.size:
+                return b""
             if start > self.end:
                 self.start, self.end = None, None
                 return self._fetch(start, end)
@@ -353,13 +337,40 @@ class GCSFile(object):
             length = self.size
         if self.closed:
             raise ValueError("I/O operation on closed file.")
+        if self.loc >= self.size:
+            return b""
         self._fetch(self.loc, self.loc + length)
         out = self.cache[self.loc - self.start : self.loc - self.start + length]
         self.loc += len(out)
         if len(out) > 0:
             return out
         else:
-            return None
+            return b""
+
+    def readline(self, length=-1):
+        """Read and return a line from the stream.
+
+        If length is specified, at most size bytes will be read.
+        """
+        if not self.readable():
+            raise ValueError("File not in read mode")
+        if length < 0:
+            length = self.size
+        if self.closed:
+            raise ValueError("I/O operation on closed file.")
+        if self.loc >= self.size:
+            return b""
+
+        self._fetch(self.loc, self.loc + 1)
+        while True:
+            found = self.cache[self.loc - self.start :].find(b"\n") + 1  # NOOP
+            if 0 < length < found:
+                return self.read(length)
+            if found:
+                return self.read(found)
+            if self.end >= self.size:
+                return self.read(length)
+            self._fetch(self.start, self.end + self.buffer_size)
 
     def write(self, data):
         """Write data to a the GCS file.

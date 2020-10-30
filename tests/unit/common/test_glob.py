@@ -38,6 +38,9 @@ class TestGlob:
         ]
         assert len(files) == 1
 
+    def test_list_glob_currdir(self, filesystem, test_data):
+        assert len([i_file for i_file in iglob(filesystem, ".")]) == 1
+
     def test_list_file_glob_no_magic(self, filesystem, test_data):
         assert len([i_file for i_file in iglob(filesystem, test_data)]) == 1
 

@@ -5,7 +5,7 @@ import pytest
 from tanit.filesystem.filesystem_factory import FileSystemFactory
 from tanit.worker.filesystem.service import LocalFileSystemService
 
-from .test_filesystem import BaseFilesystemTest
+from .base_test import BaseFilesystemTest
 
 
 @pytest.fixture(scope="session")

@@ -21,10 +21,14 @@ class BaseFilesystemTest:
     def test_create_file(self, filesystem, test_data):
         for f in filesystem.list(test_data):
             for i in range(5):
-                with filesystem.open(
-                    os.path.join(test_data, f, "ktf-%s.txt" % i), mode="wb"
-                ) as tfile:
-                    tfile.write(bytearray(random.getrandbits(8) for _ in range(1024)))
+                # with filesystem.open(
+                #    os.path.join(test_data, f, "ktf-%s.txt" % i), mode="wb"
+                # ) as tfile:
+                #    tfile.write(bytearray(random.getrandbits(8) for _ in range(1024)))
+                filesystem.write(
+                    os.path.join(test_data, f, "ktf-%s.txt" % i),
+                    data=bytearray(random.getrandbits(8) for _ in range(1024)),
+                )
             assert len(filesystem.list(os.path.join(test_data, f))) == 5
 
     def test_list(self, filesystem, test_data):
@@ -96,8 +100,7 @@ class BaseFilesystemTest:
     def test_write_read(self, filesystem, test_data):
         test_writer_file = os.path.join(test_data, "ktf-write")
         wbts = "This is a test generated file".encode("utf-8")
-        with filesystem.write(test_writer_file) as writer:
-            writer.write(wbts)
+        filesystem.write(test_writer_file, data=wbts)
         assert filesystem.status(test_writer_file)["type"] == "FILE"
         assert filesystem.status(test_writer_file)["length"] == str(len(wbts))
 

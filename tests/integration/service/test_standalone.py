@@ -2,8 +2,7 @@ import pytest
 
 from tanit.common.model.execution_type import ExecutionType
 from tanit.common.model.job import Job
-
-from ..unit.utils.tutils import wait_until
+from tests.unit.utils.tutils import wait_until
 
 
 @pytest.mark.usefixtures("master_server")

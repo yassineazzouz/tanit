@@ -3,8 +3,7 @@ import pytest
 from tanit.common.model.execution_type import ExecutionType
 from tanit.common.model.job import Job
 from tanit.thrift.master.service.ttypes import JobInitializationException
-
-from ..unit.utils.tutils import wait_until
+from tests.unit.utils.tutils import wait_until
 
 
 @pytest.mark.usefixtures("master_server", "worker_server")
@@ -12,8 +11,8 @@ class TestServiceIntegration:
     def test_server_up(self, user_client):
         assert len(user_client.list_jobs()) >= 0
 
-    def test_register_worker(self, worker_client, user_client):
-        assert len(user_client.list_workers()) >= 1
+    def test_register_worker(self, user_client):
+        assert wait_until(lambda c: len(c.list_workers()) >= 1, 20, 0.5, user_client)
 
     def test_submit_job(self, user_client):
         jid = user_client.submit_job(Job(ExecutionType.MOCK, {"num_tasks": "10"}))

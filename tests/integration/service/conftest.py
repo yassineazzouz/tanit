@@ -8,8 +8,7 @@ from tanit.master.client.client import ThriftClientFactory
 from tanit.master.config.config import MasterConfig
 from tanit.master.server.server import MasterServer
 from tanit.worker.server.server import WorkerServer
-
-from ..resources import conf
+from tests.resources import conf
 
 config_dir = os.path.dirname(os.path.abspath(conf.__file__))
 

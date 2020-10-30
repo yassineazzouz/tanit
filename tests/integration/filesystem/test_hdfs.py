@@ -4,16 +4,22 @@ import pytest
 
 from tanit.filesystem.filesystem_factory import FileSystemFactory
 
-from .test_filesystem import BaseFilesystemTest
+from .base_test import BaseFilesystemTest
 
 
 @pytest.fixture(scope="class")
 def filesystem():
     filesystems_factory = FileSystemFactory.getInstance()
     filesystems_factory.register_filesystem(
-        {"name": "s3-karken-test-bucket", "type": "s3", "bucket": "kraken-test"}
+        {
+            "name": "test-hdfs-cluster",
+            "type": "hdfs",
+            "auth_mechanism": "NONE",
+            "user": "hdfs",
+            "nameservices": [{"urls": ["http://localhost:50070"], "mounts": ["/"]}],
+        }
     )
-    filesystem = filesystems_factory.get_filesystem("s3-karken-test-bucket")
+    filesystem = filesystems_factory.get_filesystem("test-hdfs-cluster")
     yield filesystem
 
 

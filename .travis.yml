@@ -2,6 +2,9 @@ dist: bionic
 language: python
 cache: pip
 
+services:
+  - docker
+
 env:
   global:
     TOXENV: python
@@ -23,6 +26,18 @@ matrix:
 before_install:
   - openssl aes-256-cbc -K $encrypted_f5440da4f437_key -iv $encrypted_f5440da4f437_iv -in .travis/gcp.json.enc -out .travis/gcp.json -d
   - export GOOGLE_APPLICATION_CREDENTIALS=$(readlink -f .travis/gcp.json)
+  - |
+      set -xe
+      sudo rm /usr/local/bin/docker-compose
+      curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` > docker-compose
+      chmod +x docker-compose
+      sudo mv docker-compose /usr/local/bin
+
+      # Install hadoop-test-cluster
+      pip install hadoop-test-cluster
+      htcluster startup --image cdh5 --config simple
+
+      set +xe
 
 install:
   - pip install tox codecov
@@ -32,3 +47,8 @@ script:
 
 after_script:
   - codecov
+
+addons:
+  hosts:
+    - worker.example.com
+    - master.example.com
