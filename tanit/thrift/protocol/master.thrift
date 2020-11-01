@@ -74,6 +74,9 @@ service MasterUserService{
     void activate_worker(1:string wid),
 
     WorkerStats worker_stats(1:string wid),
+
+    // Manage filesystems
+    void register_filesystem(1:FileSystem filesystem),
     
 }
 

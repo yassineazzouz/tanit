@@ -30,6 +30,8 @@ class TaskExecution(object):
         self.attempts = 1
         self.worker = None
 
+        self
+
     def on_schedule(self):
         if self.state not in [ExecutionState.SUBMITTED, ExecutionState.SCHEDULED]:
             raise IllegalStateTransitionException(

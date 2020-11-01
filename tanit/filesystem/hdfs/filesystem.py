@@ -9,8 +9,7 @@ _logger = lg.getLogger(__name__)
 
 
 class HDFSFileSystem(IFileSystem):
-    def __init__(self, cluster, auth_mechanism, **params):
-        self.cluster = cluster
+    def __init__(self, auth_mechanism, **params):
         self.client = create_client(auth_mechanism, **params)
 
     def resolve_path(self, path):

@@ -177,5 +177,33 @@ def worker_stats(wid):
     client.stop()
 
 
+@tanit.group("filesystems")
+def filesystems():
+    """Manage filesystems."""
+
+
+@filesystems.command("register")
+@click.argument("filesystem")
+def filesystem_register(filesystem):
+    """Register a filesystem."""
+    client = get_client()
+    client.start()
+
+    try:
+        filesystem_spec = json.loads(filesystem)
+    except Exception as e:
+        _logger.error("Error parsing job json specification.")
+        raise e
+
+    if "name" not in filesystem_spec:
+        _logger.error("Missing filesystem name.")
+        raise Exception("Missing filesystem name.")
+
+    name = filesystem_spec.pop("name")
+    client.register_filesystem(name, filesystem_spec)
+
+    client.stop()
+
+
 if __name__ == "__main__":
     tanit()

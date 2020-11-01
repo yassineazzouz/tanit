@@ -65,6 +65,14 @@ class Iface(object):
         """
         pass
 
+    def register_filesystem(self, filesystem):
+        """
+        Parameters:
+         - filesystem
+
+        """
+        pass
+
 
 class Client(Iface):
     def __init__(self, iprot, oprot=None):
@@ -285,6 +293,36 @@ class Client(Iface):
             return result.success
         raise TApplicationException(TApplicationException.MISSING_RESULT, "worker_stats failed: unknown result")
 
+    def register_filesystem(self, filesystem):
+        """
+        Parameters:
+         - filesystem
+
+        """
+        self.send_register_filesystem(filesystem)
+        self.recv_register_filesystem()
+
+    def send_register_filesystem(self, filesystem):
+        self._oprot.writeMessageBegin('register_filesystem', TMessageType.CALL, self._seqid)
+        args = register_filesystem_args()
+        args.filesystem = filesystem
+        args.write(self._oprot)
+        self._oprot.writeMessageEnd()
+        self._oprot.trans.flush()
+
+    def recv_register_filesystem(self):
+        iprot = self._iprot
+        (fname, mtype, rseqid) = iprot.readMessageBegin()
+        if mtype == TMessageType.EXCEPTION:
+            x = TApplicationException()
+            x.read(iprot)
+            iprot.readMessageEnd()
+            raise x
+        result = register_filesystem_result()
+        result.read(iprot)
+        iprot.readMessageEnd()
+        return
+
 
 class Processor(Iface, TProcessor):
     def __init__(self, handler):
@@ -297,6 +335,7 @@ class Processor(Iface, TProcessor):
         self._processMap["deactivate_worker"] = Processor.process_deactivate_worker
         self._processMap["activate_worker"] = Processor.process_activate_worker
         self._processMap["worker_stats"] = Processor.process_worker_stats
+        self._processMap["register_filesystem"] = Processor.process_register_filesystem
         self._on_message_begin = None
 
     def on_message_begin(self, func):
@@ -482,6 +521,29 @@ class Processor(Iface, TProcessor):
             msg_type = TMessageType.EXCEPTION
             result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
         oprot.writeMessageBegin("worker_stats", msg_type, seqid)
+        result.write(oprot)
+        oprot.writeMessageEnd()
+        oprot.trans.flush()
+
+    def process_register_filesystem(self, seqid, iprot, oprot):
+        args = register_filesystem_args()
+        args.read(iprot)
+        iprot.readMessageEnd()
+        result = register_filesystem_result()
+        try:
+            self._handler.register_filesystem(args.filesystem)
+            msg_type = TMessageType.REPLY
+        except TTransport.TTransportException:
+            raise
+        except TApplicationException as ex:
+            logging.exception('TApplication exception in handler')
+            msg_type = TMessageType.EXCEPTION
+            result = ex
+        except Exception:
+            logging.exception('Unexpected exception in handler')
+            msg_type = TMessageType.EXCEPTION
+            result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
+        oprot.writeMessageBegin("register_filesystem", msg_type, seqid)
         result.write(oprot)
         oprot.writeMessageEnd()
         oprot.trans.flush()
@@ -1320,6 +1382,112 @@ class worker_stats_result(object):
 all_structs.append(worker_stats_result)
 worker_stats_result.thrift_spec = (
     (0, TType.STRUCT, 'success', [WorkerStats, None], None, ),  # 0
+)
+
+
+class register_filesystem_args(object):
+    """
+    Attributes:
+     - filesystem
+
+    """
+
+
+    def __init__(self, filesystem=None,):
+        self.filesystem = filesystem
+
+    def read(self, iprot):
+        if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
+            iprot._fast_decode(self, iprot, [self.__class__, self.thrift_spec])
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.STRUCT:
+                    self.filesystem = FileSystem()
+                    self.filesystem.read(iprot)
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot._fast_encode is not None and self.thrift_spec is not None:
+            oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
+            return
+        oprot.writeStructBegin('register_filesystem_args')
+        if self.filesystem is not None:
+            oprot.writeFieldBegin('filesystem', TType.STRUCT, 1)
+            self.filesystem.write(oprot)
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+             for key, value in self.__dict__.items()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+all_structs.append(register_filesystem_args)
+register_filesystem_args.thrift_spec = (
+    None,  # 0
+    (1, TType.STRUCT, 'filesystem', [FileSystem, None], None, ),  # 1
+)
+
+
+class register_filesystem_result(object):
+
+
+    def read(self, iprot):
+        if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
+            iprot._fast_decode(self, iprot, [self.__class__, self.thrift_spec])
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot._fast_encode is not None and self.thrift_spec is not None:
+            oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
+            return
+        oprot.writeStructBegin('register_filesystem_result')
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+             for key, value in self.__dict__.items()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+all_structs.append(register_filesystem_result)
+register_filesystem_result.thrift_spec = (
 )
 fix_spec(all_structs)
 del all_structs

@@ -31,6 +31,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
     print('  void deactivate_worker(string wid)')
     print('  void activate_worker(string wid)')
     print('  WorkerStats worker_stats(string wid)')
+    print('  void register_filesystem(FileSystem filesystem)')
     print('')
     sys.exit(0)
 
@@ -151,6 +152,12 @@ elif cmd == 'worker_stats':
         print('worker_stats requires 1 args')
         sys.exit(1)
     pp.pprint(client.worker_stats(args[0],))
+
+elif cmd == 'register_filesystem':
+    if len(args) != 1:
+        print('register_filesystem requires 1 args')
+        sys.exit(1)
+    pp.pprint(client.register_filesystem(eval(args[0]),))
 
 else:
     print('Unrecognized method %s' % cmd)

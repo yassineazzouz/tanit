@@ -84,6 +84,10 @@ class UserServiceClientIFace(object):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def register_filesystem(self, name, parameters):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def stop(self):
         raise NotImplementedError
 
@@ -158,6 +162,9 @@ class ThriftUserServiceClient(UserServiceClientIFace):
             available_cores=stats.available_cores,
         )
 
+    def register_filesystem(self, name, parameters):
+        self.client.register_filesystem(ttypes.FileSystem(name, parameters))
+
     def stop(self):
         self.transport.close()
 
@@ -190,6 +197,9 @@ class LocalUserServiceClient(UserServiceClientIFace):
 
     def submit_job(self, job):
         return self.master.submit_job()
+
+    def register_filesystem(self, name, parameters):
+        self.master.register_filesystem(name, parameters)
 
     def stop(self):
         # do nothing

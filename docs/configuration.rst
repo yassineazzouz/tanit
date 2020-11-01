@@ -1,0 +1,4 @@
+Configuration
+==============
+
+.. currentmodule:: tanit

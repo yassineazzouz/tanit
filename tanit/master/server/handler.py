@@ -93,6 +93,9 @@ class UserServiceHandler(object):
             available_cores=stats.available_cores,
         )
 
+    def register_filesystem(self, filesystem):
+        self.master.register_filesystem(filesystem.name, filesystem.parameters)
+
 
 class WorkerServiceHandler(object):
     def __init__(self, master):
