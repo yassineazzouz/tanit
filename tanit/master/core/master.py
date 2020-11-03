@@ -1,7 +1,7 @@
 import logging as lg
 
 from ...common.model.worker import Worker
-from ...filesystem.filesystem_factory import FileSystemFactory
+from ..dfs.distributed_filesystem import DistributedFileSystem
 from .execution.execution_manager import ExecutionManager
 from .worker.worker_decommissioner import WorkerDecommissioner
 from .worker.worker_factory import WorkerFactory
@@ -20,14 +20,15 @@ class Master(object):
     """
 
     def __init__(self, config=None):
-        # filesystems factory
-        self.filesystems_factory = FileSystemFactory.getInstance()
         # workers factory
         self.workers_factory = WorkerFactory(self)
         # workers manager
         self.workers_manager = WorkerManager(self.workers_factory, config)
         # execution manager
         self.execution_manager = ExecutionManager(self.workers_manager, config)
+        # filesystems factory
+        self.dfs = DistributedFileSystem(self.execution_manager)
+
         # decommissioner
         self.decommissioner = WorkerDecommissioner(
             self.execution_manager, self.workers_manager
@@ -111,11 +112,32 @@ class Master(object):
         _logger.info("Registering new filesystem [ %s ].", name)
         filesystem["name"] = name
         # register the worker as a filesystem
-        self.filesystems_factory.register_filesystem(filesystem)
+        self.dfs.register_filesystem(filesystem)
         # notify the workers about the new file system
         for worker in self.workers_manager.list_active_workers():
             worker.register_filesystem(name, filesystem)
         _logger.info("Filesystem [ %s ] registered.", name)
+
+    def mount_filesystem(self, name, mount_point, mount_path=""):
+        if not self.started:
+            raise MasterStoppedException(
+                "Can not register filesystem [ %s ] : master server stopped.", name
+            )
+
+        _logger.info("Mounting filesystem [ %s ] path [ %s ] under [ %s ]." % (name, mount_path, mount_point))
+        # register the worker as a filesystem
+        self.dfs.mount_filesystem(name, mount_point, mount_path)
+        _logger.info("Filesystem [ %s ] mounted.", name)
+
+    def umount_filesystem(self, mount_point):
+        if not self.started:
+            raise MasterStoppedException(
+                "Can not umount filesystem at [ %s ] : master server stopped.", mount_point
+            )
+
+        _logger.info("Unmounting filesystem at [ %s ]." % mount_point)
+        self.dfs.umount_filesystem(mount_point)
+        _logger.info("Filesystem under [ %s ] mounted.", mount_point)
 
     def start(self):
         _logger.info("Stating Tanit master services.")

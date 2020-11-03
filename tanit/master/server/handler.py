@@ -1,10 +1,7 @@
 import logging as lg
 
-from ...common.model.execution_type import ExecutionType
-from ...common.model.job import Job
 from ...common.model.worker import Worker
 from ...thrift.master.service import ttypes
-from ..core.execution.execution_state import ExecutionState
 
 _logger = lg.getLogger(__name__)
 
@@ -12,63 +9,6 @@ _logger = lg.getLogger(__name__)
 class UserServiceHandler(object):
     def __init__(self, master):
         self.master = master
-
-    def submit_job(self, job):
-        if job.type == ttypes.JobType.COPY:
-            etype = ExecutionType.COPY
-        elif job.type == ttypes.JobType.UPLOAD:
-            etype = ExecutionType.UPLOAD
-        elif job.type == ttypes.JobType.MOCK:
-            etype = ExecutionType.MOCK
-        else:
-            # should raise exception here
-            pass
-
-        try:
-            job_exec = self.master.submit_job(Job(etype, job.params))
-        except Exception as e:
-            raise ttypes.JobInitializationException(str(e))
-        return job_exec.jid
-
-    def list_jobs(self):
-        status = []
-        for job_exec in self.master.list_jobs():
-            status.append(
-                ttypes.JobStatus(
-                    job_exec.jid,
-                    ttypes.JobState._NAMES_TO_VALUES[
-                        ExecutionState._VALUES_TO_NAMES[job_exec.state]
-                    ],
-                    job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "-"
-                    if job_exec.start_time is None
-                    else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "-"
-                    if job_exec.finish_time is None
-                    else job_exec.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
-                    job_exec.execution_time_s,
-                )
-            )
-        return status
-
-    def job_status(self, jid):
-        job_exec = self.master.get_job(jid)
-        if job_exec is None:
-            raise ttypes.JobNotFoundException("No such job [ %s ]" % jid)
-        return ttypes.JobStatus(
-            job_exec.jid,
-            ttypes.JobState._NAMES_TO_VALUES[
-                ExecutionState._VALUES_TO_NAMES[job_exec.state]
-            ],
-            job_exec.submission_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "-"
-            if job_exec.start_time is None
-            else job_exec.start_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "-"
-            if job_exec.finish_time is None
-            else job_exec.finish_time.strftime("%Y-%m-%d %H:%M:%S"),
-            job_exec.execution_time_s,
-        )
 
     def list_workers(self):
         workers = []
@@ -96,6 +36,12 @@ class UserServiceHandler(object):
     def register_filesystem(self, filesystem):
         self.master.register_filesystem(filesystem.name, filesystem.parameters)
 
+    def mount_filesystem(self, name, mount_point, mount_path=""):
+        self.master.mount_filesystem(name, mount_point, mount_path)
+
+    def umount_filesystem(self, mount_point):
+        self.master.umount_filesystem(mount_point)
+
 
 class WorkerServiceHandler(object):
     def __init__(self, master):
@@ -112,6 +58,9 @@ class WorkerServiceHandler(object):
 
     def register_filesystem(self, filesystem):
         self.master.register_filesystem(filesystem.name, filesystem.parameters)
+
+    def mount_filesystem(self, name, mount_point, mount_path=""):
+        self.master.mount_filesystem(name, mount_point, mount_path)
 
     def task_start(self, tid):
         self.master.task_start(tid)

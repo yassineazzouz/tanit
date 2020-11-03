@@ -4,7 +4,6 @@ from six.moves.queue import Queue
 
 from ..dispatcher import FairDispatcher
 from ..scheduler import SimpleScheduler
-from .job_factory import JobFactory
 
 _logger = lg.getLogger(__name__)
 
@@ -21,8 +20,6 @@ class ExecutionManager(object):
     def __init__(self, workers_manager, config=None):
         # jobs list
         self.jobs = []
-        # job factory
-        self.jobs_factory = JobFactory()
         # Lister queue
         lqueue = Queue()
         # Call queue
@@ -51,20 +48,16 @@ class ExecutionManager(object):
         _logger.info("Tanit master services stopped.")
 
     def submit_job(self, job):
-        job_exec = self.jobs_factory.create_job(job)
-        job_exec.setup()
-
-        _logger.info("Submitting job [ %s ] for execution.", job_exec.jid)
-        self.jobs.append(job_exec)
-        for task_exec in self.get_tasks(jid=job_exec.jid):
+        _logger.info("Submitting job [ %s ] for execution.", job.jid)
+        self.jobs.append(job)
+        for task_exec in self.get_tasks(jid=job.jid):
             self.scheduler.schedule(task_exec)
 
         _logger.info(
             "Submitted %s tasks for execution in job [ %s ].",
-            len(self.get_tasks(jid=job_exec.jid)),
-            job_exec.jid,
+            len(self.get_tasks(jid=job.jid)),
+            job.jid,
         )
-        return job_exec
 
     def cancel_job(self, conf):
         pass

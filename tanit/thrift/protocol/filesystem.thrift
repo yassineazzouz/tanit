@@ -67,11 +67,11 @@ service LocalFilesystem{
 
     i32 tell(1:string filedesc) throws (1:FileSystemException e),
 
-    i32 seek(1:string filedesc, 2:i32 position) throws (1:FileSystemException e)
+    i32 seek(1:string filedesc, 2:i32 position) throws (1:FileSystemException e),
 
-    bool readable(1:string filedesc) throws (1:FileSystemException e)
+    bool readable(1:string filedesc) throws (1:FileSystemException e),
 
-    bool writable(1:string filedesc) throws (1:FileSystemException e)
+    bool writable(1:string filedesc) throws (1:FileSystemException e),
 
-    bool seekable(1:string filedesc) throws (1:FileSystemException e)
+    bool seekable(1:string filedesc) throws (1:FileSystemException e),
 }

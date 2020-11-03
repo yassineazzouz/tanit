@@ -88,6 +88,14 @@ class UserServiceClientIFace(object):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def mount_filesystem(self, name, path):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def umount_filesystem(self, mount_point):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def stop(self):
         raise NotImplementedError
 
@@ -165,6 +173,14 @@ class ThriftUserServiceClient(UserServiceClientIFace):
     def register_filesystem(self, name, parameters):
         self.client.register_filesystem(ttypes.FileSystem(name, parameters))
 
+    def mount_filesystem(self, name, mount_point, mount_path=""):
+        if mount_path is None:
+            mount_path = ""
+        self.client.mount_filesystem(name, mount_point, mount_path)
+
+    def umount_filesystem(self, mount_point):
+        self.client.umount_filesystem(mount_point)
+
     def stop(self):
         self.transport.close()
 
@@ -200,6 +216,14 @@ class LocalUserServiceClient(UserServiceClientIFace):
 
     def register_filesystem(self, name, parameters):
         self.master.register_filesystem(name, parameters)
+
+    def mount_filesystem(self, name, mount_point, mount_path=""):
+        if mount_path is None:
+            mount_path = ""
+        self.master.mount_filesystem(name, mount_point, mount_path)
+
+    def umount_filesystem(self, mount_point):
+        self.master.umount_filesystem(mount_point)
 
     def stop(self):
         # do nothing

@@ -26,8 +26,8 @@ class WorkerClient(object):
         # Connect to server
         self.transport.open()
 
-    def submit(self, tid, etype, params):
-        self.client.submit(Task(tid, etype, params))
+    def submit(self, tid, operation, params):
+        self.client.submit(Task(tid, operation, params))
 
     def register_filesystem(self, name, parameters):
         self.client.register_filesystem(FileSystem(name, parameters))

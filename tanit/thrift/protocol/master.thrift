@@ -59,13 +59,6 @@ exception JobNotFoundException {
 
 service MasterUserService{
 
-    // Manage jobs
-    string submit_job(1:Job job) throws (1:JobInitializationException e),
-
-    JobStatus job_status(1:string jid) throws (1:JobNotFoundException e),
-
-    list<JobStatus> list_jobs(),
-
     // Manage workers
     list<Worker> list_workers(),
 
@@ -77,7 +70,11 @@ service MasterUserService{
 
     // Manage filesystems
     void register_filesystem(1:FileSystem filesystem),
-    
+
+    void mount_filesystem(1:string name, 2:string mount_point, 3:string mount_path = ""),
+
+    void umount_filesystem(1:string mount_point),
+
 }
 
 service MasterWorkerService{

@@ -5,7 +5,7 @@ from threading import Thread
 from six.moves.queue import Queue
 
 from ...common.model.worker import WorkerStatus
-from ...filesystem.filesystem_factory import FileSystemFactory
+from ...filesystem.filesystem_manager import FilesystemManager
 from ...master.client.client import ClientType
 from ...master.client.client import ThriftClientFactory
 from ..core.execution.task_factory import TaskFactory
@@ -36,6 +36,8 @@ class Worker(object):
             self.lqueue,
             config.executor_threads,
         )
+
+        self.filesystem_manager = FilesystemManager.getInstance()
 
         self.task_factory = TaskFactory()
 
@@ -72,7 +74,7 @@ class Worker(object):
         _logger.info("Registering new filesystem [ %s ].", name)
         filesystem["name"] = name
         # register the worker as a filesystem
-        FileSystemFactory.getInstance().register_filesystem(filesystem)
+        self.filesystem_manager.register_filesystem(filesystem)
         _logger.info("Filesystem [ %s ] registered.", name)
 
     def start(self):

@@ -16,24 +16,6 @@ from thrift.transport import TTransport
 all_structs = []
 
 
-class TaskType(object):
-    COPY = 1
-    UPLOAD = 2
-    MOCK = 3
-
-    _VALUES_TO_NAMES = {
-        1: "COPY",
-        2: "UPLOAD",
-        3: "MOCK",
-    }
-
-    _NAMES_TO_VALUES = {
-        "COPY": 1,
-        "UPLOAD": 2,
-        "MOCK": 3,
-    }
-
-
 class WorkerStatus(object):
     """
     Attributes:
@@ -128,15 +110,15 @@ class Task(object):
     """
     Attributes:
      - tid
-     - type
+     - operation
      - params
 
     """
 
 
-    def __init__(self, tid=None, type=None, params=None,):
+    def __init__(self, tid=None, operation=None, params=None,):
         self.tid = tid
-        self.type = type
+        self.operation = operation
         self.params = params
 
     def read(self, iprot):
@@ -154,8 +136,8 @@ class Task(object):
                 else:
                     iprot.skip(ftype)
             elif fid == 2:
-                if ftype == TType.I32:
-                    self.type = iprot.readI32()
+                if ftype == TType.STRING:
+                    self.operation = iprot.readString().decode('utf-8') if sys.version_info[0] == 2 else iprot.readString()
                 else:
                     iprot.skip(ftype)
             elif fid == 3:
@@ -183,9 +165,9 @@ class Task(object):
             oprot.writeFieldBegin('tid', TType.STRING, 1)
             oprot.writeString(self.tid.encode('utf-8') if sys.version_info[0] == 2 else self.tid)
             oprot.writeFieldEnd()
-        if self.type is not None:
-            oprot.writeFieldBegin('type', TType.I32, 2)
-            oprot.writeI32(self.type)
+        if self.operation is not None:
+            oprot.writeFieldBegin('operation', TType.STRING, 2)
+            oprot.writeString(self.operation.encode('utf-8') if sys.version_info[0] == 2 else self.operation)
             oprot.writeFieldEnd()
         if self.params is not None:
             oprot.writeFieldBegin('params', TType.MAP, 3)
@@ -201,8 +183,8 @@ class Task(object):
     def validate(self):
         if self.tid is None:
             raise TProtocolException(message='Required field tid is unset!')
-        if self.type is None:
-            raise TProtocolException(message='Required field type is unset!')
+        if self.operation is None:
+            raise TProtocolException(message='Required field operation is unset!')
         if self.params is None:
             raise TProtocolException(message='Required field params is unset!')
         return
@@ -311,7 +293,7 @@ all_structs.append(Task)
 Task.thrift_spec = (
     None,  # 0
     (1, TType.STRING, 'tid', 'UTF8', None, ),  # 1
-    (2, TType.I32, 'type', None, None, ),  # 2
+    (2, TType.STRING, 'operation', 'UTF8', None, ),  # 2
     (3, TType.MAP, 'params', (TType.STRING, 'UTF8', TType.STRING, 'UTF8', False), None, ),  # 3
 )
 all_structs.append(FileSystem)

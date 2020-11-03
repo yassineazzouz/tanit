@@ -11,13 +11,40 @@ from thrift.transport import TTransport
 
 from ...thrift.master.service import MasterUserService
 from ...thrift.master.service import MasterWorkerService
+from ...thrift.master.dfs import DistributedFilesystem
 from ..config.config import MasterConfig
 from ..core.master import Master
 from ..standalone.master import StandaloneMaster
+from ..dfs.handler import DistributedFileSystemHandler
 from .handler import UserServiceHandler
 from .handler import WorkerServiceHandler
 
 _logger = lg.getLogger(__name__)
+
+
+class DistributedFilesystemServer(Thread):
+    def __init__(self, dfs):
+        super(DistributedFilesystemServer, self).__init__()
+        self.dfs = dfs
+
+    def configure(self, config):
+        self.listen_address = "0.0.0.0"
+        self.listen_port = 9092
+
+    def run(self):
+        # Create Service handler
+        handler = DistributedFileSystemHandler(self.dfs)
+
+        server = TServer.TThreadedServer(
+            DistributedFilesystem.Processor(handler),
+            TSocket.TServerSocket(self.listen_address, self.listen_port),
+            TTransport.TBufferedTransportFactory(),
+            TBinaryProtocol.TBinaryProtocolFactory(),
+            daemon=True,
+        )
+
+        # Start Tanit distributed filesystem
+        server.serve()
 
 
 class MasterWorkerServer(Thread):
@@ -114,11 +141,28 @@ class MasterServer(object):
                 self.mwserver.listen_port,
             )
 
+        _logger.info("Stating Tanit distributed filesystem.")
+
+        self.dfsserver = DistributedFilesystemServer(self.master.dfs)
+        self.dfsserver.configure(self.config)
+        self.dfsserver.setDaemon(True)
+        self.dfsserver.start()
+        _logger.info(
+            "Tanit distributed filesystem service started, listening  at %s:%s",
+            self.dfsserver.listen_address,
+            self.dfsserver.listen_port,
+        )
+
         try:
             while True:
                 if not self.mcserver.is_alive():
                     _logger.error(
                         "Unexpected Tanit master client server exit, stopping."
+                    )
+                    break
+                if not self.dfsserver.is_alive():
+                    _logger.error(
+                        "Unexpected Tanit distributed filesystem service exit, stopping."
                     )
                     break
                 if not self.standalone and not self.mwserver.is_alive():

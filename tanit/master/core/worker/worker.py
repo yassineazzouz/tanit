@@ -144,7 +144,7 @@ class RemoteThriftWorker(WorkerIFace):
 
     def submit(self, task_exec):
         if not self.stopped:
-            self.client.submit(task_exec.tid, task_exec.etype, task_exec.params)
+            self.client.submit(task_exec.tid, task_exec.operation, task_exec.params)
         else:
             raise WorkerStoppedException(
                 "Can not submit task [ %s ] to [ %s ] : worker stopped.",

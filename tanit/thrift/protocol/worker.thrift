@@ -1,11 +1,5 @@
 namespace py worker.service
 
-enum TaskType {
-  COPY = 1,
-  UPLOAD = 2,
-  MOCK = 3, // for testing
-}
-
 struct WorkerStatus {
   	1: string wid,
   	2: i32 running,
@@ -15,7 +9,7 @@ struct WorkerStatus {
 
 struct Task {
   1: required string tid,
-  2: required TaskType type,
+  2: required string operation,
   3: required map<string,string> params,
 }
 

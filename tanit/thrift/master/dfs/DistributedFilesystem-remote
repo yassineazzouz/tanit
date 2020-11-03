@@ -16,21 +16,22 @@ else:
 from thrift.transport import TTransport, TSocket, TSSLSocket, THttpClient
 from thrift.protocol.TBinaryProtocol import TBinaryProtocol
 
-from master.service import MasterUserService
-from master.service.ttypes import *
+from master.dfs import DistributedFilesystem
+from master.dfs.ttypes import *
 
 if len(sys.argv) <= 1 or sys.argv[1] == '--help':
     print('')
     print('Usage: ' + sys.argv[0] + ' [-h host[:port]] [-u url] [-f[ramed]] [-s[sl]] [-novalidate] [-ca_certs certs] [-keyfile keyfile] [-certfile certfile] function [arg1 [arg2...]]')
     print('')
     print('Functions:')
-    print('   list_workers()')
-    print('  void deactivate_worker(string wid)')
-    print('  void activate_worker(string wid)')
-    print('  WorkerStats worker_stats(string wid)')
-    print('  void register_filesystem(FileSystem filesystem)')
-    print('  void mount_filesystem(string name, string mount_point, string mount_path)')
-    print('  void umount_filesystem(string mount_point)')
+    print('   ls(string path, bool status, bool glob)')
+    print('  FileStatusOrNull status(string path, bool strict)')
+    print('  FileContentOrNull content(string path, bool strict)')
+    print('  void rm(string path, bool recursive)')
+    print('  void mkdir(string path, string permission)')
+    print('  void copy(string src_path, string dst_path, bool overwrite, bool force, bool checksum)')
+    print('  void move(string src_path, string dst_path)')
+    print('  string checksum(string path, string algorithm)')
     print('')
     sys.exit(0)
 
@@ -107,50 +108,56 @@ else:
     else:
         transport = TTransport.TBufferedTransport(socket)
 protocol = TBinaryProtocol(transport)
-client = MasterUserService.Client(protocol)
+client = DistributedFilesystem.Client(protocol)
 transport.open()
 
-if cmd == 'list_workers':
-    if len(args) != 0:
-        print('list_workers requires 0 args')
-        sys.exit(1)
-    pp.pprint(client.list_workers())
-
-elif cmd == 'deactivate_worker':
-    if len(args) != 1:
-        print('deactivate_worker requires 1 args')
-        sys.exit(1)
-    pp.pprint(client.deactivate_worker(args[0],))
-
-elif cmd == 'activate_worker':
-    if len(args) != 1:
-        print('activate_worker requires 1 args')
-        sys.exit(1)
-    pp.pprint(client.activate_worker(args[0],))
-
-elif cmd == 'worker_stats':
-    if len(args) != 1:
-        print('worker_stats requires 1 args')
-        sys.exit(1)
-    pp.pprint(client.worker_stats(args[0],))
-
-elif cmd == 'register_filesystem':
-    if len(args) != 1:
-        print('register_filesystem requires 1 args')
-        sys.exit(1)
-    pp.pprint(client.register_filesystem(eval(args[0]),))
-
-elif cmd == 'mount_filesystem':
+if cmd == 'ls':
     if len(args) != 3:
-        print('mount_filesystem requires 3 args')
+        print('ls requires 3 args')
         sys.exit(1)
-    pp.pprint(client.mount_filesystem(args[0], args[1], args[2],))
+    pp.pprint(client.ls(args[0], eval(args[1]), eval(args[2]),))
 
-elif cmd == 'umount_filesystem':
-    if len(args) != 1:
-        print('umount_filesystem requires 1 args')
+elif cmd == 'status':
+    if len(args) != 2:
+        print('status requires 2 args')
         sys.exit(1)
-    pp.pprint(client.umount_filesystem(args[0],))
+    pp.pprint(client.status(args[0], eval(args[1]),))
+
+elif cmd == 'content':
+    if len(args) != 2:
+        print('content requires 2 args')
+        sys.exit(1)
+    pp.pprint(client.content(args[0], eval(args[1]),))
+
+elif cmd == 'rm':
+    if len(args) != 2:
+        print('rm requires 2 args')
+        sys.exit(1)
+    pp.pprint(client.rm(args[0], eval(args[1]),))
+
+elif cmd == 'mkdir':
+    if len(args) != 2:
+        print('mkdir requires 2 args')
+        sys.exit(1)
+    pp.pprint(client.mkdir(args[0], args[1],))
+
+elif cmd == 'copy':
+    if len(args) != 5:
+        print('copy requires 5 args')
+        sys.exit(1)
+    pp.pprint(client.copy(args[0], args[1], eval(args[2]), eval(args[3]), eval(args[4]),))
+
+elif cmd == 'move':
+    if len(args) != 2:
+        print('move requires 2 args')
+        sys.exit(1)
+    pp.pprint(client.move(args[0], args[1],))
+
+elif cmd == 'checksum':
+    if len(args) != 2:
+        print('checksum requires 2 args')
+        sys.exit(1)
+    pp.pprint(client.checksum(args[0], args[1],))
 
 else:
     print('Unrecognized method %s' % cmd)

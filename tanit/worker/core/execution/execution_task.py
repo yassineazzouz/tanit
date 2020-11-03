@@ -8,7 +8,7 @@ import six
 
 from ....common.core.exception import TanitError
 from ....common.utils.utils import str2bool
-from ....filesystem.filesystem_factory import FileSystemFactory
+from ....filesystem.filesystem_manager import FilesystemManager
 
 _logger = lg.getLogger(__name__)
 
@@ -19,24 +19,18 @@ class TaskExecution(object):
         self.tid = tid
         self.params = params
 
-        self.initialize(params)
-
-    @abc.abstractmethod
-    def initialize(self, params):
-        return
+        self.filesystem_manager = FilesystemManager.getInstance()
 
     @abc.abstractmethod
     def run(self):
         return
 
 
-class UploadTaskExecution(TaskExecution):
-    # not implemented yet
-    pass
-
-
 class MockTaskExecution(TaskExecution):
-    def initialize(self, params):
+
+    def __init__(self, tid, params):
+        super(MockTaskExecution, self).__init__(tid, params)
+
         self.fail = str2bool(params["fail"]) if "fail" in params else False
         self.sleep = float(params["sleep"]) if "sleep" in params else 2.0
 
@@ -48,7 +42,9 @@ class MockTaskExecution(TaskExecution):
 
 
 class CopyTaskExecution(TaskExecution):
-    def initialize(self, params):
+
+    def __init__(self, tid, params):
+        super(CopyTaskExecution, self).__init__(tid, params)
 
         if "src" in params:
             self.src = params["src"]
@@ -90,8 +86,8 @@ class CopyTaskExecution(TaskExecution):
 
     def run(self):
         # Can cache the clients in the engine
-        src = FileSystemFactory.getInstance().get_filesystem(self.src)
-        dst = FileSystemFactory.getInstance().get_filesystem(self.dst)
+        src = self.filesystem_manager.get_filesystem(self.src)
+        dst = self.filesystem_manager.get_filesystem(self.dst)
 
         _src_path = self.src_path
         _dst_path = self.dest_path

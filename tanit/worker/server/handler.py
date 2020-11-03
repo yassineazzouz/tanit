@@ -1,8 +1,6 @@
 import logging as lg
 
-from ...common.model.execution_type import ExecutionType
 from ...common.model.task import Task
-from ...thrift.worker.service.ttypes import TaskType
 from ...thrift.worker.service.ttypes import WorkerStatus
 
 _logger = lg.getLogger(__name__)
@@ -13,18 +11,7 @@ class WorkerServiceHandler(object):
         self.worker = worker
 
     def submit(self, task):
-
-        if task.type == TaskType.COPY:
-            etype = ExecutionType.COPY
-        elif task.type == TaskType.UPLOAD:
-            etype = ExecutionType.UPLOAD
-        elif task.type == TaskType.MOCK:
-            etype = ExecutionType.MOCK
-        else:
-            # should raise exception here
-            pass
-
-        self.worker.submit(Task(task.tid, etype, task.params))
+        self.worker.submit(Task(task.tid, task.operation, task.params))
 
     def worker_status(self):
         status = self.worker.get_stats()

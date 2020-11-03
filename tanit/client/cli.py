@@ -3,8 +3,8 @@ import logging as lg
 
 import click
 
+from ..master.dfs.client import DistributedFileSystemClient
 from .. import __version__
-from ..common.model.execution_type import ExecutionType
 from ..common.model.job import Job
 from ..master.client.client import ClientType
 from ..master.client.client import ThriftClientFactory
@@ -41,6 +41,10 @@ def get_client():
     ).create_client(ClientType.USER_SERVICE)
     return client
 
+def get_dfs_client():
+    client = DistributedFileSystemClient()
+    return client
+
 
 @click.group()
 @click.version_option(version=__version__, message="Tanit, version %(version)s")
@@ -62,63 +66,6 @@ def worker():
     """Run the Tanit worker."""
     server = WorkerServer()
     server.start()
-
-
-@tanit.group("jobs")
-def jobs():
-    """Manage jobs."""
-
-
-@jobs.command("submit")
-@click.argument("job")
-def job_submit(job):
-    """Submit a job."""
-    client = get_client()
-    client.start()
-
-    try:
-        if job.startswith("@"):
-            with open(job[1:], "r") as json_spec_file:  # NOQA
-                job_spec = json.load(json_spec_file)
-        else:
-            job_spec = json.loads(job)
-    except Exception as e:
-        _logger.error("Error parsing job json specification.")
-        raise e
-
-    params = job_spec["params"]
-    client.submit_job(Job(ExecutionType._NAMES_TO_VALUES[job_spec["type"]], params))
-
-    client.stop()
-
-
-@jobs.command("list")
-def job_list():
-    """List jobs."""
-    client = get_client()
-    client.start()
-
-    for job in client.list_jobs():
-        print(str(job))
-
-    client.stop()
-
-
-@jobs.command("status")
-@click.argument("jid")
-def job_status(jid):
-    """Print job information."""
-    client = get_client()
-    client.start()
-
-    job = client.job_status(jid)
-    if job is None:
-        _logger.info("No such job %s", job)
-    else:
-        print(str(job))
-
-    client.stop()
-
 
 @tanit.group("workers")
 def workers():
@@ -202,6 +149,142 @@ def filesystem_register(filesystem):
     name = filesystem_spec.pop("name")
     client.register_filesystem(name, filesystem_spec)
 
+    client.stop()
+
+
+@filesystems.command("mount")
+@click.argument("name")
+@click.argument("mount_point")
+@click.argument("mount_path", default="")
+def filesystem_mount(name, mount_point, mount_path):
+    """Mount a filesystem."""
+    client = get_client()
+    client.start()
+    client.mount_filesystem(name, mount_point, mount_path)
+    client.stop()
+
+
+@filesystems.command("umount")
+@click.argument("mount_point")
+def filesystem_register(mount_point):
+    """Unmount a filesystem."""
+    client = get_client()
+    client.start()
+    client.umount_filesystem(mount_point)
+    client.stop()
+
+
+@tanit.group("dfs")
+def dfs():
+    """Tanit Distributed Filesystem command line tool."""
+
+
+@dfs.command("ls")
+@click.argument("path")
+def dfs_ls(path):
+    """List the contents that match the specified file pattern."""
+    client = get_dfs_client()
+    client.start()
+    print(client.list(path))
+    client.stop()
+
+
+@dfs.command("mkdir")
+@click.argument("path")
+def dfs_mkdir(path):
+    """Create a directory in specified location."""
+    client = get_dfs_client()
+    client.start()
+    client.mkdir(path)
+    client.stop()
+
+
+@dfs.command("rm")
+@click.argument("path")
+@click.option("--recursive", "-R", is_flag=True, help="Recursive delete.")
+def dfs_rm(path, recursive):
+    """Delete all files that match the specified file pattern."""
+    client = get_dfs_client()
+    client.start()
+    client.rm(path, recursive)
+    client.stop()
+
+
+@dfs.command("du")
+@click.argument("path")
+def dfs_du(path):
+    """Show the amount of space, in bytes, used by the files,
+       or recursively the directory that match the specified
+       file pattern."""
+    client = get_dfs_client()
+    client.start()
+    content = client.content(path, strict=True)
+    print("%s    %s" %
+          (content['length'], path)
+          )
+    client.stop()
+
+
+@dfs.command("count")
+@click.argument("path")
+def dfs_count(path):
+    """Count the number of directories, files and bytes under path."""
+    client = get_dfs_client()
+    client.start()
+    content = client.content(path, strict=True)
+    print("%s    %s    %s  %s" %
+          (content['directoryCount'], content['fileCount'], content['length'], path)
+          )
+    client.stop()
+
+
+@dfs.command("stats")
+@click.argument("path")
+def dfs_stats(path):
+    """Print statistics about the file/directory at path"""
+    client = get_dfs_client()
+    client.start()
+    print(client.status(path, strict=True))
+    client.stop()
+
+
+@dfs.command("cp")
+@click.argument("src_path")
+@click.argument("dst_path")
+@click.option("--force", "-f", is_flag=True, help="Force copy even if size match.")
+@click.option("--checksum", "-c", is_flag=True, help="Force checksum check.")
+def dfs_copy(src_path, dst_path, force, checksum):
+    """Copy files that match the file pattern <src> to a destination."""
+    if force and checksum:
+        _logger.error("'force' and 'checksum' are mutually exclusive.")
+        exit(1)
+    client = get_dfs_client()
+    client.start()
+    client.cp(src_path, dst_path, True, force, checksum)
+    client.stop()
+
+
+@dfs.command("mv")
+@click.argument("src_path")
+@click.argument("dst_path")
+def dfs_move(src_path, dst_path):
+    """Move files that match the specified file pattern <src> to a destination <dst>."""
+    client = get_dfs_client()
+    client.start()
+    client.move(src_path, dst_path)
+    client.stop()
+
+
+@dfs.command("checksum")
+@click.argument("path")
+@click.option("--algorithm", "-a", default="md5", help="The checksum algorithm.")
+def dfs_checksum(path, algorithm):
+    """Print checksum information for the file at path."""
+    client = get_dfs_client()
+    client.start()
+    print("%s    %s  %s" %
+          (client.checksum(path, algorithm), algorithm, path)
+          )
     client.stop()
 
 
