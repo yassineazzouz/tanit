@@ -4,7 +4,7 @@
 #
 # DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 #
-#  options string: py
+#  options string: py:package_prefix=tanit.thrift.
 #
 
 import sys
@@ -29,6 +29,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
     print('  void activate_worker(string wid)')
     print('  WorkerStats worker_stats(string wid)')
     print('  void register_filesystem(FileSystem filesystem)')
+    print('   list_filesystems()')
     print('  void mount_filesystem(string name, string mount_point, string mount_path)')
     print('  void umount_filesystem(string mount_point)')
     print('')
@@ -139,6 +140,12 @@ elif cmd == 'register_filesystem':
         print('register_filesystem requires 1 args')
         sys.exit(1)
     pp.pprint(client.register_filesystem(eval(args[0]),))
+
+elif cmd == 'list_filesystems':
+    if len(args) != 0:
+        print('list_filesystems requires 0 args')
+        sys.exit(1)
+    pp.pprint(client.list_filesystems())
 
 elif cmd == 'mount_filesystem':
     if len(args) != 3:

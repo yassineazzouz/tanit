@@ -6,6 +6,7 @@ from six.moves.queue import Queue
 
 from ...common.model.worker import WorkerStatus
 from ...filesystem.filesystem_manager import FilesystemManager
+from ...filesystem.model import FileSystem, FileSystemType
 from ...master.client.client import ClientType
 from ...master.client.client import ThriftClientFactory
 from ..core.execution.task_factory import TaskFactory
@@ -65,17 +66,14 @@ class Worker(object):
             self.executor.num_available(),
         )
 
-    def register_filesystem(self, name, filesystem):
+    def register_filesystem(self, filesystem):
         if self.stopped:
             raise WorkerStoppedException(
-                "Can not register filesystem [ %s ] : worker server stopped.", name
+                "Can not register filesystem : worker server stopped."
             )
 
-        _logger.info("Registering new filesystem [ %s ].", name)
-        filesystem["name"] = name
         # register the worker as a filesystem
         self.filesystem_manager.register_filesystem(filesystem)
-        _logger.info("Filesystem [ %s ] registered.", name)
 
     def start(self):
         _logger.info("Starting tanit worker [%s].", self.wid)
@@ -99,12 +97,14 @@ class Worker(object):
         if self.filesystem:
             # register the file system with the master
             self.master.register_filesystem(
-                "local:%s" % self.address,
-                {
-                    "type": "local",
-                    "address": str(self.address),
-                    "port": str(self.filesystem.bind_port),
-                },
+                FileSystem(
+                    "local:%s" % self.address,
+                    FileSystemType.LOCAL,
+                    {
+                        "address": str(self.address),
+                        "port": str(self.filesystem.bind_port)
+                    }
+                )
             )
 
         self.reporter.start()

@@ -152,12 +152,12 @@ class RemoteThriftWorker(WorkerIFace):
                 self.wid,
             )
 
-    def register_filesystem(self, name, filesystem):
+    def register_filesystem(self, filesystem):
         if not self.stopped:
-            self.client.register_filesystem(name, filesystem)
+            self.client.register_filesystem(filesystem)
         else:
             raise WorkerStoppedException(
-                "Can not register filesystem [ %s ] : worker stopped." % name
+                "Can not register filesystem : worker stopped."
             )
 
     def status(self):

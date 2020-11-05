@@ -1,9 +1,7 @@
-#!/usr/bin/env python
-# encoding: utf-8
-
 import abc
 import logging as lg
 import time
+import json
 
 from thrift.protocol import TBinaryProtocol
 from thrift.transport import TSocket
@@ -11,12 +9,14 @@ from thrift.transport import TTransport
 
 import six
 
-from ...common.model.job import JobStatus
+from ..core.worker.worker import WorkerStats
+from ...filesystem.model import FileSystem
+from ...filesystem.model import FileSystemMounts
 from ...common.model.worker import Worker
 from ...thrift.master.service import MasterUserService
 from ...thrift.master.service import MasterWorkerService
-from ...thrift.master.service import ttypes
-from ..core.worker.worker import WorkerStats
+from ...thrift.common.model.ttypes import FileSystem as TFileSystem
+from ...thrift.common.model.ttypes import Worker as TWorker
 
 _logger = lg.getLogger(__name__)
 
@@ -72,19 +72,7 @@ class UserServiceClientIFace(object):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def list_jobs(self):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def job_status(self, jid):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def submit_job(self, job):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def register_filesystem(self, name, parameters):
+    def register_filesystem(self, filesystem):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -111,42 +99,6 @@ class ThriftUserServiceClient(UserServiceClientIFace):
             TBinaryProtocol.TBinaryProtocol(self.transport)
         )
 
-    def list_jobs(self):
-        jobs = []
-        for job in self.client.list_jobs():
-            jobs.append(
-                JobStatus(
-                    job.id,
-                    ttypes.JobState._VALUES_TO_NAMES[job.state],
-                    job.submission_time,
-                    job.start_time,
-                    job.finish_time,
-                    job.execution_time,
-                )
-            )
-        return jobs
-
-    def job_status(self, jid):
-        try:
-            st = self.client.job_status(jid)
-            return JobStatus(
-                st.id,
-                ttypes.JobState._VALUES_TO_NAMES[st.state],
-                st.submission_time,
-                st.start_time,
-                st.finish_time,
-                st.execution_time,
-            )
-        except ttypes.JobNotFoundException:
-            return None
-
-    def submit_job(self, job):
-        _logger.info("Submitting new job.")
-        job = ttypes.Job(job.etype, job.params)
-        jid = self.client.submit_job(job)
-        _logger.info("Job submitted : %s.", jid)
-        return jid
-
     def list_workers(self):
         wkr_list = []
         for wkr in self.client.list_workers():
@@ -170,8 +122,14 @@ class ThriftUserServiceClient(UserServiceClientIFace):
             available_cores=stats.available_cores,
         )
 
-    def register_filesystem(self, name, parameters):
-        self.client.register_filesystem(ttypes.FileSystem(name, parameters))
+    def register_filesystem(self, filesystem):
+        self.client.register_filesystem(
+            TFileSystem(
+                filesystem.name,
+                filesystem.type,
+                json.dumps(filesystem.parameters)
+            )
+        )
 
     def mount_filesystem(self, name, mount_point, mount_path=""):
         if mount_path is None:
@@ -180,6 +138,19 @@ class ThriftUserServiceClient(UserServiceClientIFace):
 
     def umount_filesystem(self, mount_point):
         self.client.umount_filesystem(mount_point)
+
+    def list_filesystems(self):
+        filesystems = []
+        for filesystem_mount in self.client.list_filesystems():
+            filesystems.append(
+                FileSystemMounts(
+                    FileSystem(
+                        filesystem_mount.filesystem.name, filesystem_mount.filesystem.type, {}
+                    ),
+                    filesystem_mount.mounts
+                )
+            )
+        return filesystems
 
     def stop(self):
         self.transport.close()
@@ -205,17 +176,8 @@ class LocalUserServiceClient(UserServiceClientIFace):
     def worker_stats(self, wid):
         return self.master.get_worker_stats(wid)
 
-    def list_jobs(self):
-        return self.master.list_jobs()
-
-    def job_status(self, jid):
-        return self.master.get_job(jid)
-
-    def submit_job(self, job):
-        return self.master.submit_job()
-
-    def register_filesystem(self, name, parameters):
-        self.master.register_filesystem(name, parameters)
+    def register_filesystem(self, filesystem):
+        self.master.register_filesystem(filesystem)
 
     def mount_filesystem(self, name, mount_point, mount_path=""):
         if mount_path is None:
@@ -224,6 +186,9 @@ class LocalUserServiceClient(UserServiceClientIFace):
 
     def umount_filesystem(self, mount_point):
         self.master.umount_filesystem(mount_point)
+
+    def list_filesystems(self):
+        return self.master.list_filesystems()
 
     def stop(self):
         # do nothing
@@ -283,16 +248,22 @@ class ThriftWorkerServiceClient(WorkerServiceClientIFace):
         )
 
     def register_worker(self, wid, address, port):
-        return self.client.register_worker(ttypes.Worker(wid, address, port))
+        return self.client.register_worker(TWorker(wid, address, port))
 
     def unregister_worker(self, wid, address, port):
-        return self.client.unregister_worker(ttypes.Worker(wid, address, port))
+        return self.client.unregister_worker(TWorker(wid, address, port))
 
     def register_heartbeat(self, wid, address, port):
-        self.client.register_heartbeat(ttypes.Worker(wid, address, port))
+        self.client.register_heartbeat(TWorker(wid, address, port))
 
-    def register_filesystem(self, name, parameters):
-        self.client.register_filesystem(ttypes.FileSystem(name, parameters))
+    def register_filesystem(self, filesystem):
+        self.client.register_filesystem(
+            TFileSystem(
+                filesystem.name,
+                filesystem.type,
+                json.dumps(filesystem.parameters)
+            )
+        )
 
     def task_start(self, tid):
         self.client.task_start(tid)
@@ -325,6 +296,9 @@ class LocalWorkerServiceClient(WorkerServiceClientIFace):
 
     def register_heartbeat(self, wid, address, port):
         self.master.register_heartbeat(Worker(self, wid, address, port))
+
+    def register_filesystem(self, filesystem):
+        self.master.register_filesystem(filesystem)
 
     def task_start(self, tid):
         self.master.task_start(tid)

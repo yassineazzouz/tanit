@@ -13,7 +13,7 @@ class StandaloneMaster(Master):
         self.workers_manager.register_worker(Worker("local-worker", None, None))
         self.workers_manager.activate_worker("local-worker")
         # register the local file system
-        self.register_filesystem("local", {"type": "local"})
+        self.register_filesystem({"name": "local", "type": "local"})
         _logger.info("Local worker Registered.")
 
     def register_heartbeat(self, worker):

@@ -43,7 +43,7 @@ class LocalWorker(WorkerIFace):
                 self.wid,
             )
 
-    def register_filesystem(self, name, filesystem):
+    def register_filesystem(self, filesystem):
         # The file system is defined in the master already
         pass
 

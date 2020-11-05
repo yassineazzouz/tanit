@@ -3,14 +3,15 @@ import logging as lg
 
 import click
 
+from tanit.filesystem.model import FileSystem, FileSystemType
 from ..master.dfs.client import DistributedFileSystemClient
-from .. import __version__
-from ..common.model.job import Job
 from ..master.client.client import ClientType
 from ..master.client.client import ThriftClientFactory
 from ..master.config.config import MasterConfig
 from ..master.server.server import MasterServer
 from ..worker.server.server import WorkerServer
+
+from .. import __version__
 
 _logger = lg.getLogger(__name__)
 
@@ -41,6 +42,7 @@ def get_client():
     ).create_client(ClientType.USER_SERVICE)
     return client
 
+
 def get_dfs_client():
     client = DistributedFileSystemClient()
     return client
@@ -66,6 +68,7 @@ def worker():
     """Run the Tanit worker."""
     server = WorkerServer()
     server.start()
+
 
 @tanit.group("workers")
 def workers():
@@ -130,32 +133,43 @@ def filesystems():
 
 
 @filesystems.command("register")
-@click.argument("filesystem")
-def filesystem_register(filesystem):
+@click.option("--name", "-n", required=True, nargs=1, type=str, help="Filesystem name.")
+@click.option("--type", "-t", '_type',
+              required=True, type=click.Choice(['LOCAL', 'HDFS', 'S3', 'GCS'], case_sensitive=False),
+              nargs=1,
+              help="Filesystem type.")
+@click.argument("parameters")
+def filesystem_register(name, _type, parameters):
     """Register a filesystem."""
     client = get_client()
     client.start()
-
     try:
-        filesystem_spec = json.loads(filesystem)
+        params = json.loads(parameters)
     except Exception as e:
-        _logger.error("Error parsing job json specification.")
+        _logger.error("Error parsing filesystem json specification.")
         raise e
+    client.register_filesystem(
+        FileSystem(name, FileSystemType._NAMES_TO_VALUES[_type.upper()], params)
+    )
+    client.stop()
 
-    if "name" not in filesystem_spec:
-        _logger.error("Missing filesystem name.")
-        raise Exception("Missing filesystem name.")
 
-    name = filesystem_spec.pop("name")
-    client.register_filesystem(name, filesystem_spec)
-
+@filesystems.command("list")
+def filesystem_list():
+    """List Registered filesystems and mounts."""
+    client = get_client()
+    client.start()
+    for filesystem in client.list_filesystems():
+        print(filesystem)
     client.stop()
 
 
 @filesystems.command("mount")
 @click.argument("name")
-@click.argument("mount_point")
-@click.argument("mount_path", default="")
+@click.argument("mount_point", type=click.Path())
+@click.option("--mount-path", "mount_path",
+              required=False, default="", nargs=1, type=click.Path(),
+              help="Path on the filesystem to mount.")
 def filesystem_mount(name, mount_point, mount_path):
     """Mount a filesystem."""
     client = get_client()
@@ -165,8 +179,8 @@ def filesystem_mount(name, mount_point, mount_path):
 
 
 @filesystems.command("umount")
-@click.argument("mount_point")
-def filesystem_register(mount_point):
+@click.argument("mount_point", type=click.Path())
+def filesystem_umount(mount_point):
     """Unmount a filesystem."""
     client = get_client()
     client.start()

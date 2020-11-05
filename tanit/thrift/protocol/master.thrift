@@ -1,75 +1,22 @@
+include "model.thrift"
+
 namespace py master.service
-
-enum JobState {
-  SUBMITTED = 1,
-  SCHEDULED = 2,
-  DISPATCHED = 3,
-  RUNNING = 4,
-  FINISHED = 5,
-  FAILED = 6,
-}
-
-enum JobType {
-  COPY = 1,
-  UPLOAD = 2,
-  MOCK = 3, // for testing
-}
-
-struct JobStatus {
-  	1: string id,
-  	2: JobState state,
-  	3: string submission_time,
-  	4: string start_time,
-  	5: string finish_time,
-  	6: i32 execution_time,
-}
-
-struct Job {
-    1: JobType type,
-    2: map<string,string> params,
-}
-
-struct Worker {
-  	1: required string wid,
-  	2: optional string address,
-  	3: optional i32 port,
-}
-
-struct WorkerStats {
-  	1: string wid,
-  	2: string state,
-  	3: string last_heartbeat,
-  	4: i32 running_tasks,
-  	5: i32 pending_tasks,
-  	6: i32 available_cores
-}
-
-struct FileSystem {
-    1: required string name,
-    2: required map<string,string> parameters
-}
-
-exception JobInitializationException {
-  1: string message,
-}
-
-exception JobNotFoundException {
-  1: string message,
-}
 
 service MasterUserService{
 
     // Manage workers
-    list<Worker> list_workers(),
+    list<model.Worker> list_workers(),
 
     void deactivate_worker(1:string wid),
 
     void activate_worker(1:string wid),
 
-    WorkerStats worker_stats(1:string wid),
+    model.WorkerStats worker_stats(1:string wid),
 
     // Manage filesystems
-    void register_filesystem(1:FileSystem filesystem),
+    void register_filesystem(1:model.FileSystem filesystem),
+
+    list<model.FileSystemMount> list_filesystems(),
 
     void mount_filesystem(1:string name, 2:string mount_point, 3:string mount_path = ""),
 
@@ -79,13 +26,13 @@ service MasterUserService{
 
 service MasterWorkerService{
 
-    void register_worker(1:Worker worker),
+    void register_worker(1:model.Worker worker),
     
-    void unregister_worker(1:Worker worker),
+    void unregister_worker(1:model.Worker worker),
     
-    void register_heartbeat(1:Worker worker),
+    void register_heartbeat(1:model.Worker worker),
 
-    void register_filesystem(1:FileSystem filesystem),
+    void register_filesystem(1:model.FileSystem filesystem),
    
     void task_start(1:string tid),
         

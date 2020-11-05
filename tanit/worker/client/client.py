@@ -1,13 +1,13 @@
+import json
 from thrift.protocol import TBinaryProtocol
 
-# Thrift files
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
 from ...common.model.worker import WorkerStatus
 from ...thrift.worker.service import WorkerService
-from ...thrift.worker.service.ttypes import FileSystem
-from ...thrift.worker.service.ttypes import Task
+from ...thrift.common.model.ttypes import Task as TTask
+from ...thrift.common.model.ttypes import FileSystem as TFileSystem
 
 
 class WorkerClient(object):
@@ -27,10 +27,16 @@ class WorkerClient(object):
         self.transport.open()
 
     def submit(self, tid, operation, params):
-        self.client.submit(Task(tid, operation, params))
+        self.client.submit(TTask(tid, operation, params))
 
-    def register_filesystem(self, name, parameters):
-        self.client.register_filesystem(FileSystem(name, parameters))
+    def register_filesystem(self, filesystem):
+        self.client.register_filesystem(
+            TFileSystem(
+                filesystem.name,
+                filesystem.type,
+                json.dumps(filesystem.parameters)
+            )
+        )
 
     def worker_status(self):
         status = self.client.worker_status()

@@ -3,7 +3,7 @@
 #
 # DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 #
-#  options string: py
+#  options string: py:package_prefix=tanit.thrift.
 #
 
 from thrift.Thrift import TType, TMessageType, TFrozenDict, TException, TApplicationException
@@ -513,7 +513,7 @@ class register_worker_args(object):
                 break
             if fid == 1:
                 if ftype == TType.STRUCT:
-                    self.worker = Worker()
+                    self.worker = tanit.thrift.common.model.ttypes.Worker()
                     self.worker.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -550,7 +550,7 @@ class register_worker_args(object):
 all_structs.append(register_worker_args)
 register_worker_args.thrift_spec = (
     None,  # 0
-    (1, TType.STRUCT, 'worker', [Worker, None], None, ),  # 1
+    (1, TType.STRUCT, 'worker', [tanit.thrift.common.model.ttypes.Worker, None], None, ),  # 1
 )
 
 
@@ -619,7 +619,7 @@ class unregister_worker_args(object):
                 break
             if fid == 1:
                 if ftype == TType.STRUCT:
-                    self.worker = Worker()
+                    self.worker = tanit.thrift.common.model.ttypes.Worker()
                     self.worker.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -656,7 +656,7 @@ class unregister_worker_args(object):
 all_structs.append(unregister_worker_args)
 unregister_worker_args.thrift_spec = (
     None,  # 0
-    (1, TType.STRUCT, 'worker', [Worker, None], None, ),  # 1
+    (1, TType.STRUCT, 'worker', [tanit.thrift.common.model.ttypes.Worker, None], None, ),  # 1
 )
 
 
@@ -725,7 +725,7 @@ class register_heartbeat_args(object):
                 break
             if fid == 1:
                 if ftype == TType.STRUCT:
-                    self.worker = Worker()
+                    self.worker = tanit.thrift.common.model.ttypes.Worker()
                     self.worker.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -762,7 +762,7 @@ class register_heartbeat_args(object):
 all_structs.append(register_heartbeat_args)
 register_heartbeat_args.thrift_spec = (
     None,  # 0
-    (1, TType.STRUCT, 'worker', [Worker, None], None, ),  # 1
+    (1, TType.STRUCT, 'worker', [tanit.thrift.common.model.ttypes.Worker, None], None, ),  # 1
 )
 
 
@@ -831,7 +831,7 @@ class register_filesystem_args(object):
                 break
             if fid == 1:
                 if ftype == TType.STRUCT:
-                    self.filesystem = FileSystem()
+                    self.filesystem = tanit.thrift.common.model.ttypes.FileSystem()
                     self.filesystem.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -868,7 +868,7 @@ class register_filesystem_args(object):
 all_structs.append(register_filesystem_args)
 register_filesystem_args.thrift_spec = (
     None,  # 0
-    (1, TType.STRUCT, 'filesystem', [FileSystem, None], None, ),  # 1
+    (1, TType.STRUCT, 'filesystem', [tanit.thrift.common.model.ttypes.FileSystem, None], None, ),  # 1
 )
 
 

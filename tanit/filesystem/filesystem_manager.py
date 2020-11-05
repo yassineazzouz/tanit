@@ -1,6 +1,4 @@
-
 import logging as lg
-from copy import deepcopy
 from threading import RLock
 
 from .config import FileSystemsConfig
@@ -18,9 +16,8 @@ class FilesystemManager(object):
     @staticmethod
     def getInstance():
         with _glock:
-            """ Static access method. """
             if FilesystemManager.__instance is None:
-                FilesystemManager()
+                FilesystemManager.__instance = FilesystemManager()
         return FilesystemManager.__instance
 
     def __init__(self):
@@ -28,7 +25,7 @@ class FilesystemManager(object):
             raise Exception("Only one instance of Client Factory is allowed!")
         else:
             FilesystemManager.__instance = self
-            self.factory = FileSystemFactory()
+            self.factory = FileSystemFactory.getInstance()
             self._configure()
 
     def _configure(self):
@@ -41,25 +38,25 @@ class FilesystemManager(object):
             _logger.warning("Empty filesystems configuration file.")
 
     def register_filesystem(self, filesystem):
-        _conf = deepcopy(filesystem)
         with _glock:
-            if "name" in _conf:
-                name = _conf.pop("name")
-                if name in self._filesystems:
-                    # file system already exist, overwrite
-                    del self._filesystems[name]
-                self._filesystems[name] = _conf
-                _logger.info("Registered filesystem '%s'" % name)
-            else:
-                raise InvalidFileSystemError(
-                    "Missing filesystem name from %s" % str(_conf)
-                )
+            _logger.info("Registering new filesystem [ %s ].", filesystem.name)
+            if filesystem.name in self._filesystems:
+                # file system already exist, overwrite
+                _logger.warning("A filesystem with name [%s] already exist, overwriting it." % filesystem.name)
+            self._filesystems[filesystem.name] = filesystem
+            _logger.info("Registered filesystem '%s'" % filesystem.name)
+
+    def list_filesystems(self):
+        with _glock:
+            return [
+                self._filesystems[name] for name in self._filesystems
+            ]
 
     def get_filesystem(self, name):
         with _glock:
             if name in self._filesystems:
                 return self.factory.create_filesystem(
-                    deepcopy(self._filesystems[name])
+                    self._filesystems[name]
                 )
             else:
                 # the name does not exist

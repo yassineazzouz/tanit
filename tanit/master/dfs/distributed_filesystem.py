@@ -9,6 +9,7 @@ from ..core.execution.execution_job import JobExecution
 from ...common.utils.glob import iglob
 from ...filesystem.filesystem_manager import FilesystemManager
 from ...filesystem.ioutils import FileSystemError
+from ...filesystem.model import FileSystemType, FileSystemMounts, FileSystem
 
 _logger = lg.getLogger(__name__)
 
@@ -38,6 +39,10 @@ class DistributedFileSystem(object):
         self.filesystem_manager = FilesystemManager.getInstance()
         self.execution_manager = execution_manager
         self.root = INode("", "DIR")
+
+    def list_filesystem(self):
+        # register the worker as a filesystem
+        self.filesystem_manager.list_filesystems()
 
     def register_filesystem(self, filesystem):
         # register the worker as a filesystem
@@ -84,6 +89,33 @@ class DistributedFileSystem(object):
         parent = inode.parent
         if parent is not None:
             parent.childs.pop(inode.iname)
+
+    def list_filesystems(self):
+        return self.filesystem_manager.list_filesystems()
+
+    def list_filesystems_mounts(self):
+        def list_mounts(inode=None):
+            if inode is None:
+                inode = self.root
+            if inode.itype == "MOUNT":
+                yield inode
+            else:
+                for dir in inode.childs:
+                    for child in list_mounts(inode.childs[dir]):
+                        yield child
+
+        filesystems = {}
+        for filesystem in self.filesystem_manager.list_filesystems():
+            filesystems[filesystem.name] = FileSystemMounts(
+                # when listing filesystems, never print the parameters
+                FileSystem(filesystem.name, filesystem.type, {}), [],
+        )
+        for mount in list_mounts():
+            filesystems[mount.mount].mounts.append({
+                "mount point": mount.get_path(),
+                "mount path": mount.mount_path
+            })
+        return filesystems.values()
 
     def status(self, path, strict=True):
         def _datetime2timestamp(dt):

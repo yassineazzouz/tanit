@@ -3,7 +3,7 @@
 #
 # DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 #
-#  options string: py
+#  options string: py:package_prefix=tanit.thrift.
 #
 
 from thrift.Thrift import TType, TMessageType, TFrozenDict, TException, TApplicationException
@@ -256,7 +256,7 @@ class submit_args(object):
                 break
             if fid == 1:
                 if ftype == TType.STRUCT:
-                    self.task = Task()
+                    self.task = tanit.thrift.common.model.ttypes.Task()
                     self.task.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -293,7 +293,7 @@ class submit_args(object):
 all_structs.append(submit_args)
 submit_args.thrift_spec = (
     None,  # 0
-    (1, TType.STRUCT, 'task', [Task, None], None, ),  # 1
+    (1, TType.STRUCT, 'task', [tanit.thrift.common.model.ttypes.Task, None], None, ),  # 1
 )
 
 
@@ -405,7 +405,7 @@ class worker_status_result(object):
                 break
             if fid == 0:
                 if ftype == TType.STRUCT:
-                    self.success = WorkerStatus()
+                    self.success = tanit.thrift.common.model.ttypes.WorkerExecutionStatus()
                     self.success.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -441,7 +441,7 @@ class worker_status_result(object):
         return not (self == other)
 all_structs.append(worker_status_result)
 worker_status_result.thrift_spec = (
-    (0, TType.STRUCT, 'success', [WorkerStatus, None], None, ),  # 0
+    (0, TType.STRUCT, 'success', [tanit.thrift.common.model.ttypes.WorkerExecutionStatus, None], None, ),  # 0
 )
 
 
@@ -467,7 +467,7 @@ class register_filesystem_args(object):
                 break
             if fid == 1:
                 if ftype == TType.STRUCT:
-                    self.filesystem = FileSystem()
+                    self.filesystem = tanit.thrift.common.model.ttypes.FileSystem()
                     self.filesystem.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -504,7 +504,7 @@ class register_filesystem_args(object):
 all_structs.append(register_filesystem_args)
 register_filesystem_args.thrift_spec = (
     None,  # 0
-    (1, TType.STRUCT, 'filesystem', [FileSystem, None], None, ),  # 1
+    (1, TType.STRUCT, 'filesystem', [tanit.thrift.common.model.ttypes.FileSystem, None], None, ),  # 1
 )
 
 

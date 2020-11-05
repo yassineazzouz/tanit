@@ -3,7 +3,7 @@
 #
 # DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 #
-#  options string: py
+#  options string: py:package_prefix=tanit.thrift.
 #
 
 from thrift.Thrift import TType, TMessageType, TFrozenDict, TException, TApplicationException
@@ -52,6 +52,9 @@ class Iface(object):
          - filesystem
 
         """
+        pass
+
+    def list_filesystems(self):
         pass
 
     def mount_filesystem(self, name, mount_point, mount_path):
@@ -228,6 +231,32 @@ class Client(Iface):
         iprot.readMessageEnd()
         return
 
+    def list_filesystems(self):
+        self.send_list_filesystems()
+        return self.recv_list_filesystems()
+
+    def send_list_filesystems(self):
+        self._oprot.writeMessageBegin('list_filesystems', TMessageType.CALL, self._seqid)
+        args = list_filesystems_args()
+        args.write(self._oprot)
+        self._oprot.writeMessageEnd()
+        self._oprot.trans.flush()
+
+    def recv_list_filesystems(self):
+        iprot = self._iprot
+        (fname, mtype, rseqid) = iprot.readMessageBegin()
+        if mtype == TMessageType.EXCEPTION:
+            x = TApplicationException()
+            x.read(iprot)
+            iprot.readMessageEnd()
+            raise x
+        result = list_filesystems_result()
+        result.read(iprot)
+        iprot.readMessageEnd()
+        if result.success is not None:
+            return result.success
+        raise TApplicationException(TApplicationException.MISSING_RESULT, "list_filesystems failed: unknown result")
+
     def mount_filesystem(self, name, mount_point, mount_path):
         """
         Parameters:
@@ -302,6 +331,7 @@ class Processor(Iface, TProcessor):
         self._processMap["activate_worker"] = Processor.process_activate_worker
         self._processMap["worker_stats"] = Processor.process_worker_stats
         self._processMap["register_filesystem"] = Processor.process_register_filesystem
+        self._processMap["list_filesystems"] = Processor.process_list_filesystems
         self._processMap["mount_filesystem"] = Processor.process_mount_filesystem
         self._processMap["umount_filesystem"] = Processor.process_umount_filesystem
         self._on_message_begin = None
@@ -441,6 +471,29 @@ class Processor(Iface, TProcessor):
         oprot.writeMessageEnd()
         oprot.trans.flush()
 
+    def process_list_filesystems(self, seqid, iprot, oprot):
+        args = list_filesystems_args()
+        args.read(iprot)
+        iprot.readMessageEnd()
+        result = list_filesystems_result()
+        try:
+            result.success = self._handler.list_filesystems()
+            msg_type = TMessageType.REPLY
+        except TTransport.TTransportException:
+            raise
+        except TApplicationException as ex:
+            logging.exception('TApplication exception in handler')
+            msg_type = TMessageType.EXCEPTION
+            result = ex
+        except Exception:
+            logging.exception('Unexpected exception in handler')
+            msg_type = TMessageType.EXCEPTION
+            result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
+        oprot.writeMessageBegin("list_filesystems", msg_type, seqid)
+        result.write(oprot)
+        oprot.writeMessageEnd()
+        oprot.trans.flush()
+
     def process_mount_filesystem(self, seqid, iprot, oprot):
         args = mount_filesystem_args()
         args.read(iprot)
@@ -556,11 +609,11 @@ class list_workers_result(object):
             if fid == 0:
                 if ftype == TType.LIST:
                     self.success = []
-                    (_etype21, _size18) = iprot.readListBegin()
-                    for _i22 in range(_size18):
-                        _elem23 = Worker()
-                        _elem23.read(iprot)
-                        self.success.append(_elem23)
+                    (_etype3, _size0) = iprot.readListBegin()
+                    for _i4 in range(_size0):
+                        _elem5 = tanit.thrift.common.model.ttypes.Worker()
+                        _elem5.read(iprot)
+                        self.success.append(_elem5)
                     iprot.readListEnd()
                 else:
                     iprot.skip(ftype)
@@ -577,8 +630,8 @@ class list_workers_result(object):
         if self.success is not None:
             oprot.writeFieldBegin('success', TType.LIST, 0)
             oprot.writeListBegin(TType.STRUCT, len(self.success))
-            for iter24 in self.success:
-                iter24.write(oprot)
+            for iter6 in self.success:
+                iter6.write(oprot)
             oprot.writeListEnd()
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
@@ -599,7 +652,7 @@ class list_workers_result(object):
         return not (self == other)
 all_structs.append(list_workers_result)
 list_workers_result.thrift_spec = (
-    (0, TType.LIST, 'success', (TType.STRUCT, [Worker, None], False), None, ),  # 0
+    (0, TType.LIST, 'success', (TType.STRUCT, [tanit.thrift.common.model.ttypes.Worker, None], False), None, ),  # 0
 )
 
 
@@ -897,7 +950,7 @@ class worker_stats_result(object):
                 break
             if fid == 0:
                 if ftype == TType.STRUCT:
-                    self.success = WorkerStats()
+                    self.success = tanit.thrift.common.model.ttypes.WorkerStats()
                     self.success.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -933,7 +986,7 @@ class worker_stats_result(object):
         return not (self == other)
 all_structs.append(worker_stats_result)
 worker_stats_result.thrift_spec = (
-    (0, TType.STRUCT, 'success', [WorkerStats, None], None, ),  # 0
+    (0, TType.STRUCT, 'success', [tanit.thrift.common.model.ttypes.WorkerStats, None], None, ),  # 0
 )
 
 
@@ -959,7 +1012,7 @@ class register_filesystem_args(object):
                 break
             if fid == 1:
                 if ftype == TType.STRUCT:
-                    self.filesystem = FileSystem()
+                    self.filesystem = tanit.thrift.common.model.ttypes.FileSystem()
                     self.filesystem.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -996,7 +1049,7 @@ class register_filesystem_args(object):
 all_structs.append(register_filesystem_args)
 register_filesystem_args.thrift_spec = (
     None,  # 0
-    (1, TType.STRUCT, 'filesystem', [FileSystem, None], None, ),  # 1
+    (1, TType.STRUCT, 'filesystem', [tanit.thrift.common.model.ttypes.FileSystem, None], None, ),  # 1
 )
 
 
@@ -1040,6 +1093,119 @@ class register_filesystem_result(object):
         return not (self == other)
 all_structs.append(register_filesystem_result)
 register_filesystem_result.thrift_spec = (
+)
+
+
+class list_filesystems_args(object):
+
+
+    def read(self, iprot):
+        if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
+            iprot._fast_decode(self, iprot, [self.__class__, self.thrift_spec])
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot._fast_encode is not None and self.thrift_spec is not None:
+            oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
+            return
+        oprot.writeStructBegin('list_filesystems_args')
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+             for key, value in self.__dict__.items()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+all_structs.append(list_filesystems_args)
+list_filesystems_args.thrift_spec = (
+)
+
+
+class list_filesystems_result(object):
+    """
+    Attributes:
+     - success
+
+    """
+
+
+    def __init__(self, success=None,):
+        self.success = success
+
+    def read(self, iprot):
+        if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
+            iprot._fast_decode(self, iprot, [self.__class__, self.thrift_spec])
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 0:
+                if ftype == TType.LIST:
+                    self.success = []
+                    (_etype10, _size7) = iprot.readListBegin()
+                    for _i11 in range(_size7):
+                        _elem12 = tanit.thrift.common.model.ttypes.FileSystemMount()
+                        _elem12.read(iprot)
+                        self.success.append(_elem12)
+                    iprot.readListEnd()
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot._fast_encode is not None and self.thrift_spec is not None:
+            oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
+            return
+        oprot.writeStructBegin('list_filesystems_result')
+        if self.success is not None:
+            oprot.writeFieldBegin('success', TType.LIST, 0)
+            oprot.writeListBegin(TType.STRUCT, len(self.success))
+            for iter13 in self.success:
+                iter13.write(oprot)
+            oprot.writeListEnd()
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+             for key, value in self.__dict__.items()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
+all_structs.append(list_filesystems_result)
+list_filesystems_result.thrift_spec = (
+    (0, TType.LIST, 'success', (TType.STRUCT, [tanit.thrift.common.model.ttypes.FileSystemMount, None], False), None, ),  # 0
 )
 
 
