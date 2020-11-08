@@ -8,7 +8,7 @@ from ...common.model.worker import WorkerStatus
 from ...worker.core.execution.task_factory import TaskFactory
 from ...worker.core.executor_factory import ExecutorFactory
 from ...worker.core.executor_pool import ExecutorPool
-from ..client.client import LocalClientFactory
+from ..client.factory import LocalClientFactory
 from ..core.worker.worker import WorkerIFace
 
 _logger = lg.getLogger(__name__)

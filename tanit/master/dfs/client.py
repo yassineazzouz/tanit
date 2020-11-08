@@ -1,51 +1,47 @@
-import time
 import logging as lg
 
 from thrift.protocol import TBinaryProtocol
+from thrift.protocol.TMultiplexedProtocol import TMultiplexedProtocol
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 
+from ...common.thrift.utils import connect
 from ...thrift.master.dfs import DistributedFilesystem
+from ...common.config.configuration_keys import Keys
+from ...common.config.configuration import TanitConfigurationException, TanitConfiguration
 
 _logger = lg.getLogger(__name__)
 
 
 class DistributedFileSystemClient(object):
-    def __init__(self, host="127.0.0.1", port=9092):
-        self.host = host
-        self.port = port
-        # Init thrift connection and protocol handlers
-        socket = TSocket.TSocket(host, port)
-        self.transport = TTransport.TBufferedTransport(socket)
-        protocol = TBinaryProtocol.TBinaryProtocol(self.transport)
+    def __init__(self):
+        configuration = TanitConfiguration.getInstance()
+        self.master_host = configuration.get(Keys.MASTER_HOSTNAME)
+        if self.master_host is None:
+            raise TanitConfigurationException("Missing required configuration '%s'", Keys.MASTER_HOSTNAME)
 
-        # Set client to our Example
-        self.client = DistributedFilesystem.Client(protocol)
+        self.rpc_port = configuration.get(Keys.MASTER_RPC_PORT)
+        if self.rpc_port is None:
+            raise TanitConfigurationException("Missing required configuration '%s'", Keys.MASTER_RPC_PORT)
+
+        self.rpc_max_retries = configuration.get(Keys.RPC_CLIENT_MAX_RETRIES)
+        self.rpc_retry_interval = configuration.get(Keys.RPC_CLIENT_RETRY_INTERVAL)
 
     def start(self):
-        # Connect to server
-        retries = 1
-        last_error = None
-        while retries < 10:
-            try:
-                self.transport.open()
-                break
-            except TTransport.TTransportException as e:
-                _logger.error(
-                    "Could not connect to any local system service. "
-                    + "retrying after 5 seconds ..."
-                )
-                last_error = e
-            retries += 1
-            time.sleep(5.0)
-
-        if retries == 10:
-            _logger.error(
-                "Could not connect to any local system service after 30 retries. "
-                + "exiting ..."
+        self.transport = connect(
+            TTransport.TFramedTransport(
+                TSocket.TSocket(self.master_host, self.rpc_port)
+            ),
+            self.rpc_max_retries,
+            self.rpc_retry_interval / 1000
+        )
+        # Set client to our Example
+        self.client = DistributedFilesystem.Client(
+            TMultiplexedProtocol(
+                TBinaryProtocol.TBinaryProtocol(self.transport),
+                "DFSService"
             )
-            self.stop()
-            raise last_error
+        )
 
     def stop(self):
         self.transport.close()

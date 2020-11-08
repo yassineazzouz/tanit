@@ -37,6 +37,8 @@ class DistributedFileSystem(object):
 
     def __init__(self, execution_manager):
         self.filesystem_manager = FilesystemManager.getInstance()
+        self.filesystem_manager.configure()
+
         self.execution_manager = execution_manager
         self.root = INode("", "DIR")
 
@@ -134,7 +136,7 @@ class DistributedFileSystem(object):
                     mount = inode.childs[splt]
                     filesystem = self.filesystem_manager.get_filesystem(inode.childs[splt].mount)
                     return filesystem.status(
-                        re.sub(mount.get_path(), mount.mount_path, path),
+                        re.sub("^%s" % mount.get_path(), mount.mount_path, path),
                         strict=strict
                     )
                 else:
@@ -166,7 +168,7 @@ class DistributedFileSystem(object):
                         mount = inode.childs[splt]
                         filesystem = self.filesystem_manager.get_filesystem(inode.childs[splt].mount)
                         return filesystem.list(
-                            re.sub(mount.get_path(), mount.mount_path, path),
+                            re.sub("^%s" % mount.get_path(), mount.mount_path, path),
                             status=status
                         )
                     else:
@@ -248,7 +250,7 @@ class DistributedFileSystem(object):
                     mount = parent.childs[splt]
                     filesystem = self.filesystem_manager.get_filesystem(parent.childs[splt].mount)
                     return filesystem.mkdir(
-                        re.sub(mount.get_path(), mount.mount_path, path),
+                        re.sub("^%s" % mount.get_path(), mount.mount_path, path),
                         permission
                     )
                 else:
@@ -289,7 +291,7 @@ class DistributedFileSystem(object):
                     mount = inode.childs[splt]
                     filesystem = self.filesystem_manager.get_filesystem(inode.childs[splt].mount)
                     return filesystem.delete(
-                        re.sub(mount.get_path(), mount.mount_path, path),
+                        re.sub("^%s" % mount.get_path(), mount.mount_path, path),
                         recursive=recursive
                     )
                 else:
@@ -309,7 +311,7 @@ class DistributedFileSystem(object):
                     mount = inode.childs[splt]
                     filesystem = self.filesystem_manager.get_filesystem(inode.childs[splt].mount)
                     return filesystem.checksum(
-                        re.sub(mount.get_path(), mount.mount_path, path),
+                        re.sub("^%s" % mount.get_path(), mount.mount_path, path),
                         algorithm
                     )
                 else:
@@ -340,12 +342,12 @@ class DistributedFileSystem(object):
         src_mount = self.get_path_mount(src_path)
         if src_mount is None:
             raise FileSystemError("Source path [%s] is not a mounted file system" % src_path)
-        src_path = re.sub(src_mount.get_path(), src_mount.mount_path, src_path)
+        src_path = re.sub("^%s" % src_mount.get_path(), src_mount.mount_path, src_path)
 
         dst_mount = self.get_path_mount(dst_path)
         if dst_mount is None:
             raise FileSystemError("Destination path [%s] is not a mounted file system" % dst_path)
-        dst_path = re.sub(dst_mount.get_path(), dst_mount.mount_path, dst_path)
+        dst_path = re.sub("^%s" % dst_mount.get_path(), dst_mount.mount_path, dst_path)
 
         src = self.filesystem_manager.get_filesystem(src_mount.mount)
         dst = self.filesystem_manager.get_filesystem(dst_mount.mount)
@@ -493,12 +495,12 @@ class DistributedFileSystem(object):
         src_mount = self.get_path_mount(src_path)
         if src_mount is None:
             raise FileSystemError("Source path [%s] is not a mounted file system" % src_path)
-        real_src_path = re.sub(src_mount.get_path(), src_mount.mount_path, src_path)
+        real_src_path = re.sub("^%s" % src_mount.get_path(), src_mount.mount_path, src_path)
 
         dst_mount = self.get_path_mount(dst_path)
         if dst_mount is None:
             raise FileSystemError("Destination path [%s] is not a mounted file system" % dst_path)
-        real_dst_path = re.sub(dst_mount.get_path(), dst_mount.mount_path, dst_path)
+        real_dst_path = re.sub("^%s" % dst_mount.get_path(), dst_mount.mount_path, dst_path)
 
         src = self.filesystem_manager.get_filesystem(src_mount.mount)
         dst = self.filesystem_manager.get_filesystem(dst_mount.mount)

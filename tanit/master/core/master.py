@@ -19,13 +19,13 @@ class Master(object):
     and the RPC technology used.
     """
 
-    def __init__(self, config=None):
+    def __init__(self):
         # workers factory
         self.workers_factory = WorkerFactory(self)
         # workers manager
-        self.workers_manager = WorkerManager(self.workers_factory, config)
+        self.workers_manager = WorkerManager(self.workers_factory)
         # execution manager
-        self.execution_manager = ExecutionManager(self.workers_manager, config)
+        self.execution_manager = ExecutionManager(self.workers_manager)
         # filesystems factory
         self.dfs = DistributedFileSystem(self.execution_manager)
 
@@ -34,12 +34,7 @@ class Master(object):
             self.execution_manager, self.workers_manager
         )
 
-        self.configure(config)
-
         self.started = False
-
-    def configure(self, config):
-        pass
 
     def submit_job(self, job):
         if not self.started:

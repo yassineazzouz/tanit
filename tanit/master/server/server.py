@@ -4,6 +4,7 @@ import logging as lg
 import time
 from threading import Thread
 
+from thrift.TMultiplexedProcessor import TMultiplexedProcessor
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
 from thrift.transport import TSocket
@@ -12,33 +13,50 @@ from thrift.transport import TTransport
 from ...thrift.master.service import MasterUserService
 from ...thrift.master.service import MasterWorkerService
 from ...thrift.master.dfs import DistributedFilesystem
-from ..config.config import MasterConfig
 from ..core.master import Master
 from ..standalone.master import StandaloneMaster
 from ..dfs.handler import DistributedFileSystemHandler
 from .handler import UserServiceHandler
 from .handler import WorkerServiceHandler
 
+from ...common.config.configuration import TanitConfiguration
+from ...common.config.configuration_keys import Keys
+
 _logger = lg.getLogger(__name__)
 
 
-class DistributedFilesystemServer(Thread):
-    def __init__(self, dfs):
-        super(DistributedFilesystemServer, self).__init__()
-        self.dfs = dfs
+class UsersServer(Thread):
+    def __init__(self, master):
+        super(UsersServer, self).__init__()
+        configuration = TanitConfiguration.getInstance()
 
-    def configure(self, config):
-        self.listen_address = "0.0.0.0"
-        self.listen_port = 9092
+        self.master = master
+        self.listen_address = configuration.get(Keys.MASTER_RPC_BIND_HOST)
+        self.listen_port = configuration.get_int(Keys.MASTER_RPC_PORT)
+        self.n_threads = configuration.get_int(Keys.MASTER_RPC_THREADS)
 
     def run(self):
-        # Create Service handler
-        handler = DistributedFileSystemHandler(self.dfs)
+
+        processor = TMultiplexedProcessor()
+
+        processor.registerProcessor(
+            "DFSService",
+            DistributedFilesystem.Processor(
+                DistributedFileSystemHandler(self.master.dfs)
+            )
+        )
+
+        processor.registerProcessor(
+            "UserService",
+            MasterUserService.Processor(
+                UserServiceHandler(self.master)
+            )
+        )
 
         server = TServer.TThreadedServer(
-            DistributedFilesystem.Processor(handler),
+            processor,
             TSocket.TServerSocket(self.listen_address, self.listen_port),
-            TTransport.TBufferedTransportFactory(),
+            TTransport.TFramedTransportFactory(),
             TBinaryProtocol.TBinaryProtocolFactory(),
             daemon=True,
         )
@@ -50,12 +68,12 @@ class DistributedFilesystemServer(Thread):
 class MasterWorkerServer(Thread):
     def __init__(self, master):
         super(MasterWorkerServer, self).__init__()
-        self.master = master
+        configuration = TanitConfiguration.getInstance()
 
-    def configure(self, config):
-        self.listen_address = config.bind_address
-        self.listen_port = config.worker_service_port
-        self.n_threads = config.thrift_threads
+        self.master = master
+        self.listen_address = configuration.get(Keys.MASTER_RPC_SERVICE_BIND_HOST)
+        self.listen_port = configuration.get_int(Keys.MASTER_RPC_SERVICE_PORT)
+        self.n_threads = configuration.get_int(Keys.MASTER_RPC_THREADS)
 
     def run(self):
         # Create Service handler
@@ -64,33 +82,7 @@ class MasterWorkerServer(Thread):
         server = TServer.TThreadedServer(
             MasterWorkerService.Processor(handler),
             TSocket.TServerSocket(self.listen_address, self.listen_port),
-            TTransport.TBufferedTransportFactory(),
-            TBinaryProtocol.TBinaryProtocolFactory(),
-            daemon=True,
-        )
-
-        # Start Tanit server
-        server.serve()
-
-
-class MasterClientServer(Thread):
-    def __init__(self, master):
-        super(MasterClientServer, self).__init__()
-        self.master = master
-
-    def configure(self, config):
-        self.listen_address = config.bind_address
-        self.listen_port = config.client_service_port
-        self.n_threads = config.thrift_threads
-
-    def run(self):
-        # Create Service handler
-        handler = UserServiceHandler(self.master)
-
-        server = TServer.TThreadedServer(
-            MasterUserService.Processor(handler),
-            TSocket.TServerSocket(self.listen_address, self.listen_port),
-            TTransport.TBufferedTransportFactory(),
+            TTransport.TFramedTransportFactory(),
             TBinaryProtocol.TBinaryProtocolFactory(),
             daemon=True,
         )
@@ -100,13 +92,10 @@ class MasterClientServer(Thread):
 
 
 class MasterServer(object):
-    def __init__(self, config=None, standalone=False):
-
-        self.config = MasterConfig(config)
-        self.config.load()
+    def __init__(self, standalone=False):
 
         self.standalone = standalone
-        self.master = Master(self.config) if not standalone else StandaloneMaster()
+        self.master = Master() if not standalone else StandaloneMaster()
 
         self.stopped = False
 
@@ -117,55 +106,36 @@ class MasterServer(object):
         # Start master services
         self.master.start()
 
-        _logger.info("Stating Tanit master client server.")
+        _logger.info("Stating Tanit rpc server.")
 
-        self.mcserver = MasterClientServer(self.master)
-        self.mcserver.configure(self.config)
-        self.mcserver.setDaemon(True)
-        self.mcserver.start()
+        rpc_server = UsersServer(self.master)
+        rpc_server.setDaemon(True)
+        rpc_server.start()
         _logger.info(
-            "Tanit master client server started, listening  at %s:%s",
-            self.mcserver.listen_address,
-            self.mcserver.listen_port,
+            "Tanit rpc server started, listening  at %s:%s",
+            rpc_server.listen_address,
+            rpc_server.listen_port,
         )
 
         if not self.standalone:
             _logger.info("Stating Tanit master worker server.")
-            self.mwserver = MasterWorkerServer(self.master)
-            self.mwserver.configure(self.config)
-            self.mwserver.setDaemon(True)
-            self.mwserver.start()
+            mwserver = MasterWorkerServer(self.master)
+            mwserver.setDaemon(True)
+            mwserver.start()
             _logger.info(
                 "Tanit master worker server started, listening  at %s:%s",
-                self.mwserver.listen_address,
-                self.mwserver.listen_port,
+                mwserver.listen_address,
+                mwserver.listen_port,
             )
-
-        _logger.info("Stating Tanit distributed filesystem.")
-
-        self.dfsserver = DistributedFilesystemServer(self.master.dfs)
-        self.dfsserver.configure(self.config)
-        self.dfsserver.setDaemon(True)
-        self.dfsserver.start()
-        _logger.info(
-            "Tanit distributed filesystem service started, listening  at %s:%s",
-            self.dfsserver.listen_address,
-            self.dfsserver.listen_port,
-        )
 
         try:
             while True:
-                if not self.mcserver.is_alive():
+                if not rpc_server.is_alive():
                     _logger.error(
-                        "Unexpected Tanit master client server exit, stopping."
+                        "Unexpected Tanit rpc server exit, stopping."
                     )
                     break
-                if not self.dfsserver.is_alive():
-                    _logger.error(
-                        "Unexpected Tanit distributed filesystem service exit, stopping."
-                    )
-                    break
-                if not self.standalone and not self.mwserver.is_alive():
+                if not self.standalone and not mwserver.is_alive():
                     _logger.error(
                         "Unexpected Tanit worker client server exit, stopping."
                     )

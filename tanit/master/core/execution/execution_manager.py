@@ -5,6 +5,9 @@ from six.moves.queue import Queue
 from ..dispatcher import FairDispatcher
 from ..scheduler import SimpleScheduler
 
+from ....common.config.configuration import TanitConfiguration
+from ....common.config.configuration_keys import Keys
+
 _logger = lg.getLogger(__name__)
 
 
@@ -17,7 +20,7 @@ class ExecutionManager(object):
     and reflect the real progress.
     """
 
-    def __init__(self, workers_manager, config=None):
+    def __init__(self, workers_manager):
         # jobs list
         self.jobs = []
         # Lister queue
@@ -29,11 +32,8 @@ class ExecutionManager(object):
         # dispatcher
         self.dispatcher = FairDispatcher(cqueue, workers_manager, self.task_dispatch)
 
-        self.configure(config)
-
-    def configure(self, config):
-        # should be configurable
-        self.max_task_retries = 3
+        configuration = TanitConfiguration.getInstance()
+        self.max_task_retries = configuration.get(Keys.MASTER_EXECUTION_MAX_TASK_RETRIES)
 
     def start(self):
         _logger.info("Stating Tanit master services.")

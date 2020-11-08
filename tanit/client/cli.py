@@ -5,9 +5,8 @@ import click
 
 from tanit.filesystem.model import FileSystem, FileSystemType
 from ..master.dfs.client import DistributedFileSystemClient
-from ..master.client.client import ClientType
-from ..master.client.client import ThriftClientFactory
-from ..master.config.config import MasterConfig
+from ..master.client.factory import ClientType
+from ..master.client.factory import ThriftClientFactory
 from ..master.server.server import MasterServer
 from ..worker.server.server import WorkerServer
 
@@ -36,16 +35,11 @@ def configure_logging():
 
 
 def get_client():
-    config = MasterConfig()
-    client = ThriftClientFactory(
-        config.client_service_host, config.client_service_port
-    ).create_client(ClientType.USER_SERVICE)
-    return client
+    return ThriftClientFactory().create_client(ClientType.USER_SERVICE)
 
 
 def get_dfs_client():
-    client = DistributedFileSystemClient()
-    return client
+    return DistributedFileSystemClient()
 
 
 @click.group()

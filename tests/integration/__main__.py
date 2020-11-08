@@ -3,8 +3,8 @@ import os
 import time
 from threading import Thread
 
-from tanit.master.client.client import ClientType
-from tanit.master.client.client import ThriftClientFactory
+from tanit.master.client.factory import ClientType
+from tanit.master.client.factory import ThriftClientFactory
 from tanit.master.config.config import MasterConfig
 from tanit.master.server.server import MasterServer
 from tanit.worker.server.server import WorkerServer

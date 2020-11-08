@@ -23,13 +23,13 @@ class FilesystemManager(object):
     def __init__(self):
         if FilesystemManager.__instance is not None:
             raise Exception("Only one instance of Client Factory is allowed!")
-        else:
-            FilesystemManager.__instance = self
-            self.factory = FileSystemFactory.getInstance()
-            self._configure()
 
-    def _configure(self):
+        self.factory = FileSystemFactory.getInstance()
         self._filesystems = {}
+
+        FilesystemManager.__instance = self
+
+    def configure(self):
         _config = FileSystemsConfig(None).get_config()
         if _config is not None:
             for _fs_conf in _config["filesystems"]:

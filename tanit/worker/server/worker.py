@@ -3,41 +3,47 @@ import time
 from threading import Thread
 
 from six.moves.queue import Queue
+from thrift.Thrift import TException
 
 from ...common.model.worker import WorkerStatus
 from ...filesystem.filesystem_manager import FilesystemManager
 from ...filesystem.model import FileSystem, FileSystemType
-from ...master.client.client import ClientType
-from ...master.client.client import ThriftClientFactory
+from ...master.client.factory import ClientType
+from ...master.client.factory import ThriftClientFactory
 from ..core.execution.task_factory import TaskFactory
 from ..core.executor_factory import ExecutorFactory
 from ..core.executor_pool import ExecutorPool
 from ..filesystem.service import LocalFileSystemService
+
+from ...common.config.configuration import TanitConfiguration
+from ...common.config.configuration_keys import Keys
 
 _logger = lg.getLogger(__name__)
 
 
 class Worker(object):
     def __init__(self):
+        configuration = TanitConfiguration.getInstance()
+
         self.lqueue = Queue()
         self.stopped = False
 
-    def configure(self, config):
-        self.address = config.worker_host
-        self.port = config.worker_port
+        self.address = configuration.get(Keys.WORKER_HOSTNAME)
+        self.port = configuration.get_int(Keys.WORKER_RPC_PORT)
 
         self.wid = "tanit-worker-%s-%s" % (self.address, self.port)
 
-        client_factory = ThriftClientFactory(config.master_host, config.master_port)
+        client_factory = ThriftClientFactory()
         self.master = client_factory.create_client(ClientType.WORKER_SERVICE)
 
         self.executor = ExecutorPool(
             self.wid,
-            ExecutorFactory(client_factory, self.lqueue, config.executor_threads),
+            ExecutorFactory(client_factory, self.lqueue),
             self.lqueue,
-            config.executor_threads,
+            configuration.get_int(Keys.WORKER_EXECUTOR_THREADS)
         )
 
+        # Do not configure FilesystemManager on workers
         self.filesystem_manager = FilesystemManager.getInstance()
 
         self.task_factory = TaskFactory()
@@ -80,7 +86,7 @@ class Worker(object):
         self.stopped = False
         try:
             self.master.start()
-        except Exception as e:
+        except TException as e:
             _logger.error(
                 "Could not connect to master on [%s:%s]", self.address, self.port
             )
@@ -116,7 +122,7 @@ class Worker(object):
         # unregister the worker
         try:
             self.master.unregister_worker(self.wid, self.address, self.port)
-        except Exception:
+        except TException:
             _logger.error("Could not unregister worker from master, exiting.")
 
         self.reporter.stop()
@@ -127,14 +133,15 @@ class Worker(object):
 
 
 class WorkerHearbeatReporter(Thread):
-    # in seconds
-    heartbeat_interval = 3
-
     def __init__(self, worker):
         super(WorkerHearbeatReporter, self).__init__()
+
+        configuration = TanitConfiguration.getInstance()
+
         self.worker = worker
         self.client = worker.master
         self.stopped = False
+        self.heartbeat_interval = configuration.get_int(Keys.WORKER_HEARTBEATS_INTERVAL)
 
     def stop(self):
         _logger.info("Stopping tanit worker hearbeat reporter.")
@@ -147,11 +154,11 @@ class WorkerHearbeatReporter(Thread):
                 self.client.register_heartbeat(
                     self.worker.wid, self.worker.address, self.worker.port
                 )
-            except Exception:
+            except TException:
                 _logger.exception(
                     "Could not send heartbeat to master, is the server running !"
                 )
-            time.sleep(self.heartbeat_interval)
+            time.sleep(self.heartbeat_interval / 1000)
         _logger.info("Tanit worker hearbeat reporter stopped.")
 
 

@@ -4,7 +4,7 @@ from threading import Thread
 
 from six.moves.queue import Empty
 
-from ...master.client.client import ClientType
+from ...master.client.factory import ClientType
 
 _logger = lg.getLogger(__name__)
 

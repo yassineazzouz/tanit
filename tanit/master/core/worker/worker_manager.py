@@ -16,7 +16,7 @@ class WorkerManager(object):
     machines are active and fetch their state.
     """  # NOQA
 
-    def __init__(self, workers_factory, config=None):
+    def __init__(self, workers_factory):
         self.worker_factory = workers_factory
         self.workers = []
 
@@ -24,11 +24,6 @@ class WorkerManager(object):
 
         # monitor
         self.monitor = WorkerMonitor(self)
-
-        self.configure(config)
-
-    def configure(self, config):
-        pass
 
     def start(self):
         _logger.info("Stating tanit worker manager.")

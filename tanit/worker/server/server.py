@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import logging as lg
 from threading import Thread
 
@@ -9,22 +7,21 @@ from thrift.transport import TSocket
 from thrift.transport import TTransport
 
 from ...thrift.worker.service import WorkerService
-from ..config.config import WorkerConfig
 from .handler import WorkerServiceHandler
 from .worker import Worker
+
+from ...common.config.configuration import TanitConfiguration
+from ...common.config.configuration_keys import Keys
 
 _logger = lg.getLogger(__name__)
 
 
 class WorkerServer(object):
-    def __init__(self, config=None):
-
-        self.config = WorkerConfig(config)
-        self.config.load()
-
+    def __init__(self):
+        configuration = TanitConfiguration.getInstance()
+        self.bind_address = configuration.get(Keys.WORKER_RPC_BIND_HOST)
+        self.bind_port = configuration.get(Keys.WORKER_RPC_PORT)
         self.worker = Worker()
-        self.worker.configure(self.config)
-
         self.stopped = False
 
     def stop(self):
@@ -36,7 +33,7 @@ class WorkerServer(object):
 
         server = TServer.TThreadedServer(
             WorkerService.Processor(handler),
-            TSocket.TServerSocket(self.config.bind_address, self.config.bind_port),
+            TSocket.TServerSocket(self.bind_address, self.bind_port),
             TTransport.TBufferedTransportFactory(),
             TBinaryProtocol.TBinaryProtocolFactory(),
             daemon=True,
@@ -55,8 +52,8 @@ class WorkerServer(object):
         self.daemon.start()
         _logger.info(
             "Tanit worker server started, listening  at %s:%s",
-            self.config.bind_address,
-            self.config.bind_port,
+            self.bind_address,
+            self.bind_port,
         )
 
         # Start worker services
